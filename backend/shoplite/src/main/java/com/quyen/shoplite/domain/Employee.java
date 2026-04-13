@@ -36,4 +36,13 @@ public class Employee {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    /**
+     * Soft-delete flag — true khi nhân viên nghỉ luôn.
+     * Các dữ liệu lịch sử (Order, Payroll...) vẫn giữ tham chiếu;
+     * chỉ các read-queries trong EmployeeService lọc bỏ bản ghi này.
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
 }

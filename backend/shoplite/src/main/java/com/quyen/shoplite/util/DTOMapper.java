@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 /**
  * Utility class để chuyển đổi (mapping) giữa Entity và DTO.
- * Theo cấu trúc dự án JobHunter.
  */
 public class DTOMapper {
 
@@ -142,6 +141,10 @@ public class DTOMapper {
         dto.setOfficeLat(office.getOfficeLat());
         dto.setOfficeLng(office.getOfficeLng());
         dto.setRadius(office.getRadius());
+        dto.setShiftStart(office.getShiftStart());
+        dto.setShiftEnd(office.getShiftEnd());
+        dto.setLateGraceMinutes(office.getLateGraceMinutes());
+        dto.setAutoCheckoutTime(office.getAutoCheckoutTime());
         return dto;
     }
 
@@ -153,6 +156,7 @@ public class DTOMapper {
         dto.setSalaryRate(employee.getSalaryRate());
         dto.setQr(employee.getQr());
         dto.setNote(employee.getNote());
+        dto.setDeleted(employee.isDeleted());
         if (employee.getUser() != null) {
             dto.setUserId(employee.getUser().getId());
             dto.setUsername(employee.getUser().getUsername());
@@ -171,13 +175,23 @@ public class DTOMapper {
         dto.setId(attendance.getId());
         dto.setCheckIn(attendance.getCheckIn());
         dto.setCheckOut(attendance.getCheckOut());
-        dto.setHours(attendance.getHours());
+        dto.setWorkedMinutes(attendance.getWorkedMinutes());
+        dto.setPayableMinutes(attendance.getPayableMinutes());
         dto.setWorkingDay(attendance.getWorkingDay());
+        dto.setWalkIn(attendance.isWalkIn());
         dto.setLatitude(attendance.getLatitude());
         dto.setLongitude(attendance.getLongitude());
         dto.setDistance(attendance.getDistance());
+        dto.setCheckOutLatitude(attendance.getCheckOutLatitude());
+        dto.setCheckOutLongitude(attendance.getCheckOutLongitude());
+        dto.setCheckOutDistance(attendance.getCheckOutDistance());
         dto.setLateMinutes(attendance.getLateMinutes());
+        dto.setEarlyLeaveMinutes(attendance.getEarlyLeaveMinutes());
+        dto.setClosedAutomatically(attendance.isClosedAutomatically());
         dto.setStatus(attendance.getStatus());
+        if (attendance.getRoster() != null) {
+            dto.setRosterId(attendance.getRoster().getId());
+        }
         if (attendance.getEmployee() != null) {
             dto.setEmployeeId(attendance.getEmployee().getId());
             if (attendance.getEmployee().getUser() != null) {
@@ -366,5 +380,25 @@ public class DTOMapper {
         }
         return dto;
     }
-}
 
+    // ==================== Roster ====================
+    public static ResRosterDTO toResRosterDTO(Roster roster) {
+        if (roster == null) return null;
+        ResRosterDTO dto = new ResRosterDTO();
+        dto.setId(roster.getId());
+        dto.setWorkingDay(roster.getWorkingDay());
+        dto.setStartTime(roster.getStartTime());
+        dto.setEndTime(roster.getEndTime());
+        dto.setExpectedHours(roster.getExpectedHours());
+        dto.setType(roster.getType());
+        dto.setNote(roster.getNote());
+        dto.setUnpaidBreakMinutes(roster.getUnpaidBreakMinutes());
+        if (roster.getEmployee() != null) {
+            dto.setEmployeeId(roster.getEmployee().getId());
+            if (roster.getEmployee().getUser() != null) {
+                dto.setEmployeeUsername(roster.getEmployee().getUser().getUsername());
+            }
+        }
+        return dto;
+    }
+}

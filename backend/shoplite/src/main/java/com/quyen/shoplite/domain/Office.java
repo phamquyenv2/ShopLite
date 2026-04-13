@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "offices")
@@ -32,4 +33,24 @@ public class Office {
     /** Allowed radius in meters for check-in validation */
     @Column(nullable = false)
     private Integer radius;
+
+    /** Planned shift start used for late calculation */
+    @Column(name = "shift_start")
+    @Builder.Default
+    private LocalTime shiftStart = LocalTime.of(8, 0);
+
+    /** Planned shift end used for early-leave calculation */
+    @Column(name = "shift_end")
+    @Builder.Default
+    private LocalTime shiftEnd = LocalTime.of(17, 0);
+
+    /** Grace window after shift start before counting lateness */
+    @Column(name = "late_grace_minutes")
+    @Builder.Default
+    private Integer lateGraceMinutes = 0;
+
+    /** Automatic close time for missing check-out on the same working day */
+    @Column(name = "auto_checkout_time")
+    @Builder.Default
+    private LocalTime autoCheckoutTime = LocalTime.of(23, 59);
 }

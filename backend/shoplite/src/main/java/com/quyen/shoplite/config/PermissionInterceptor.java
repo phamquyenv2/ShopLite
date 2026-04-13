@@ -59,6 +59,10 @@ public class PermissionInterceptor implements HandlerInterceptor {
             System.out.println("⚠️ Mising Permission: [" + httpMethod + "] " + path + " for role: " + role.getName());
         }
 
+        if (!hasPermission) {
+            throw new PermissionException("You do not have permission to access this endpoint");
+        }
+
         return true;
     }
 }

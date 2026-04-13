@@ -105,9 +105,9 @@ class EmployeeServiceTest {
             Office office = makeOffice(10);
 
             when(userRepository.findById(1)).thenReturn(Optional.of(user));
-            when(employeeRepository.existsByUser_Id(1)).thenReturn(false);
+            when(employeeRepository.existsByUser_IdAndDeletedFalse(1)).thenReturn(false);
             when(officeRepository.findById(10)).thenReturn(Optional.of(office));
-            when(employeeRepository.existsByQr("QR-NEW")).thenReturn(false);
+            when(employeeRepository.existsByQrAndDeletedFalse("QR-NEW")).thenReturn(false);
             when(employeeRepository.save(any(Employee.class)))
                     .thenAnswer(inv -> {
                         Employee e = inv.getArgument(0);
@@ -142,7 +142,7 @@ class EmployeeServiceTest {
             Office office = makeOffice(5);
 
             when(userRepository.findById(2)).thenReturn(Optional.of(user));
-            when(employeeRepository.existsByUser_Id(2)).thenReturn(false);
+            when(employeeRepository.existsByUser_IdAndDeletedFalse(2)).thenReturn(false);
             when(officeRepository.findById(5)).thenReturn(Optional.of(office));
             when(employeeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -163,7 +163,7 @@ class EmployeeServiceTest {
             Office office = makeOffice(7);
 
             when(userRepository.findById(3)).thenReturn(Optional.of(user));
-            when(employeeRepository.existsByUser_Id(3)).thenReturn(false);
+            when(employeeRepository.existsByUser_IdAndDeletedFalse(3)).thenReturn(false);
             when(officeRepository.findById(7)).thenReturn(Optional.of(office));
             when(employeeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -186,9 +186,9 @@ class EmployeeServiceTest {
             Office office = makeOffice(20);
 
             when(userRepository.findById(4)).thenReturn(Optional.of(user));
-            when(employeeRepository.existsByUser_Id(4)).thenReturn(false);
+            when(employeeRepository.existsByUser_IdAndDeletedFalse(4)).thenReturn(false);
             when(officeRepository.findById(20)).thenReturn(Optional.of(office));
-            when(employeeRepository.existsByQr("ABC-123")).thenReturn(false);
+            when(employeeRepository.existsByQrAndDeletedFalse("ABC-123")).thenReturn(false);
             when(employeeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             ReqEmployeeDTO req = new ReqEmployeeDTO();
@@ -239,7 +239,7 @@ class EmployeeServiceTest {
         void create_DuplicateUserMapping_Throws() {
             User user = makeUser(5);
             when(userRepository.findById(5)).thenReturn(Optional.of(user));
-            when(employeeRepository.existsByUser_Id(5)).thenReturn(true); // already mapped
+            when(employeeRepository.existsByUser_IdAndDeletedFalse(5)).thenReturn(true); // already mapped
 
             ReqEmployeeDTO req = validCreateReq(5, 1);
             BadRequestException ex = assertThrows(BadRequestException.class,
@@ -254,7 +254,7 @@ class EmployeeServiceTest {
         void create_OfficeNotFound_Throws() {
             User user = makeUser(6);
             when(userRepository.findById(6)).thenReturn(Optional.of(user));
-            when(employeeRepository.existsByUser_Id(6)).thenReturn(false);
+            when(employeeRepository.existsByUser_IdAndDeletedFalse(6)).thenReturn(false);
             when(officeRepository.findById(999)).thenReturn(Optional.empty());
 
             ReqEmployeeDTO req = validCreateReq(6, 999);
@@ -272,7 +272,7 @@ class EmployeeServiceTest {
             Office office = makeOffice(1);
 
             when(userRepository.findById(7)).thenReturn(Optional.of(user));
-            when(employeeRepository.existsByUser_Id(7)).thenReturn(false);
+            when(employeeRepository.existsByUser_IdAndDeletedFalse(7)).thenReturn(false);
             when(officeRepository.findById(1)).thenReturn(Optional.of(office));
 
             ReqEmployeeDTO req = validCreateReq(7, 1);
@@ -292,9 +292,9 @@ class EmployeeServiceTest {
             Office office = makeOffice(2);
 
             when(userRepository.findById(8)).thenReturn(Optional.of(user));
-            when(employeeRepository.existsByUser_Id(8)).thenReturn(false);
+            when(employeeRepository.existsByUser_IdAndDeletedFalse(8)).thenReturn(false);
             when(officeRepository.findById(2)).thenReturn(Optional.of(office));
-            when(employeeRepository.existsByQr("DUPE-QR")).thenReturn(true);
+            when(employeeRepository.existsByQrAndDeletedFalse("DUPE-QR")).thenReturn(true);
 
             ReqEmployeeDTO req = validCreateReq(8, 2);
             req.setQr("DUPE-QR");
@@ -367,7 +367,7 @@ class EmployeeServiceTest {
             Employee e1 = makeEmployee(1, u1, o);
             Employee e2 = makeEmployee(2, u2, o);
 
-            when(employeeRepository.findAll()).thenReturn(List.of(e1, e2));
+            when(employeeRepository.findAllByDeletedFalseOrderByIdAsc()).thenReturn(List.of(e1, e2));
 
             List<ResEmployeeDTO> result = service.findAll();
 
@@ -376,13 +376,13 @@ class EmployeeServiceTest {
             assertEquals(1, result.get(0).getId());
             assertEquals(2, result.get(1).getId());
 
-            verify(employeeRepository).findAll();
+            verify(employeeRepository).findAllByDeletedFalseOrderByIdAsc();
         }
 
         @Test
         @DisplayName("Success – empty repository returns empty list")
         void findAll_Empty() {
-            when(employeeRepository.findAll()).thenReturn(List.of());
+            when(employeeRepository.findAllByDeletedFalseOrderByIdAsc()).thenReturn(List.of());
 
             List<ResEmployeeDTO> result = service.findAll();
 
@@ -407,7 +407,7 @@ class EmployeeServiceTest {
             Employee emp  = makeEmployee(1, user, office);
 
             when(employeeRepository.findById(1)).thenReturn(Optional.of(emp));
-            when(employeeRepository.existsByQrAndIdNot("NEW-QR", 1)).thenReturn(false);
+            when(employeeRepository.existsByQrAndIdNotAndDeletedFalse("NEW-QR", 1)).thenReturn(false);
             when(employeeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             ReqEmployeeDTO req = new ReqEmployeeDTO();
@@ -426,7 +426,7 @@ class EmployeeServiceTest {
             assertEquals("updated note", result.getNote());
 
             verify(employeeRepository).save(any(Employee.class));
-            verify(userRepository, never()).findById(anyInt());
+            verify(userRepository, never()).findById(anyInt()); // same user — no user lookup needed
             verify(officeRepository, never()).findById(anyInt());
         }
 
@@ -440,7 +440,7 @@ class EmployeeServiceTest {
 
             when(employeeRepository.findById(10)).thenReturn(Optional.of(emp));
             when(userRepository.findById(2)).thenReturn(Optional.of(newUser));
-            when(employeeRepository.existsByUser_IdAndIdNot(2, 10)).thenReturn(false);
+            when(employeeRepository.existsByUser_IdAndIdNotAndDeletedFalse(2, 10)).thenReturn(false);
             when(employeeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             ReqEmployeeDTO req = new ReqEmployeeDTO();
@@ -507,7 +507,7 @@ class EmployeeServiceTest {
 
             // Assert
             assertNull(result.getQr());
-            verify(employeeRepository, never()).existsByQrAndIdNot(any(), anyInt());
+            verify(employeeRepository, never()).existsByQrAndIdNotAndDeletedFalse(any(), anyInt());
         }
     }
 
@@ -559,7 +559,7 @@ class EmployeeServiceTest {
 
             when(employeeRepository.findById(1)).thenReturn(Optional.of(emp));
             when(userRepository.findById(2)).thenReturn(Optional.of(newUser));
-            when(employeeRepository.existsByUser_IdAndIdNot(2, 1)).thenReturn(true); // already taken
+            when(employeeRepository.existsByUser_IdAndIdNotAndDeletedFalse(2, 1)).thenReturn(true); // already taken
 
             ReqEmployeeDTO req = validCreateReq(2, 1);
 
@@ -616,7 +616,7 @@ class EmployeeServiceTest {
             Employee emp  = makeEmployee(1, user, office);
 
             when(employeeRepository.findById(1)).thenReturn(Optional.of(emp));
-            when(employeeRepository.existsByQrAndIdNot("TAKEN-QR", 1)).thenReturn(true);
+            when(employeeRepository.existsByQrAndIdNotAndDeletedFalse("TAKEN-QR", 1)).thenReturn(true);
 
             ReqEmployeeDTO req = validCreateReq(1, 1);
             req.setQr("TAKEN-QR");
@@ -644,11 +644,15 @@ class EmployeeServiceTest {
             Employee emp  = makeEmployee(1, user, office);
 
             when(employeeRepository.findById(1)).thenReturn(Optional.of(emp));
+            when(employeeRepository.save(any(Employee.class))).thenAnswer(inv -> inv.getArgument(0));
 
             service.delete(1);
 
             verify(employeeRepository).findById(1);
-            verify(employeeRepository).delete(emp);
+            // Soft delete: save() called with deleted=true, not delete()
+            ArgumentCaptor<Employee> captor = ArgumentCaptor.forClass(Employee.class);
+            verify(employeeRepository).save(captor.capture());
+            assertTrue(captor.getValue().isDeleted());
         }
 
         @Test

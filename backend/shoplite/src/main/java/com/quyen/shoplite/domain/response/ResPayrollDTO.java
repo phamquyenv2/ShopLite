@@ -26,4 +26,15 @@ public class ResPayrollDTO {
      * Tổng lương: totalHours * salaryRate + bonus - penalty
      */
     private Double totalSalary;
+
+    // --- Breakdown từ Roster ---
+    /** Số ngày WORKING trong lịch (có hoặc không có Attendance) */
+    private int scheduledWorkingDays;
+    /** Số ngày thực tế đi làm (có Attendance với hours > 0) */
+    private int actualPresentDays;
+    /** Số ngày nghỉ có phép (LEAVE_APPROVED) */
+    private int approvedLeaveDays;
+    /** Số ngày nghỉ không phép hoặc bỏ ca không báo (LEAVE_UNAPPROVED + bỏ ca) */
+    private int absentWithoutLeaveDays;
 }
+

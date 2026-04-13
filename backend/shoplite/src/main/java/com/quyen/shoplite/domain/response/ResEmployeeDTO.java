@@ -10,6 +10,7 @@ public class ResEmployeeDTO {
     private Double salaryRate;
     private String qr;
     private String note;
+    private boolean deleted;
 
     // --- User info ---
     private Integer userId;
@@ -19,3 +20,4 @@ public class ResEmployeeDTO {
     private Integer officeId;
     private String officeName;
 }
+

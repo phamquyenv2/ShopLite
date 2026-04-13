@@ -365,7 +365,7 @@ class EmployeeControllerIntegrationTest {
     // ==========================================================================
 
     @Test
-    @DisplayName("DELETE /employees/{id} – success returns 204 and removes from DB")
+    @DisplayName("DELETE /employees/{id} – success returns 204 and soft-deletes employee")
     void deleteEmployee_Success() throws Exception {
         Employee emp = savedEmployee(itUserId, itOfficeId, 50.0, "QR-DEL-" + System.nanoTime());
         Integer empId = emp.getId();
@@ -373,7 +373,12 @@ class EmployeeControllerIntegrationTest {
         mockMvc.perform(delete("/api/v1/employees/" + empId))
                 .andExpect(status().isNoContent());
 
-        assertThat(employeeRepository.findById(empId)).isEmpty();
+        // Soft delete: record still in DB but with deleted=true
+        assertThat(employeeRepository.findById(empId))
+                .isPresent()
+                .get()
+                .extracting(Employee::isDeleted)
+                .isEqualTo(true);
     }
 
     @Test

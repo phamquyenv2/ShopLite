@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalTime;
 
 @Getter
 @Setter
@@ -24,4 +25,13 @@ public class ReqOfficeDTO {
     @NotNull(message = "radius must not be null")
     @Positive(message = "radius must be positive")
     private Integer radius;
+
+    private LocalTime shiftStart;
+
+    private LocalTime shiftEnd;
+
+    @Positive(message = "lateGraceMinutes must be positive")
+    private Integer lateGraceMinutes;
+
+    private LocalTime autoCheckoutTime;
 }

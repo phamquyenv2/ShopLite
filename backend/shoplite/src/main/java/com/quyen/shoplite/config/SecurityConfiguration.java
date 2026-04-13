@@ -51,7 +51,8 @@ public class SecurityConfiguration {
             "/api/v1/categories/**",
             "/api/webhook/sepay",
             "/api/v1/payment/create",
-            "/api/v1/device-tokens/register"
+            "/api/v1/device-tokens/register",
+            "/actuator/**"
     };
 
     // ─── Security Filter Chain ─────────────────────────────────────────────────

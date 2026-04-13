@@ -32,8 +32,8 @@ public class EmployeeService {
         // 1. Validate user exists
         User user = findUser(req.getUserId());
 
-        // 2. Prevent duplicate employee-user mapping
-        if (employeeRepository.existsByUser_Id(req.getUserId())) {
+        // 2. Prevent duplicate employee-user mapping (active employees only)
+        if (employeeRepository.existsByUser_IdAndDeletedFalse(req.getUserId())) {
             throw new BadRequestException(
                     "User id=" + req.getUserId() + " is already linked to an employee");
         }
@@ -46,9 +46,9 @@ public class EmployeeService {
             throw new BadRequestException("salaryRate must be >= 0");
         }
 
-        // 5. QR uniqueness
+        // 5. QR uniqueness (active only)
         if (req.getQr() != null && !req.getQr().isBlank()) {
-            if (employeeRepository.existsByQr(req.getQr().trim())) {
+            if (employeeRepository.existsByQrAndDeletedFalse(req.getQr().trim())) {
                 throw new BadRequestException("qr_code already exists: " + req.getQr().trim());
             }
         }
@@ -71,7 +71,7 @@ public class EmployeeService {
     }
 
     public List<ResEmployeeDTO> findAll() {
-        return employeeRepository.findAll().stream()
+        return employeeRepository.findAllByDeletedFalseOrderByIdAsc().stream()
                 .map(DTOMapper::toResEmployeeDTO)
                 .toList();
     }
@@ -86,8 +86,8 @@ public class EmployeeService {
         if (!req.getUserId().equals(employee.getUser().getId())) {
             // Ensure the new user exists
             User newUser = findUser(req.getUserId());
-            // Ensure the new user is not already bound to another employee
-            if (employeeRepository.existsByUser_IdAndIdNot(req.getUserId(), id)) {
+            // Ensure the new user is not already bound to another active employee
+            if (employeeRepository.existsByUser_IdAndIdNotAndDeletedFalse(req.getUserId(), id)) {
                 throw new BadRequestException(
                         "User id=" + req.getUserId() + " is already linked to another employee");
             }
@@ -110,7 +110,7 @@ public class EmployeeService {
         // 4. QR uniqueness (only when qr value actually changes)
         String newQr = req.getQr() != null ? req.getQr().trim() : null;
         if (newQr != null && !newQr.isBlank()) {
-            if (employeeRepository.existsByQrAndIdNot(newQr, id)) {
+            if (employeeRepository.existsByQrAndIdNotAndDeletedFalse(newQr, id)) {
                 throw new BadRequestException("qr_code already exists: " + newQr);
             }
         }
@@ -127,7 +127,11 @@ public class EmployeeService {
     @Transactional
     public void delete(Integer id) {
         Employee employee = findEntityById(id);
-        employeeRepository.delete(employee);
+        if (employee.isDeleted()) {
+            throw new BadRequestException("Employee id=" + id + " is already deactivated");
+        }
+        employee.setDeleted(true);
+        employeeRepository.save(employee);
     }
 
     // ------------------------------------------------------------------ helpers
