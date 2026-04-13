@@ -5,10 +5,12 @@ import com.quyen.shoplite.util.constant.TypeTransactionEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
     List<Transaction> findAllByOrder_Id(Integer orderId);
     List<Transaction> findAllByType(TypeTransactionEnum type);
     boolean existsByImportOrder_Id(Integer importOrderId);
+    Optional<Transaction> findByPayroll_IdAndType(Integer payrollId, TypeTransactionEnum type);
 }
 

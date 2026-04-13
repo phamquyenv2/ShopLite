@@ -30,6 +30,12 @@ public class PayrollController {
         return ResponseEntity.ok(payrollService.findAll());
     }
 
+    @GetMapping("/{id}")
+    @ApiMessage("Get payroll by ID success")
+    public ResponseEntity<ResPayrollDTO> findById(@PathVariable Integer id) {
+        return ResponseEntity.ok(payrollService.findById(id));
+    }
+
     @GetMapping("/employee/{employeeId}")
     @ApiMessage("Get employee payrolls success")
     public ResponseEntity<List<ResPayrollDTO>> findByEmployee(@PathVariable Integer employeeId) {

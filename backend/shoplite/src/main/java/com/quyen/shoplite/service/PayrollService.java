@@ -10,13 +10,18 @@ import com.quyen.shoplite.repository.AttendanceRepository;
 import com.quyen.shoplite.repository.EmployeeRepository;
 import com.quyen.shoplite.repository.PayrollRepository;
 import com.quyen.shoplite.repository.RosterRepository;
+import com.quyen.shoplite.domain.Transaction;
+import com.quyen.shoplite.repository.TransactionRepository;
+import com.quyen.shoplite.util.constant.TypeTransactionEnum;
 import com.quyen.shoplite.util.DTOMapper;
+import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -30,6 +35,7 @@ public class PayrollService {
     private final EmployeeRepository employeeRepository;
     private final AttendanceRepository attendanceRepository;
     private final RosterRepository rosterRepository;
+    private final TransactionRepository transactionRepository;
 
     // ------------------------------------------------------------------ sync
 
@@ -59,6 +65,9 @@ public class PayrollService {
         List<ResPayrollDTO> results = new ArrayList<>();
 
         for (Employee employee : employees) {
+            if (employee.getSalaryRate() == null || employee.getSalaryRate() < 0) {
+                throw new BadRequestException("Employee ID " + employee.getId() + " has invalid negative or missing salary rate");
+            }
 
             // --- 1. Completed Attendance records — source of truth for worked time ---
             List<Attendance> completed = attendanceRepository
@@ -125,6 +134,10 @@ public class PayrollService {
             double penalty     = penaltyGlobal + absentPenalty;
             double totalSalary = totalHours * employee.getSalaryRate() + bonus - penalty;
 
+            if (totalSalary < 0) {
+                throw new BadRequestException("Total salary cannot be negative for employee ID " + employee.getId());
+            }
+
             // Upsert Payroll record
             Payroll payroll = payrollRepository.findByEmployee_IdAndPeriod(employee.getId(), period)
                     .orElseGet(() -> Payroll.builder()
@@ -140,6 +153,22 @@ public class PayrollService {
 
             Payroll saved = payrollRepository.save(payroll);
 
+            // SALARY Transaction side effect
+            Transaction existingTx = transactionRepository.findByPayroll_IdAndType(saved.getId(), TypeTransactionEnum.SALARY).orElse(null);
+            if (existingTx == null) {
+                Transaction transaction = Transaction.builder()
+                        .amount(totalSalary)
+                        .type(TypeTransactionEnum.SALARY)
+                        .payroll(saved)
+                        .transactionTime(LocalDateTime.now())
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                transactionRepository.save(transaction);
+            } else {
+                existingTx.setAmount(totalSalary);
+                transactionRepository.save(existingTx);
+            }
+
             ResPayrollDTO dto = DTOMapper.toResPayrollDTO(saved);
             dto.setScheduledWorkingDays(scheduledWorkingDays);
             dto.setActualPresentDays(actualPresentDays);
@@ -152,6 +181,12 @@ public class PayrollService {
     }
 
     // ------------------------------------------------------------------ read
+
+    public ResPayrollDTO findById(Integer id) {
+        Payroll payroll = payrollRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Payroll not found with id=" + id));
+        return DTOMapper.toResPayrollDTO(payroll);
+    }
 
     public List<ResPayrollDTO> findAll() {
         return payrollRepository.findAllByOrderByPeriodDescEmployee_IdAsc()
