@@ -8,10 +8,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/employees")
 @RequiredArgsConstructor
@@ -33,22 +36,24 @@ public class EmployeeController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get employee success")
-    public ResponseEntity<ResEmployeeDTO> findById(@PathVariable Integer id) {
+    public ResponseEntity<ResEmployeeDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(employeeService.findById(id));
     }
 
     @PutMapping("/{id}")
     @ApiMessage("Update employee success")
     public ResponseEntity<ResEmployeeDTO> update(
-            @PathVariable Integer id,
+             @Positive(message = " must be greater than 0") Integer id,
             @Valid @RequestBody ReqEmployeeDTO req) {
         return ResponseEntity.ok(employeeService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
     @ApiMessage("Delete employee success")
-    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+    public ResponseEntity<Void> delete( @Positive(message = " must be greater than 0") Integer id) {
         employeeService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
+
+

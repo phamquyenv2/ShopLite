@@ -8,10 +8,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -27,7 +30,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get user success")
-    public ResponseEntity<ResUserDTO> findById(@PathVariable Integer id) {
+    public ResponseEntity<ResUserDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(userService.findById(id));
     }
 
@@ -39,14 +42,15 @@ public class UserController {
 
     @PutMapping("/{id}")
     @ApiMessage("Update user success")
-    public ResponseEntity<ResUserDTO> update(@PathVariable Integer id, @Valid @RequestBody ReqUserDTO req) {
+    public ResponseEntity<ResUserDTO> update( @Positive(message = " must be greater than 0") Integer id, @Valid @RequestBody ReqUserDTO req) {
         return ResponseEntity.ok(userService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
     @ApiMessage("Delete user success")
-    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+    public ResponseEntity<Void> delete( @Positive(message = " must be greater than 0") Integer id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
+

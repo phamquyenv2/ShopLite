@@ -1,6 +1,8 @@
 package com.quyen.shoplite.domain.request;
 
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,8 +12,8 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class ReqPayrollSyncDTO {
-
-    private Integer employeeId;
+    @Positive(message = "employeeId must be greater than 0")
+private Integer employeeId;
 
     @NotNull(message = "period is required")
     private LocalDate period;
@@ -31,4 +33,5 @@ public class ReqPayrollSyncDTO {
     @Min(value = 0, message = "PenaltyPerAbsent must be non-negative")
     private Double penaltyPerAbsent = 0.0;
 }
+
 

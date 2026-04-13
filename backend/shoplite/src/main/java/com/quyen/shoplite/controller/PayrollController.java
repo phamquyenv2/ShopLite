@@ -7,10 +7,13 @@ import com.quyen.shoplite.util.annotation.ApiMessage;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/payrolls")
 @RequiredArgsConstructor
@@ -32,13 +35,15 @@ public class PayrollController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get payroll by ID success")
-    public ResponseEntity<ResPayrollDTO> findById(@PathVariable Integer id) {
+    public ResponseEntity<ResPayrollDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(payrollService.findById(id));
     }
 
     @GetMapping("/employee/{employeeId}")
     @ApiMessage("Get employee payrolls success")
-    public ResponseEntity<List<ResPayrollDTO>> findByEmployee(@PathVariable Integer employeeId) {
+    public ResponseEntity<List<ResPayrollDTO>> findByEmployee( @Positive(message = " must be greater than 0") Integer employeeId) {
         return ResponseEntity.ok(payrollService.findByEmployee(employeeId));
     }
 }
+
+

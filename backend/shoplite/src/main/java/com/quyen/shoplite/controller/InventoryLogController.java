@@ -8,10 +8,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/inventory-logs")
 @RequiredArgsConstructor
@@ -33,7 +36,8 @@ public class InventoryLogController {
 
     @GetMapping("/product/{productId}")
     @ApiMessage("Get product inventory logs success")
-    public ResponseEntity<List<ResInventoryLogDTO>> findByProductId(@PathVariable Integer productId) {
+    public ResponseEntity<List<ResInventoryLogDTO>> findByProductId( @Positive(message = " must be greater than 0") Integer productId) {
         return ResponseEntity.ok(inventoryLogService.findByProductId(productId));
     }
 }
+

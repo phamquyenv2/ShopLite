@@ -8,10 +8,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/suppliers")
 @RequiredArgsConstructor
@@ -27,7 +30,7 @@ public class SupplierController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get supplier success")
-    public ResponseEntity<ResSupplierDTO> findById(@PathVariable Integer id) {
+    public ResponseEntity<ResSupplierDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(supplierService.findById(id));
     }
 
@@ -39,14 +42,15 @@ public class SupplierController {
 
     @PutMapping("/{id}")
     @ApiMessage("Update supplier success")
-    public ResponseEntity<ResSupplierDTO> update(@PathVariable Integer id, @Valid @RequestBody ReqSupplierDTO req) {
+    public ResponseEntity<ResSupplierDTO> update( @Positive(message = " must be greater than 0") Integer id, @Valid @RequestBody ReqSupplierDTO req) {
         return ResponseEntity.ok(supplierService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
     @ApiMessage("Delete supplier success")
-    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+    public ResponseEntity<Void> delete( @Positive(message = " must be greater than 0") Integer id) {
         supplierService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
+

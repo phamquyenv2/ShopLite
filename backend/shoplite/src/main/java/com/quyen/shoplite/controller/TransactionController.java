@@ -8,10 +8,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/transactions")
 @RequiredArgsConstructor
@@ -27,7 +30,7 @@ public class TransactionController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get transaction success")
-    public ResponseEntity<ResTransactionDTO> findById(@PathVariable Integer id) {
+    public ResponseEntity<ResTransactionDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(transactionService.findById(id));
     }
 
@@ -39,7 +42,8 @@ public class TransactionController {
 
     @GetMapping("/order/{orderId}")
     @ApiMessage("Get order transactions success")
-    public ResponseEntity<List<ResTransactionDTO>> findByOrderId(@PathVariable Integer orderId) {
+    public ResponseEntity<List<ResTransactionDTO>> findByOrderId( @Positive(message = " must be greater than 0") Integer orderId) {
         return ResponseEntity.ok(transactionService.findByOrderId(orderId));
     }
 }
+

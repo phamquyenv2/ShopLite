@@ -9,10 +9,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/import-orders")
 @RequiredArgsConstructor
@@ -34,15 +37,17 @@ public class ImportOrderController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get import order success")
-    public ResponseEntity<ResImportOrderDTO> findById(@PathVariable("id") Integer id) {
+    public ResponseEntity<ResImportOrderDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(importOrderService.findById(id));
     }
 
     @PutMapping("/{id}/status")
     @ApiMessage("Update import order status success")
     public ResponseEntity<ResImportOrderDTO> updateStatus(
-            @PathVariable("id") Integer id,
+             @Positive(message = " must be greater than 0") Integer id,
             @Valid @RequestBody ReqUpdateImportOrderStatusDTO req) {
         return ResponseEntity.ok(importOrderService.updateStatus(id, req.getStatus()));
     }
 }
+
+

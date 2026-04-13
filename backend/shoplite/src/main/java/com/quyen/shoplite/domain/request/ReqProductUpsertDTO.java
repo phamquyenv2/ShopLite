@@ -1,6 +1,8 @@
 package com.quyen.shoplite.domain.request;
 
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,10 +14,14 @@ import lombok.Setter;
 @Setter
 public class ReqProductUpsertDTO {
 
-    @NotNull(message = "categoryId must not be null")
+    
+    @Positive(message = "categoryId must be greater than 0")
+@NotNull(message = "categoryId must not be null")
     private Integer categoryId;
 
-    @NotNull(message = "unitId must not be null")
+    
+    @Positive(message = "unitId must be greater than 0")
+@NotNull(message = "unitId must not be null")
     private Integer unitId;
 
     @NotBlank(message = "name must not be blank")
@@ -28,13 +34,16 @@ public class ReqProductUpsertDTO {
     @Min(value = 0, message = "barcode must be greater than or equal to 0")
     private Long barcode;
 
-    @NotNull(message = "stock must not be null")
-    @Min(value = 0, message = "stock must be greater than or equal to 0")
+    
+    @PositiveOrZero(message = "stock must be greater than or equal to 0")
+@NotNull(message = "stock must not be null")
     private Integer stock;
 
-    @NotNull(message = "price must not be null")
-    @DecimalMin(value = "0.0", inclusive = true, message = "price must be greater than or equal to 0")
+    
+    @PositiveOrZero(message = "price must be greater than or equal to 0")
+@NotNull(message = "price must not be null")
     private Double price;
 
     private Integer version;
 }
+

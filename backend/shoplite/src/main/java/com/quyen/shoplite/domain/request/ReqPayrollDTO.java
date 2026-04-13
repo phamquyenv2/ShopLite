@@ -1,6 +1,7 @@
 package com.quyen.shoplite.domain.request;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +12,9 @@ import java.time.LocalDate;
 @Setter
 public class ReqPayrollDTO {
 
-    @NotNull(message = "employeeId không được để trống")
+    
+    @Positive(message = "employeeId must be greater than 0")
+@NotNull(message = "employeeId không được để trống")
     private Integer employeeId;
 
     /**
@@ -34,3 +37,4 @@ public class ReqPayrollDTO {
     /** Trừ phạt (mặc định 0) */
     private Double penalty = 0.0;
 }
+

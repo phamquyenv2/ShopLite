@@ -1,6 +1,8 @@
 package com.quyen.shoplite.domain.request;
 
 import com.quyen.shoplite.util.constant.AttendanceStatusEnum;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,10 +15,14 @@ import java.time.LocalDateTime;
 @Setter
 public class ReqAttendanceDTO {
 
-    @NotNull(message = "employeeId không được để trống")
+    
+    @Positive(message = "employeeId must be greater than 0")
+@NotNull(message = "employeeId không được để trống")
     private Integer employeeId;
 
-    @NotNull(message = "officeId không được để trống")
+    
+    @Positive(message = "officeId must be greater than 0")
+@NotNull(message = "officeId không được để trống")
     private Integer officeId;
 
     /** Thời gian check-in */
@@ -43,3 +49,4 @@ public class ReqAttendanceDTO {
 
     private AttendanceStatusEnum status;
 }
+

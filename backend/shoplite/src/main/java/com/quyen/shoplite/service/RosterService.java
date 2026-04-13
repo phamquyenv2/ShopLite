@@ -130,6 +130,12 @@ public class RosterService {
 
     /** Apply mutable fields from request onto a roster instance. */
     private void applyFields(ReqRosterDTO req, Roster roster) {
+        if (req.getType() == com.quyen.shoplite.util.constant.RosterTypeEnum.WORKING) {
+            if (req.getStartTime() == null || req.getEndTime() == null) {
+                throw new BadRequestException("startTime và endTime bắt buộc khi type là WORKING");
+            }
+        }
+        
         roster.setWorkingDay(req.getWorkingDay());
         roster.setType(req.getType());
         roster.setStartTime(req.getStartTime());

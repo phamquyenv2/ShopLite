@@ -9,8 +9,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
@@ -31,7 +34,7 @@ public class ProductController {
      */
     @GetMapping("/{id}")
     @ApiMessage("Get product successfully")
-    public ResponseEntity<ResProductDTO> findById(@PathVariable Integer id) {
+    public ResponseEntity<ResProductDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(productService.findById(id));
     }
 
@@ -72,7 +75,7 @@ public class ProductController {
      */
     @PutMapping("/{id}")
     @ApiMessage("Update product successfully")
-    public ResponseEntity<ResProductDTO> update(@PathVariable Integer id,
+    public ResponseEntity<ResProductDTO> update( @Positive(message = " must be greater than 0") Integer id,
                                                 @Valid @RequestBody ReqProductUpsertDTO req) {
         return ResponseEntity.ok(productService.update(id, req));
     }
@@ -83,9 +86,11 @@ public class ProductController {
      */
     @DeleteMapping("/{id}")
     @ApiMessage("Soft delete product successfully")
-    public ResponseEntity<Void> softDelete(@PathVariable Integer id) {
+    public ResponseEntity<Void> softDelete( @Positive(message = " must be greater than 0") Integer id) {
         productService.softDelete(id);
         return ResponseEntity.noContent().build();
     }
 }
+
+
 

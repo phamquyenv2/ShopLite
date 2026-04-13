@@ -1,6 +1,8 @@
 package com.quyen.shoplite.domain.request;
 
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,11 +11,15 @@ import lombok.Setter;
 @Setter
 public class ReqEmployeeDTO {
 
-    @NotNull(message = "userId is required")
+    
+    @Positive(message = "userId must be greater than 0")
+@NotNull(message = "userId is required")
     private Integer userId;
 
     /** office_id is required (employee must belong to one office) */
-    @NotNull(message = "officeId is required")
+    
+    @Positive(message = "officeId must be greater than 0")
+@NotNull(message = "officeId is required")
     private Integer officeId;
 
     /** salary_rate must be >= 0 */
@@ -26,3 +32,4 @@ public class ReqEmployeeDTO {
 
     private String note;
 }
+

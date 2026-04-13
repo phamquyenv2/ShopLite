@@ -1,6 +1,7 @@
 package com.quyen.shoplite.domain.request;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -13,7 +14,9 @@ import java.util.List;
 @Setter
 public class ReqImportOrderDTO {
 
-    @NotNull(message = "supplierId không được để trống")
+    
+    @Positive(message = "supplierId must be greater than 0")
+@NotNull(message = "supplierId không được để trống")
     private Integer supplierId;
 
     @NotEmpty(message = "items không được để trống")
@@ -21,10 +24,12 @@ public class ReqImportOrderDTO {
     private List<ReqImportItemDTO> items;
 
     @PositiveOrZero(message = "tax phải >= 0")
-    private Double tax;
+    @PositiveOrZero(message = "tax must be greater than or equal to 0")
+private Double tax;
 
     @PositiveOrZero(message = "discount phải >= 0")
-    private Double discount;
+    @PositiveOrZero(message = "discount must be greater than or equal to 0")
+private Double discount;
 
     private String note;
 }

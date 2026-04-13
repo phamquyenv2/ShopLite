@@ -8,10 +8,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/inventory-adjustments")
 @RequiredArgsConstructor
@@ -36,7 +39,9 @@ public class InventoryAdjustmentController {
     @GetMapping("/{id}")
     @ApiMessage("Get inventory adjustment success")
     public ResponseEntity<ResInventoryAdjustmentDTO> findById(
-            @PathVariable("id") Integer id) {
+             @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(inventoryAdjustmentService.findById(id));
     }
 }
+
+

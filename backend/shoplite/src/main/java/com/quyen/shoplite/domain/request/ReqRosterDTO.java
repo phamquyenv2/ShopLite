@@ -1,6 +1,8 @@
 package com.quyen.shoplite.domain.request;
 
 import com.quyen.shoplite.util.constant.RosterTypeEnum;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -13,7 +15,9 @@ import java.time.LocalTime;
 @Setter
 public class ReqRosterDTO {
 
-    @NotNull(message = "employeeId không được để trống")
+    
+    @Positive(message = "employeeId must be greater than 0")
+@NotNull(message = "employeeId không được để trống")
     private Integer employeeId;
 
     @NotNull(message = "workingDay không được để trống")
@@ -31,13 +35,8 @@ public class ReqRosterDTO {
     private String note;
 
     /** Số phút nghỉ không lương trong ca */
-    private Long unpaidBreakMinutes = 0L;
+    @PositiveOrZero(message = "unpaidBreakMinutes must be greater than or equal to 0")
+private Long unpaidBreakMinutes = 0L;
 
-    @AssertTrue(message = "startTime và endTime bắt buộc khi type là WORKING")
-    public boolean isTimesValidForWorkingType() {
-        if (type == RosterTypeEnum.WORKING) {
-            return startTime != null && endTime != null;
-        }
-        return true;
-    }
 }
+

@@ -1,6 +1,8 @@
 package com.quyen.shoplite.domain.request;
 
 import com.quyen.shoplite.util.constant.TypeInventoryEnum;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,7 +11,9 @@ import lombok.Setter;
 @Setter
 public class ReqInventoryLogDTO {
 
-    @NotNull(message = "productId không được để trống")
+    
+    @Positive(message = "productId must be greater than 0")
+@NotNull(message = "productId không được để trống")
     private Integer productId;
 
     @NotNull(message = "changeQuantity không được để trống")
@@ -19,5 +23,7 @@ public class ReqInventoryLogDTO {
     private TypeInventoryEnum type;
 
     /** FK tới InventoryAdjustment nếu đây là log từ phiên kiểm kê */
-    private Integer adjustmentId;
+    @Positive(message = "adjustmentId must be greater than 0")
+private Integer adjustmentId;
 }
+

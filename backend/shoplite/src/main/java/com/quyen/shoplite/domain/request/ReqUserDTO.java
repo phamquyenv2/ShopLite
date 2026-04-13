@@ -1,6 +1,8 @@
 package com.quyen.shoplite.domain.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,7 +15,9 @@ public class ReqUserDTO {
     private String password;
 
     /** ID của Role cần gán (null = không đổi khi update) */
-    private Long roleId;
+    @Positive(message = "roleId must be greater than 0")
+private Long roleId;
 
     private boolean isActive = true;
 }
+

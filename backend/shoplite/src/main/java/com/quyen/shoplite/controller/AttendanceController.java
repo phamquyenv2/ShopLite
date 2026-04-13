@@ -9,10 +9,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/attendance")
 @RequiredArgsConstructor
@@ -66,7 +69,9 @@ public class AttendanceController {
      */
     @GetMapping("/{id}")
     @ApiMessage("Get attendance success")
-    public ResponseEntity<ResAttendanceDTO> findById(@PathVariable Integer id) {
+    public ResponseEntity<ResAttendanceDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(attendanceService.findById(id));
     }
 }
+
+

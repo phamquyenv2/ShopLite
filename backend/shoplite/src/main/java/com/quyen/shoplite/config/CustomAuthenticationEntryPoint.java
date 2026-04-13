@@ -8,10 +8,11 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.Instant;
 
 /**
  * Trả về JSON 401 khi request không có token hoặc token không hợp lệ.
- * Dùng getWriter() – không cần ObjectMapper để tránh phụ thuộc ngoài.
+ * Dùng getWriter() để không phụ thuộc ObjectMapper.
  */
 @Component
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
@@ -30,11 +31,12 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
 
         String json = """
                 {
+                  "timestamp": "%s",
                   "statusCode": 401,
                   "message": "Không có quyền truy cập: %s",
                   "data": null
                 }
-                """.formatted(message);
+                """.formatted(Instant.now().toString(), message);
 
         response.getWriter().write(json);
         response.getWriter().flush();

@@ -8,10 +8,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/units")
 @RequiredArgsConstructor
@@ -27,7 +30,7 @@ public class UnitController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get unit success")
-    public ResponseEntity<ResUnitDTO> findById(@PathVariable Integer id) {
+    public ResponseEntity<ResUnitDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(unitService.findById(id));
     }
 
@@ -39,14 +42,16 @@ public class UnitController {
 
     @PutMapping("/{id}")
     @ApiMessage("Update unit success")
-    public ResponseEntity<ResUnitDTO> update(@PathVariable Integer id, @Valid @RequestBody ReqUnitUpsertDTO req) {
+    public ResponseEntity<ResUnitDTO> update( @Positive(message = " must be greater than 0") Integer id, @Valid @RequestBody ReqUnitUpsertDTO req) {
         return ResponseEntity.ok(unitService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
     @ApiMessage("Delete unit success")
-    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+    public ResponseEntity<Void> delete( @Positive(message = " must be greater than 0") Integer id) {
         unitService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
+
+

@@ -8,10 +8,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/categories")
 @RequiredArgsConstructor
@@ -27,7 +30,7 @@ public class CategoryController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get category success")
-    public ResponseEntity<ResCategoryDTO> findById(@PathVariable Integer id) {
+    public ResponseEntity<ResCategoryDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(categoryService.findById(id));
     }
 
@@ -39,14 +42,16 @@ public class CategoryController {
 
     @PutMapping("/{id}")
     @ApiMessage("Update category success")
-    public ResponseEntity<ResCategoryDTO> update(@PathVariable Integer id, @Valid @RequestBody ReqCategoryUpsertDTO req) {
+    public ResponseEntity<ResCategoryDTO> update( @Positive(message = " must be greater than 0") Integer id, @Valid @RequestBody ReqCategoryUpsertDTO req) {
         return ResponseEntity.ok(categoryService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
     @ApiMessage("Delete category success")
-    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+    public ResponseEntity<Void> delete( @Positive(message = " must be greater than 0") Integer id) {
         categoryService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
+
+
