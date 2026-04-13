@@ -15,7 +15,7 @@ public class ProductSpecification {
     private ProductSpecification() {}
 
     public static Specification<Product> filter(String keyword, Integer categoryId,
-                                                Double minPrice, Double maxPrice) {
+                                                Double minPrice, Double maxPrice, Integer unitId) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -44,6 +44,11 @@ public class ProductSpecification {
             // Lọc theo giá tối đa
             if (maxPrice != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("price"), maxPrice));
+            }
+
+            // Lọc theo unitId
+            if (unitId != null) {
+                predicates.add(cb.equal(root.get("unit").get("id"), unitId));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

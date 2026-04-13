@@ -35,4 +35,6 @@ public class ReqProductUpsertDTO {
     @NotNull(message = "price must not be null")
     @DecimalMin(value = "0.0", inclusive = true, message = "price must be greater than or equal to 0")
     private Double price;
+
+    private Integer version;
 }

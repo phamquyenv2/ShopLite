@@ -14,4 +14,5 @@ public class ResPaymentDTO {
     private PaymentMethodEnum method;
     private Double amount;
     private StatusEnum status;
+    private java.time.LocalDateTime createdAt;
 }

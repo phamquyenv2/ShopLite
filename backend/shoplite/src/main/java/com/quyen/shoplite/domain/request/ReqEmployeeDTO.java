@@ -1,7 +1,7 @@
 package com.quyen.shoplite.domain.request;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,16 +9,20 @@ import lombok.Setter;
 @Setter
 public class ReqEmployeeDTO {
 
-    @NotNull(message = "userId không được để trống")
+    @NotNull(message = "userId is required")
     private Integer userId;
 
-    @NotNull(message = "salaryRate không được để trống")
-    @Positive(message = "salaryRate phải lớn hơn 0")
-    private Double salaryRate;
-
-    /** ID văn phòng (nullable) */
+    /** office_id is required (employee must belong to one office) */
+    @NotNull(message = "officeId is required")
     private Integer officeId;
 
-    /** QR code cho check-in (tuỳ chọn, nếu null sẽ sinh tự động) */
+    /** salary_rate must be >= 0 */
+    @NotNull(message = "salaryRate is required")
+    @Min(value = 0, message = "salaryRate must be >= 0")
+    private Double salaryRate;
+
+    /** QR code for check-in (optional – auto-generated if null) */
     private String qr;
+
+    private String note;
 }

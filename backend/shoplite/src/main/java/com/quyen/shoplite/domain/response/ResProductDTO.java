@@ -20,4 +20,5 @@ public class ResProductDTO {
     private Double price;
     private boolean isDeleted;
     private LocalDateTime createdAt;
+    private Integer version;
 }

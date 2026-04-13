@@ -2,6 +2,7 @@ package com.quyen.shoplite.domain.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,13 +10,14 @@ import lombok.Setter;
 @Setter
 public class ReqSupplierDTO {
 
-    @NotBlank(message = "Tên nhà cung cấp không được để trống")
+    @NotBlank(message = "name must not be blank")
     private String name;
 
+    @Pattern(regexp = "^$|^(0|\\+84)(3|5|7|8|9)\\d{8}$", message = "phone must be a valid Vietnam phone number")
     private String phone;
 
     private String address;
 
-    @Email(message = "Email không hợp lệ")
+    @Email(message = "email must be valid")
     private String email;
 }

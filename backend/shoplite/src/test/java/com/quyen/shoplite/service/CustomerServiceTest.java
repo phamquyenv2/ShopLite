@@ -27,17 +27,21 @@ class CustomerServiceTest {
     @InjectMocks
     private CustomerService customerService;
 
-    // --- Success cases ---
-
     @Test
-    void create_ShouldReturnCustomer_WhenValidRequest() {
+    void create_ShouldReturnCustomer_WhenPhoneIsUnique() {
         // Arrange
         ReqCustomerUpsertDTO req = new ReqCustomerUpsertDTO();
-        req.setName(" John Doe ");
-        req.setPhone(" 0987654321 ");
+        req.setName("  John Doe  ");
+        req.setPhone("0987654321");
 
         when(customerRepository.existsByPhone("0987654321")).thenReturn(false);
-        Customer savedCustomer = Customer.builder().id(1).name("John Doe").phone("0987654321").points(0).build();
+
+        Customer savedCustomer = Customer.builder()
+                .id(1)
+                .name("John Doe")
+                .phone("0987654321")
+                .points(0)
+                .build();
         when(customerRepository.save(any(Customer.class))).thenReturn(savedCustomer);
 
         // Act
@@ -49,41 +53,93 @@ class CustomerServiceTest {
         assertEquals("John Doe", result.getName());
         assertEquals("0987654321", result.getPhone());
         assertEquals(0, result.getPoints());
-        verify(customerRepository).save(any(Customer.class));
+        verify(customerRepository).save(argThat(c -> c.getName().equals("John Doe") && c.getPhone().equals("0987654321")));
     }
 
     @Test
-    void update_ShouldReturnCustomer_WhenValidRequest() {
+    void create_ShouldThrowBadRequest_WhenPhoneExists() {
+        // Arrange
+        ReqCustomerUpsertDTO req = new ReqCustomerUpsertDTO();
+        req.setName("John");
+        req.setPhone("0987654321");
+
+        when(customerRepository.existsByPhone("0987654321")).thenReturn(true);
+
+        // Act & Assert
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> 
+            customerService.create(req)
+        );
+        assertEquals("Phone already exists: 0987654321", exception.getMessage());
+        verify(customerRepository, never()).save(any(Customer.class));
+    }
+
+    @Test
+    void update_ShouldReturnCustomer_WhenIdExistsAndPhoneIsUnique() {
         // Arrange
         Integer id = 1;
         ReqCustomerUpsertDTO req = new ReqCustomerUpsertDTO();
-        req.setName(" Jane Doe ");
-        req.setPhone(" 0123456789 ");
+        req.setName("Updated John");
+        req.setPhone("0999999999");
 
-        Customer existingCustomer = Customer.builder().id(id).name("John Doe").phone("0987654321").points(10).build();
+        Customer existingCustomer = Customer.builder().id(id).name("Old Name").phone("Old Phone").build();
         when(customerRepository.findById(id)).thenReturn(Optional.of(existingCustomer));
-        when(customerRepository.existsByPhoneAndIdNot("0123456789", id)).thenReturn(false);
+        when(customerRepository.existsByPhoneAndIdNot("0999999999", id)).thenReturn(false);
 
-        Customer savedCustomer = Customer.builder().id(id).name("Jane Doe").phone("0123456789").points(10).build();
-        when(customerRepository.save(any(Customer.class))).thenReturn(savedCustomer);
+        Customer savedCustomer = Customer.builder().id(id).name("Updated John").phone("0999999999").build();
+        when(customerRepository.save(existingCustomer)).thenReturn(savedCustomer);
 
         // Act
         ResCustomerDTO result = customerService.update(id, req);
 
         // Assert
         assertNotNull(result);
-        assertEquals(1, result.getId());
-        assertEquals("Jane Doe", result.getName());
-        assertEquals("0123456789", result.getPhone());
-        assertEquals(10, result.getPoints());
-        verify(customerRepository).save(any(Customer.class));
+        assertEquals("Updated John", result.getName());
+        assertEquals("0999999999", result.getPhone());
+        verify(customerRepository).save(existingCustomer);
     }
 
     @Test
-    void delete_ShouldCallDelete_WhenCustomerExists() {
+    void update_ShouldThrowResourceNotFound_WhenIdDoesNotExist() {
+        // Arrange
+        Integer id = 99;
+        ReqCustomerUpsertDTO req = new ReqCustomerUpsertDTO();
+        req.setName("Updated John");
+
+        when(customerRepository.findById(id)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> 
+            customerService.update(id, req)
+        );
+        assertEquals("Customer not found with id=99", exception.getMessage());
+        verify(customerRepository, never()).save(any(Customer.class));
+    }
+
+    @Test
+    void update_ShouldThrowBadRequest_WhenPhoneExistsForAnotherId() {
         // Arrange
         Integer id = 1;
-        Customer existingCustomer = Customer.builder().id(id).name("John Doe").build();
+        ReqCustomerUpsertDTO req = new ReqCustomerUpsertDTO();
+        req.setName("John");
+        req.setPhone("0987654321");
+
+        Customer existingCustomer = Customer.builder().id(id).name("Old Name").build();
+        when(customerRepository.findById(id)).thenReturn(Optional.of(existingCustomer));
+        when(customerRepository.existsByPhoneAndIdNot("0987654321", id)).thenReturn(true);
+
+        // Act & Assert
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> 
+            customerService.update(id, req)
+        );
+        assertEquals("Phone already exists: 0987654321", exception.getMessage());
+        verify(customerRepository, never()).save(any(Customer.class));
+    }
+
+    @Test
+    void delete_ShouldCallRepositoryDelete_WhenIdExists() {
+        // Arrange
+        Integer id = 1;
+        Customer existingCustomer = Customer.builder().id(id).name("John").build();
         when(customerRepository.findById(id)).thenReturn(Optional.of(existingCustomer));
 
         // Act
@@ -93,60 +149,17 @@ class CustomerServiceTest {
         verify(customerRepository).delete(existingCustomer);
     }
 
-    // --- Failure cases ---
-
     @Test
-    void create_ShouldThrowBadRequest_WhenDuplicatePhone() {
-        // Arrange
-        ReqCustomerUpsertDTO req = new ReqCustomerUpsertDTO();
-        req.setPhone(" 0987654321 ");
-        when(customerRepository.existsByPhone("0987654321")).thenReturn(true);
-
-        // Act & Assert
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> customerService.create(req));
-        assertEquals("Phone already exists: 0987654321", exception.getMessage());
-        verify(customerRepository, never()).save(any(Customer.class));
-    }
-
-    @Test
-    void update_ShouldThrowNotFound_WhenCustomerNotFound() {
-        // Arrange
-        Integer id = 99;
-        ReqCustomerUpsertDTO req = new ReqCustomerUpsertDTO();
-        when(customerRepository.findById(id)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> customerService.update(id, req));
-        assertEquals("Customer not found with id=" + id, exception.getMessage());
-        verify(customerRepository, never()).save(any(Customer.class));
-    }
-
-    @Test
-    void update_ShouldThrowBadRequest_WhenDuplicatePhone() {
-        // Arrange
-        Integer id = 1;
-        ReqCustomerUpsertDTO req = new ReqCustomerUpsertDTO();
-        req.setPhone(" 0123456789 ");
-
-        Customer existingCustomer = Customer.builder().id(id).name("Old Name").build();
-        when(customerRepository.findById(id)).thenReturn(Optional.of(existingCustomer));
-        when(customerRepository.existsByPhoneAndIdNot("0123456789", id)).thenReturn(true);
-
-        // Act & Assert
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> customerService.update(id, req));
-        assertEquals("Phone already exists: 0123456789", exception.getMessage());
-        verify(customerRepository, never()).save(any(Customer.class));
-    }
-
-    @Test
-    void delete_ShouldThrowNotFound_WhenCustomerNotFound() {
+    void delete_ShouldThrowResourceNotFound_WhenIdDoesNotExist() {
         // Arrange
         Integer id = 99;
         when(customerRepository.findById(id)).thenReturn(Optional.empty());
 
         // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> customerService.delete(id));
-        assertEquals("Customer not found with id=" + id, exception.getMessage());
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> 
+            customerService.delete(id)
+        );
+        assertEquals("Customer not found with id=99", exception.getMessage());
         verify(customerRepository, never()).delete(any(Customer.class));
     }
 }

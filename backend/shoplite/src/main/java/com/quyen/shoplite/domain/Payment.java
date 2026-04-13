@@ -5,6 +5,8 @@ import com.quyen.shoplite.util.constant.StatusEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "payments")
 @Getter
@@ -32,4 +34,7 @@ public class Payment {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StatusEnum status;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 }

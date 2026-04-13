@@ -1,7 +1,8 @@
 package com.quyen.shoplite.domain.request;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,10 +14,10 @@ public class ReqImportItemDTO {
     private Integer productId;
 
     @NotNull(message = "quantity không được để trống")
-    @Positive(message = "quantity phải lớn hơn 0")
+    @Min(value = 1, message = "quantity phải >= 1")
     private Integer quantity;
 
     @NotNull(message = "importPrice không được để trống")
-    @Positive(message = "importPrice phải lớn hơn 0")
+    @PositiveOrZero(message = "importPrice phải >= 0")
     private Double importPrice;
 }

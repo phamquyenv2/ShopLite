@@ -206,6 +206,26 @@ class ProductControllerIntegrationTest {
     }
 
     @Test
+    @DisplayName("create product with negative stock failure")
+    void createProduct_NegativeStockFailure() throws Exception {
+        ReqProductUpsertDTO req = new ReqProductUpsertDTO();
+        req.setName("Prod IT");
+        req.setSku("SKUIT");
+        req.setBarcode(111222L);
+        req.setCategoryId(categoryItId);
+        req.setUnitId(unitItId);
+        req.setStock(-5); // Invalid
+        req.setPrice(10.5);
+
+        mockMvc.perform(post("/api/v1/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.errors").isArray());
+    }
+
+    @Test
     @DisplayName("get product by id success")
     void getProduct_Success() throws Exception {
         Product p = productRepository.save(Product.builder()
@@ -223,6 +243,15 @@ class ProductControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(p.getId()))
                 .andExpect(jsonPath("$.data.name").value("TestProd"));
+    }
+
+    @Test
+    @DisplayName("get product by id not found")
+    void getProduct_NotFoundFailure() throws Exception {
+        mockMvc.perform(get("/api/v1/products/9999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value(404))
+                .andExpect(jsonPath("$.message").value("Product not found with id=9999"));
     }
 
     @Test
@@ -247,6 +276,7 @@ class ProductControllerIntegrationTest {
         req.setUnitId(unitItId);
         req.setStock(20);
         req.setPrice(25.0);
+        req.setVersion(p.getVersion());
 
         mockMvc.perform(put("/api/v1/products/" + p.getId())
                         .contentType(MediaType.APPLICATION_JSON)

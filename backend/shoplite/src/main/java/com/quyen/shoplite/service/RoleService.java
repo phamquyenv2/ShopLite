@@ -8,6 +8,7 @@ import com.quyen.shoplite.repository.RoleRepository;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.IdInvalidException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
+import com.quyen.shoplite.util.DTOMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,14 +41,14 @@ public class RoleService {
                 .permissions(permissions)
                 .createdAt(LocalDateTime.now())
                 .build();
-        return toDTO(roleRepository.save(role));
+        return DTOMapper.toResRoleDTO(roleRepository.save(role));
     }
 
     // ─── Get by ID ─────────────────────────────────────────────────────────────
     public ResRoleDTO findById(Long id) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Role id=" + id));
-        return toDTO(role);
+        return DTOMapper.toResRoleDTO(role);
     }
 
     // ─── Update ────────────────────────────────────────────────────────────────
@@ -71,7 +72,7 @@ public class RoleService {
             role.setPermissions(resolvePermissions(req.getPermissionIds()));
         }
 
-        return toDTO(roleRepository.save(role));
+        return DTOMapper.toResRoleDTO(roleRepository.save(role));
     }
 
     // ─── Delete ────────────────────────────────────────────────────────────────
@@ -90,7 +91,7 @@ public class RoleService {
         result.put("totalPages", page.getTotalPages());
         result.put("page", pageable.getPageNumber());
         result.put("size", pageable.getPageSize());
-        result.put("data", page.getContent().stream().map(this::toDTO).toList());
+        result.put("data", page.getContent().stream().map(DTOMapper::toResRoleDTO).toList());
         return result;
     }
 
@@ -105,21 +106,4 @@ public class RoleService {
         return permissionService.findAllByIds(ids);
     }
 
-    // ─── Mapper ────────────────────────────────────────────────────────────────
-    public ResRoleDTO toDTO(Role role) {
-        ResRoleDTO dto = new ResRoleDTO();
-        dto.setId(role.getId());
-        dto.setName(role.getName());
-        dto.setDescription(role.getDescription());
-        dto.setActive(role.isActive());
-        dto.setCreatedAt(role.getCreatedAt());
-        dto.setUpdatedAt(role.getUpdatedAt());
-        dto.setCreatedBy(role.getCreatedBy());
-        dto.setUpdatedBy(role.getUpdatedBy());
-        if (role.getPermissions() != null) {
-            dto.setPermissions(role.getPermissions().stream()
-                    .map(permissionService::toDTO).toList());
-        }
-        return dto;
-    }
 }

@@ -31,6 +31,41 @@ public class DTOMapper {
         return dto;
     }
 
+    // ==================== Permission ====================
+    public static ResPermissionDTO toResPermissionDTO(Permission p) {
+        if (p == null) return null;
+        ResPermissionDTO dto = new ResPermissionDTO();
+        dto.setId(p.getId());
+        dto.setName(p.getName());
+        dto.setApiPath(p.getApiPath());
+        dto.setMethod(p.getMethod());
+        dto.setModule(p.getModule());
+        dto.setCreatedAt(p.getCreatedAt());
+        dto.setUpdatedAt(p.getUpdatedAt());
+        dto.setCreatedBy(p.getCreatedBy());
+        dto.setUpdatedBy(p.getUpdatedBy());
+        return dto;
+    }
+
+    // ==================== Role ====================
+    public static ResRoleDTO toResRoleDTO(Role role) {
+        if (role == null) return null;
+        ResRoleDTO dto = new ResRoleDTO();
+        dto.setId(role.getId());
+        dto.setName(role.getName());
+        dto.setDescription(role.getDescription());
+        dto.setActive(role.isActive());
+        dto.setCreatedAt(role.getCreatedAt());
+        dto.setUpdatedAt(role.getUpdatedAt());
+        dto.setCreatedBy(role.getCreatedBy());
+        dto.setUpdatedBy(role.getUpdatedBy());
+        if (role.getPermissions() != null) {
+            dto.setPermissions(role.getPermissions().stream()
+                    .map(DTOMapper::toResPermissionDTO).toList());
+        }
+        return dto;
+    }
+
     // ==================== Category ====================
     public static ResCategoryDTO toResCategoryDTO(Category category) {
         if (category == null) return null;
@@ -62,6 +97,7 @@ public class DTOMapper {
         dto.setPrice(product.getPrice());
         dto.setDeleted(product.isDeleted());
         dto.setCreatedAt(product.getCreatedAt());
+        dto.setVersion(product.getVersion());
         if (product.getCategory() != null) {
             dto.setCategoryId(product.getCategory().getId());
             dto.setCategoryName(product.getCategory().getName());
@@ -116,6 +152,7 @@ public class DTOMapper {
         dto.setId(employee.getId());
         dto.setSalaryRate(employee.getSalaryRate());
         dto.setQr(employee.getQr());
+        dto.setNote(employee.getNote());
         if (employee.getUser() != null) {
             dto.setUserId(employee.getUser().getId());
             dto.setUsername(employee.getUser().getUsername());
@@ -182,6 +219,7 @@ public class DTOMapper {
         dto.setMethod(payment.getMethod());
         dto.setAmount(payment.getAmount());
         dto.setStatus(payment.getStatus());
+        dto.setCreatedAt(payment.getCreatedAt());
         if (payment.getOrder() != null) {
             dto.setOrderId(payment.getOrder().getId());
             dto.setOrderCode(payment.getOrder().getCode());
@@ -329,3 +367,4 @@ public class DTOMapper {
         return dto;
     }
 }
+

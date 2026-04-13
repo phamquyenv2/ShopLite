@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,13 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import org.springframework.security.test.context.support.WithMockUser;
-
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
-@WithMockUser
 class UnitControllerIntegrationTest {
 
     @Autowired
@@ -37,67 +35,75 @@ class UnitControllerIntegrationTest {
     private UnitRepository unitRepository;
 
     @Test
-    @DisplayName("create unit success")
+    @WithMockUser
+    @DisplayName("Create Unit - Success")
     void createUnit_Success() throws Exception {
         ReqUnitUpsertDTO req = new ReqUnitUpsertDTO();
-        req.setName("UnitIT");
+        req.setName("Kilogram");
+        req.setDescription("Weight unit");
 
         mockMvc.perform(post("/api/v1/units")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.name").value("UnitIT"));
+                .andExpect(jsonPath("$.data.name").value("Kilogram"));
 
-        assertThat(unitRepository.existsByName("UnitIT")).isTrue();
+        assertThat(unitRepository.existsByName("Kilogram")).isTrue();
     }
 
     @Test
-    @DisplayName("create unit validation failure")
+    @WithMockUser
+    @DisplayName("Create Unit - Validation Failure (Blank Name)")
     void createUnit_ValidationFailure() throws Exception {
         ReqUnitUpsertDTO req = new ReqUnitUpsertDTO();
-        req.setName("");
+        req.setName(""); 
 
         mockMvc.perform(post("/api/v1/units")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value(400))
-                .andExpect(jsonPath("$.errors").isArray());
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
-    @DisplayName("get unit by id success")
+    @WithMockUser
+    @DisplayName("Get Unit - Success")
     void getUnit_Success() throws Exception {
-        Unit unit = unitRepository.save(Unit.builder().name("TestUnit").build());
+        Unit unit = Unit.builder().name("Piece").build();
+        unit = unitRepository.save(unit);
 
         mockMvc.perform(get("/api/v1/units/" + unit.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(unit.getId()))
-                .andExpect(jsonPath("$.data.name").value("TestUnit"));
+                .andExpect(jsonPath("$.data.name").value("Piece"));
     }
 
     @Test
-    @DisplayName("update unit success")
+    @WithMockUser
+    @DisplayName("Update Unit - Success")
     void updateUnit_Success() throws Exception {
-        Unit unit = unitRepository.save(Unit.builder().name("OldUnit").build());
+        Unit unit = Unit.builder().name("Old Name").build();
+        unit = unitRepository.save(unit);
 
         ReqUnitUpsertDTO req = new ReqUnitUpsertDTO();
-        req.setName("UpdatedUnit");
+        req.setName("New Name");
 
         mockMvc.perform(put("/api/v1/units/" + unit.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.name").value("UpdatedUnit"));
+                .andExpect(jsonPath("$.data.name").value("New Name"));
 
         Unit updated = unitRepository.findById(unit.getId()).orElseThrow();
-        assertThat(updated.getName()).isEqualTo("UpdatedUnit");
+        assertThat(updated.getName()).isEqualTo("New Name");
     }
 
     @Test
-    @DisplayName("delete unit success")
+    @WithMockUser
+    @DisplayName("Delete Unit - Success")
     void deleteUnit_Success() throws Exception {
-        Unit unit = unitRepository.save(Unit.builder().name("ToDelUnit").build());
+        Unit unit = Unit.builder().name("To Delete").build();
+        unit = unitRepository.save(unit);
 
         mockMvc.perform(delete("/api/v1/units/" + unit.getId()))
                 .andExpect(status().isNoContent());

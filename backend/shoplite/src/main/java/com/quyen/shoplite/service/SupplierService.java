@@ -5,9 +5,11 @@ import com.quyen.shoplite.domain.request.ReqSupplierDTO;
 import com.quyen.shoplite.domain.response.ResSupplierDTO;
 import com.quyen.shoplite.repository.SupplierRepository;
 import com.quyen.shoplite.util.DTOMapper;
-import com.quyen.shoplite.util.error.IdInvalidException;
+import com.quyen.shoplite.util.error.BadRequestException;
+import com.quyen.shoplite.util.error.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,6 +20,7 @@ public class SupplierService {
 
     private final SupplierRepository supplierRepository;
 
+    @Transactional
     public ResSupplierDTO create(ReqSupplierDTO req) {
         validateDuplicateName(req.getName(), null);
 
@@ -41,6 +44,7 @@ public class SupplierService {
                 .toList();
     }
 
+    @Transactional
     public ResSupplierDTO update(Integer id, ReqSupplierDTO req) {
         Supplier supplier = findEntityById(id);
         validateDuplicateName(req.getName(), id);
@@ -52,26 +56,24 @@ public class SupplierService {
         return DTOMapper.toResSupplierDTO(supplierRepository.save(supplier));
     }
 
+    @Transactional
     public void delete(Integer id) {
-        if (!supplierRepository.existsById(id)) {
-            throw new IdInvalidException("Supplier id=" + id + " not found");
-        }
-        supplierRepository.deleteById(id);
+        Supplier supplier = findEntityById(id);
+        supplierRepository.delete(supplier);
     }
 
     private Supplier findEntityById(Integer id) {
         return supplierRepository.findById(id)
-                .orElseThrow(() -> new IdInvalidException("Supplier id=" + id + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id=" + id));
     }
 
     private void validateDuplicateName(String name, Integer supplierId) {
         String normalizedName = name.trim();
-        boolean duplicate = supplierRepository.findAll().stream()
-                .anyMatch(item -> item.getName() != null
-                        && item.getName().equalsIgnoreCase(normalizedName)
-                        && !item.getId().equals(supplierId));
+        boolean duplicate = supplierId == null
+                ? supplierRepository.existsByName(normalizedName)
+                : supplierRepository.existsByNameAndIdNot(normalizedName, supplierId);
         if (duplicate) {
-            throw new IdInvalidException("Supplier '" + normalizedName + "' already exists");
+            throw new BadRequestException("Supplier name already exists: " + normalizedName);
         }
     }
 

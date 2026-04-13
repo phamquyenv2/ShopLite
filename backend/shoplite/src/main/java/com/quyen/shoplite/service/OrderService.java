@@ -79,9 +79,8 @@ public class OrderService {
                 .code("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .totalAmount(finalAmount)
                 .discount(discount)
-                .status(StatusEnum.COMPLETED)
+                .status(StatusEnum.PENDING)
                 .createdAt(LocalDateTime.now())
-                .paidAt(LocalDateTime.now())
                 .build();
         Order savedOrder = orderRepository.save(order);
 
@@ -100,6 +99,7 @@ public class OrderService {
             // Ghi inventory log
             inventoryLogsRepository.save(InventoryLogs.builder()
                     .product(product)
+                    .orderItem(item)
                     .quantityOut(item.getQuantity().intValue())
                     .balanceAfter(newStock)
                     .currentStock(newStock)
@@ -175,6 +175,7 @@ public class OrderService {
 
             inventoryLogsRepository.save(InventoryLogs.builder()
                     .product(product)
+                    .orderItem(item)
                     .quantityIn(restoreQuantity)
                     .balanceAfter(newStock)
                     .currentStock(newStock)

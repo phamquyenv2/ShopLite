@@ -9,6 +9,7 @@ public class ResEmployeeDTO {
     private Integer id;
     private Double salaryRate;
     private String qr;
+    private String note;
 
     // --- User info ---
     private Integer userId;

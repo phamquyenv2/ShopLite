@@ -5,9 +5,11 @@ import com.quyen.shoplite.domain.request.ReqOfficeDTO;
 import com.quyen.shoplite.domain.response.ResOfficeDTO;
 import com.quyen.shoplite.repository.OfficeRepository;
 import com.quyen.shoplite.util.DTOMapper;
-import com.quyen.shoplite.util.error.IdInvalidException;
+import com.quyen.shoplite.util.error.BadRequestException;
+import com.quyen.shoplite.util.error.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -17,6 +19,7 @@ public class OfficeService {
 
     private final OfficeRepository officeRepository;
 
+    @Transactional
     public ResOfficeDTO create(ReqOfficeDTO req) {
         validateDuplicateName(req.getName(), null);
 
@@ -39,6 +42,7 @@ public class OfficeService {
                 .toList();
     }
 
+    @Transactional
     public ResOfficeDTO update(Integer id, ReqOfficeDTO req) {
         Office office = findEntityById(id);
         validateDuplicateName(req.getName(), id);
@@ -50,26 +54,24 @@ public class OfficeService {
         return DTOMapper.toResOfficeDTO(officeRepository.save(office));
     }
 
+    @Transactional
     public void delete(Integer id) {
-        if (!officeRepository.existsById(id)) {
-            throw new IdInvalidException("Office id=" + id + " not found");
-        }
-        officeRepository.deleteById(id);
+        Office office = findEntityById(id);
+        officeRepository.delete(office);
     }
 
     private Office findEntityById(Integer id) {
         return officeRepository.findById(id)
-                .orElseThrow(() -> new IdInvalidException("Office id=" + id + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Office not found with id=" + id));
     }
 
     private void validateDuplicateName(String name, Integer officeId) {
         String normalizedName = name.trim();
-        boolean duplicate = officeRepository.findAll().stream()
-                .anyMatch(item -> item.getName() != null
-                        && item.getName().equalsIgnoreCase(normalizedName)
-                        && !item.getId().equals(officeId));
+        boolean duplicate = officeId == null
+                ? officeRepository.existsByName(normalizedName)
+                : officeRepository.existsByNameAndIdNot(normalizedName, officeId);
         if (duplicate) {
-            throw new IdInvalidException("Office '" + normalizedName + "' already exists");
+            throw new BadRequestException("Office name already exists: " + normalizedName);
         }
     }
 }

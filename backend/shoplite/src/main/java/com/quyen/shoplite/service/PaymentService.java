@@ -41,6 +41,7 @@ public class PaymentService {
                 .method(req.getMethod())
                 .amount(req.getAmount())
                 .status(req.getStatus() != null ? req.getStatus() : StatusEnum.COMPLETED)
+                .createdAt(LocalDateTime.now())
                 .build();
         
         Payment savedPayment = paymentRepository.save(payment);
@@ -55,6 +56,7 @@ public class PaymentService {
             transactionService.create(transactionDTO);
             
             order.setPaidAt(LocalDateTime.now());
+            order.setStatus(StatusEnum.COMPLETED);
             orderRepository.save(order);
         }
 

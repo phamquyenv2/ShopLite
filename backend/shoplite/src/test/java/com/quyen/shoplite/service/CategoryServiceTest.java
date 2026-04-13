@@ -16,6 +16,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -27,16 +28,18 @@ class CategoryServiceTest {
     @InjectMocks
     private CategoryService categoryService;
 
-    // --- Success cases ---
-
     @Test
-    void create_ShouldReturnCategory_WhenValidRequest() {
+    void create_ShouldReturnCategory_WhenNameIsUnique() {
         // Arrange
         ReqCategoryUpsertDTO req = new ReqCategoryUpsertDTO();
-        req.setName(" Beverages ");
+        req.setName("  New Category  ");
 
-        when(categoryRepository.existsByName("Beverages")).thenReturn(false);
-        Category savedCategory = Category.builder().id(1).name("Beverages").build();
+        when(categoryRepository.existsByName("New Category")).thenReturn(false);
+
+        Category savedCategory = Category.builder()
+                .id(1)
+                .name("New Category")
+                .build();
         when(categoryRepository.save(any(Category.class))).thenReturn(savedCategory);
 
         // Act
@@ -45,39 +48,90 @@ class CategoryServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals(1, result.getId());
-        assertEquals("Beverages", result.getName());
-        verify(categoryRepository).save(any(Category.class));
+        assertEquals("New Category", result.getName());
+        verify(categoryRepository).save(argThat(c -> c.getName().equals("New Category")));
     }
 
     @Test
-    void update_ShouldReturnCategory_WhenValidRequest() {
+    void create_ShouldThrowBadRequest_WhenNameExists() {
+        // Arrange
+        ReqCategoryUpsertDTO req = new ReqCategoryUpsertDTO();
+        req.setName("Existing Category");
+
+        when(categoryRepository.existsByName("Existing Category")).thenReturn(true);
+
+        // Act & Assert
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> 
+            categoryService.create(req)
+        );
+        assertEquals("Category name already exists: Existing Category", exception.getMessage());
+        verify(categoryRepository, never()).save(any(Category.class));
+    }
+
+    @Test
+    void update_ShouldReturnCategory_WhenIdExistsAndNameIsUnique() {
         // Arrange
         Integer id = 1;
         ReqCategoryUpsertDTO req = new ReqCategoryUpsertDTO();
-        req.setName(" Updated Beverages ");
+        req.setName("Updated Category");
 
-        Category existingCategory = Category.builder().id(id).name("Beverages").build();
+        Category existingCategory = Category.builder().id(id).name("Old Name").build();
         when(categoryRepository.findById(id)).thenReturn(Optional.of(existingCategory));
-        when(categoryRepository.existsByNameAndIdNot("Updated Beverages", id)).thenReturn(false);
-        
-        Category savedCategory = Category.builder().id(id).name("Updated Beverages").build();
-        when(categoryRepository.save(any(Category.class))).thenReturn(savedCategory);
+        when(categoryRepository.existsByNameAndIdNot("Updated Category", id)).thenReturn(false);
+
+        Category savedCategory = Category.builder().id(id).name("Updated Category").build();
+        when(categoryRepository.save(existingCategory)).thenReturn(savedCategory);
 
         // Act
         ResCategoryDTO result = categoryService.update(id, req);
 
         // Assert
         assertNotNull(result);
-        assertEquals(1, result.getId());
-        assertEquals("Updated Beverages", result.getName());
-        verify(categoryRepository).save(any(Category.class));
+        assertEquals("Updated Category", result.getName());
+        verify(categoryRepository).save(existingCategory);
     }
 
     @Test
-    void delete_ShouldCallDelete_WhenCategoryExists() {
+    void update_ShouldThrowResourceNotFound_WhenIdDoesNotExist() {
+        // Arrange
+        Integer id = 99;
+        ReqCategoryUpsertDTO req = new ReqCategoryUpsertDTO();
+        req.setName("Updated Category");
+
+        when(categoryRepository.findById(id)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> 
+            categoryService.update(id, req)
+        );
+        assertEquals("Category not found with id=99", exception.getMessage());
+        verify(categoryRepository, never()).save(any(Category.class));
+    }
+
+    @Test
+    void update_ShouldThrowBadRequest_WhenNameExistsForAnotherId() {
         // Arrange
         Integer id = 1;
-        Category existingCategory = Category.builder().id(id).name("Beverages").build();
+        ReqCategoryUpsertDTO req = new ReqCategoryUpsertDTO();
+        req.setName("Duplicate Name");
+
+        Category existingCategory = Category.builder().id(id).name("Old Name").build();
+        when(categoryRepository.findById(id)).thenReturn(Optional.of(existingCategory));
+        when(categoryRepository.existsByNameAndIdNot("Duplicate Name", id)).thenReturn(true);
+
+        // Act & Assert
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> 
+            categoryService.update(id, req)
+        );
+        assertEquals("Category name already exists: Duplicate Name", exception.getMessage());
+        verify(categoryRepository, never()).save(any(Category.class));
+    }
+
+    @Test
+    void delete_ShouldCallRepositoryDelete_WhenIdExists() {
+        // Arrange
+        Integer id = 1;
+        Category existingCategory = Category.builder().id(id).name("Name").build();
         when(categoryRepository.findById(id)).thenReturn(Optional.of(existingCategory));
 
         // Act
@@ -87,63 +141,17 @@ class CategoryServiceTest {
         verify(categoryRepository).delete(existingCategory);
     }
 
-    // --- Failure cases ---
-
     @Test
-    void create_ShouldThrowBadRequest_WhenDuplicateName() {
-        // Arrange
-        ReqCategoryUpsertDTO req = new ReqCategoryUpsertDTO();
-        req.setName(" Beverages ");
-
-        when(categoryRepository.existsByName("Beverages")).thenReturn(true);
-
-        // Act & Assert
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> categoryService.create(req));
-        assertEquals("Category name already exists: Beverages", exception.getMessage());
-        verify(categoryRepository, never()).save(any(Category.class));
-    }
-
-    @Test
-    void update_ShouldThrowNotFound_WhenCategoryNotFound() {
-        // Arrange
-        Integer id = 99;
-        ReqCategoryUpsertDTO req = new ReqCategoryUpsertDTO();
-        req.setName("Beverages");
-
-        when(categoryRepository.findById(id)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> categoryService.update(id, req));
-        assertEquals("Category not found with id=" + id, exception.getMessage());
-        verify(categoryRepository, never()).save(any(Category.class));
-    }
-
-    @Test
-    void update_ShouldThrowBadRequest_WhenDuplicateName() {
-        // Arrange
-        Integer id = 1;
-        ReqCategoryUpsertDTO req = new ReqCategoryUpsertDTO();
-        req.setName(" Beverages ");
-
-        Category existingCategory = Category.builder().id(id).name("Old Name").build();
-        when(categoryRepository.findById(id)).thenReturn(Optional.of(existingCategory));
-        when(categoryRepository.existsByNameAndIdNot("Beverages", id)).thenReturn(true);
-
-        // Act & Assert
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> categoryService.update(id, req));
-        assertEquals("Category name already exists: Beverages", exception.getMessage());
-        verify(categoryRepository, never()).save(any(Category.class));
-    }
-
-    @Test
-    void delete_ShouldThrowNotFound_WhenCategoryNotFound() {
+    void delete_ShouldThrowResourceNotFound_WhenIdDoesNotExist() {
         // Arrange
         Integer id = 99;
         when(categoryRepository.findById(id)).thenReturn(Optional.empty());
 
         // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> categoryService.delete(id));
-        assertEquals("Category not found with id=" + id, exception.getMessage());
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> 
+            categoryService.delete(id)
+        );
+        assertEquals("Category not found with id=99", exception.getMessage());
         verify(categoryRepository, never()).delete(any(Category.class));
     }
 }

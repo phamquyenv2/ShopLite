@@ -57,10 +57,11 @@ public class ProductController {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
-            @RequestParam(value = "sortDir", defaultValue = "desc") String sortDir) {
+            @RequestParam(value = "sortDir", defaultValue = "desc") String sortDir,
+            @RequestParam(value = "unitId", required = false) Integer unitId) {
 
         return ResponseEntity.ok(
-                productService.getProducts(keyword, categoryId, minPrice, maxPrice, page, size, sortBy, sortDir)
+                productService.getProducts(keyword, categoryId, minPrice, maxPrice, page, size, sortBy, sortDir, unitId)
         );
     }
 

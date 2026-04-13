@@ -6,6 +6,7 @@ import com.quyen.shoplite.domain.request.ReqRoleDTO;
 import com.quyen.shoplite.domain.response.ResPermissionDTO;
 import com.quyen.shoplite.domain.response.ResRoleDTO;
 import com.quyen.shoplite.repository.RoleRepository;
+import com.quyen.shoplite.util.DTOMapper;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -79,12 +80,6 @@ class RoleServiceTest {
 
         when(roleRepository.existsByName("MANAGER")).thenReturn(false);
         when(permissionService.findAllByIds(List.of(10L, 11L))).thenReturn(permissions);
-        
-        ResPermissionDTO resP1 = new ResPermissionDTO(); resP1.setId(10L); 
-        ResPermissionDTO resP2 = new ResPermissionDTO(); resP2.setId(11L);
-        when(permissionService.toDTO(p1)).thenReturn(resP1);
-        when(permissionService.toDTO(p2)).thenReturn(resP2);
-
         when(roleRepository.save(any(Role.class))).thenReturn(savedRole);
 
         // Act

@@ -34,9 +34,22 @@ public class ProductService {
 
     @Transactional
     public ResProductDTO create(ReqProductUpsertDTO req) {
-        if (hasText(req.getSku()) && productRepository.existsBySku(req.getSku().trim())) {
-            throw new BadRequestException("SKU already exists: " + req.getSku().trim());
+        if (req.getPrice() < 0) {
+            throw new BadRequestException("Price cannot be negative");
         }
+        if (req.getStock() < 0) {
+            throw new BadRequestException("Stock cannot be negative");
+        }
+
+        String normalizedSku = normalize(req.getSku());
+        if (hasText(normalizedSku)) {
+            if (productRepository.existsBySku(normalizedSku)) {
+                throw new BadRequestException("SKU already exists: " + normalizedSku);
+            }
+        } else {
+            normalizedSku = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        }
+
         if (req.getBarcode() != null && productRepository.existsByBarcode(req.getBarcode())) {
             throw new BadRequestException("Barcode already exists: " + req.getBarcode());
         }
@@ -50,7 +63,7 @@ public class ProductService {
                 .category(category)
                 .unit(unit)
                 .name(req.getName().trim())
-                .sku(normalize(req.getSku()))
+                .sku(normalizedSku)
                 .barcode(req.getBarcode())
                 .stock(req.getStock())
                 .price(req.getPrice())
@@ -72,14 +85,14 @@ public class ProductService {
 
     public ResProductPageDTO getProducts(String keyword, Integer categoryId,
                                          Double minPrice, Double maxPrice,
-                                         int page, int size, String sortBy, String sortDir) {
+                                         int page, int size, String sortBy, String sortDir, Integer unitId) {
         Sort sort = sortDir.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()
                 : Sort.by(sortBy).ascending();
 
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Specification<Product> spec = ProductSpecification.filter(keyword, categoryId, minPrice, maxPrice);
+        Specification<Product> spec = ProductSpecification.filter(keyword, categoryId, minPrice, maxPrice, unitId);
         Page<Product> productPage = productRepository.findAll(spec, pageable);
 
         ResProductPageDTO result = new ResProductPageDTO();
@@ -101,10 +114,22 @@ public class ProductService {
             throw new ResourceNotFoundException("Product not found with id=" + id);
         }
 
-        String normalizedSku = normalize(req.getSku());
-        if (hasText(normalizedSku) && productRepository.existsBySkuAndIdNot(normalizedSku, id)) {
-            throw new BadRequestException("SKU already exists: " + normalizedSku);
+        if (req.getPrice() < 0) {
+            throw new BadRequestException("Price cannot be negative");
         }
+
+        if (req.getVersion() != null && !req.getVersion().equals(product.getVersion())) {
+            throw new BadRequestException("Product has been modified by another user. Please refresh and try again.");
+        }
+
+        String normalizedSku = normalize(req.getSku());
+        if (hasText(normalizedSku)) {
+            if (productRepository.existsBySkuAndIdNot(normalizedSku, id)) {
+                throw new BadRequestException("SKU already exists: " + normalizedSku);
+            }
+            product.setSku(normalizedSku);
+        }
+
         if (req.getBarcode() != null && productRepository.existsByBarcodeAndIdNot(req.getBarcode(), id)) {
             throw new BadRequestException("Barcode already exists: " + req.getBarcode());
         }
@@ -117,9 +142,8 @@ public class ProductService {
         product.setCategory(category);
         product.setUnit(unit);
         product.setName(req.getName().trim());
-        product.setSku(normalizedSku);
         product.setBarcode(req.getBarcode());
-        product.setStock(req.getStock());
+        // do not update stock according to controller comment
         product.setPrice(req.getPrice());
 
         return DTOMapper.toResProductDTO(productRepository.save(product));

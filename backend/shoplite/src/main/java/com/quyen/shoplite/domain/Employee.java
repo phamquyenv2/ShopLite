@@ -24,6 +24,10 @@ public class Employee {
     @Column(length = 300)
     private String qr;
 
+    /** Optional note / remark for this employee record */
+    @Column(columnDefinition = "TEXT")
+    private String note;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "office_id")
     private Office office;

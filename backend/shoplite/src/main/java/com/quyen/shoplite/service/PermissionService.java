@@ -7,6 +7,7 @@ import com.quyen.shoplite.repository.PermissionRepository;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.IdInvalidException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
+import com.quyen.shoplite.util.DTOMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,14 +38,14 @@ public class PermissionService {
                 .module(req.getModule().toUpperCase())
                 .createdAt(LocalDateTime.now())
                 .build();
-        return toDTO(permissionRepository.save(p));
+        return DTOMapper.toResPermissionDTO(permissionRepository.save(p));
     }
 
     // ─── Get by ID ─────────────────────────────────────────────────────────────
     public ResPermissionDTO findById(Long id) {
         Permission p = permissionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Permission id=" + id));
-        return toDTO(p);
+        return DTOMapper.toResPermissionDTO(p);
     }
 
     // ─── Update ────────────────────────────────────────────────────────────────
@@ -56,7 +57,7 @@ public class PermissionService {
         p.setMethod(req.getMethod().toUpperCase());
         p.setModule(req.getModule().toUpperCase());
         p.setUpdatedAt(LocalDateTime.now());
-        return toDTO(permissionRepository.save(p));
+        return DTOMapper.toResPermissionDTO(permissionRepository.save(p));
     }
 
     // ─── Delete ────────────────────────────────────────────────────────────────
@@ -76,7 +77,7 @@ public class PermissionService {
         result.put("totalPages", page.getTotalPages());
         result.put("page", pageable.getPageNumber());
         result.put("size", pageable.getPageSize());
-        result.put("data", page.getContent().stream().map(this::toDTO).toList());
+        result.put("data", page.getContent().stream().map(DTOMapper::toResPermissionDTO).toList());
         return result;
     }
 
@@ -85,18 +86,4 @@ public class PermissionService {
         return permissionRepository.findAllById(ids);
     }
 
-    // ─── Mapper ────────────────────────────────────────────────────────────────
-    public ResPermissionDTO toDTO(Permission p) {
-        ResPermissionDTO dto = new ResPermissionDTO();
-        dto.setId(p.getId());
-        dto.setName(p.getName());
-        dto.setApiPath(p.getApiPath());
-        dto.setMethod(p.getMethod());
-        dto.setModule(p.getModule());
-        dto.setCreatedAt(p.getCreatedAt());
-        dto.setUpdatedAt(p.getUpdatedAt());
-        dto.setCreatedBy(p.getCreatedBy());
-        dto.setUpdatedBy(p.getUpdatedBy());
-        return dto;
-    }
 }

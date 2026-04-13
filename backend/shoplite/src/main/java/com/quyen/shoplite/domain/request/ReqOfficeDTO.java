@@ -12,16 +12,16 @@ import java.math.BigDecimal;
 @Setter
 public class ReqOfficeDTO {
 
-    @NotBlank(message = "Tên văn phòng không được để trống")
+    @NotBlank(message = "name must not be blank")
     private String name;
 
-    @NotNull(message = "officeLat không được để trống")
+    @NotNull(message = "officeLat must not be null")
     private BigDecimal officeLat;
 
-    @NotNull(message = "officeLng không được để trống")
+    @NotNull(message = "officeLng must not be null")
     private BigDecimal officeLng;
 
-    @NotNull(message = "radius không được để trống")
-    @Positive(message = "radius phải lớn hơn 0")
+    @NotNull(message = "radius must not be null")
+    @Positive(message = "radius must be positive")
     private Integer radius;
 }
