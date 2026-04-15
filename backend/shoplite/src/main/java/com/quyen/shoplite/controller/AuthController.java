@@ -4,7 +4,6 @@ import com.quyen.shoplite.domain.request.ReqLoginDTO;
 import com.quyen.shoplite.domain.response.ResLoginDTO;
 import com.quyen.shoplite.service.AuthService;
 import com.quyen.shoplite.util.annotation.ApiMessage;
-import com.quyen.shoplite.util.error.IdInvalidException;
 import com.quyen.shoplite.util.error.UnauthorizedException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

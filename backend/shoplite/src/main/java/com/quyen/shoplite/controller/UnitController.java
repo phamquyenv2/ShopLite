@@ -30,7 +30,7 @@ public class UnitController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get unit success")
-    public ResponseEntity<ResUnitDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<ResUnitDTO> findById(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(unitService.findById(id));
     }
 
@@ -42,13 +42,13 @@ public class UnitController {
 
     @PutMapping("/{id}")
     @ApiMessage("Update unit success")
-    public ResponseEntity<ResUnitDTO> update( @Positive(message = " must be greater than 0") Integer id, @Valid @RequestBody ReqUnitUpsertDTO req) {
+    public ResponseEntity<ResUnitDTO> update(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id, @Valid @RequestBody ReqUnitUpsertDTO req) {
         return ResponseEntity.ok(unitService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
     @ApiMessage("Delete unit success")
-    public ResponseEntity<Void> delete( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         unitService.delete(id);
         return ResponseEntity.noContent().build();
     }

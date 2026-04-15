@@ -35,13 +35,13 @@ public class PayrollController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get payroll by ID success")
-    public ResponseEntity<ResPayrollDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<ResPayrollDTO> findById(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(payrollService.findById(id));
     }
 
     @GetMapping("/employee/{employeeId}")
     @ApiMessage("Get employee payrolls success")
-    public ResponseEntity<List<ResPayrollDTO>> findByEmployee( @Positive(message = " must be greater than 0") Integer employeeId) {
+    public ResponseEntity<List<ResPayrollDTO>> findByEmployee(@PathVariable("employeeId") @Positive(message = " must be greater than 0") Integer employeeId) {
         return ResponseEntity.ok(payrollService.findByEmployee(employeeId));
     }
 }

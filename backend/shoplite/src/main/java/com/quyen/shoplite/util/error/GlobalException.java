@@ -14,6 +14,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -68,10 +69,13 @@ public class GlobalException {
     public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException e) {
         String message = e.getBindingResult().getAllErrors().stream()
                 .map(error -> {
-                    if (error instanceof FieldError fieldError) {
-                        return fieldError.getField() + ": " + fieldError.getDefaultMessage();
+                    if (error == null) {
+                        return "";
                     }
-                    return error.getDefaultMessage();
+                    if (error instanceof FieldError fieldError) {
+                        return fieldError.getField() + ": " + Objects.toString(fieldError.getDefaultMessage(), "");
+                    }
+                    return Objects.toString(error.getDefaultMessage(), "");
                 })
                 .sorted()
                 .collect(Collectors.joining("; "));
@@ -80,12 +84,17 @@ public class GlobalException {
         List<Map<String, String>> errors = e.getBindingResult().getAllErrors().stream()
                 .map(error -> {
                     Map<String, String> item = new LinkedHashMap<>();
+                    if (error == null) {
+                        item.put("field", "");
+                        item.put("message", "");
+                        return item;
+                    }
                     if (error instanceof FieldError fieldError) {
                         item.put("field", fieldError.getField());
                     } else {
-                        item.put("field", error.getObjectName());
+                        item.put("field", Objects.toString(error.getObjectName(), ""));
                     }
-                    item.put("message", error.getDefaultMessage());
+                    item.put("message", Objects.toString(error.getDefaultMessage(), ""));
                     return item;
                 })
                 .sorted(Comparator.comparing(item -> item.getOrDefault("field", "")))

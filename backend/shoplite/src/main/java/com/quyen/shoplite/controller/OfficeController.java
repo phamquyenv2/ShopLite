@@ -30,7 +30,7 @@ public class OfficeController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get office success")
-    public ResponseEntity<ResOfficeDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<ResOfficeDTO> findById(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(officeService.findById(id));
     }
 
@@ -42,13 +42,13 @@ public class OfficeController {
 
     @PutMapping("/{id}")
     @ApiMessage("Update office success")
-    public ResponseEntity<ResOfficeDTO> update( @Positive(message = " must be greater than 0") Integer id, @Valid @RequestBody ReqOfficeDTO req) {
+    public ResponseEntity<ResOfficeDTO> update(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id, @Valid @RequestBody ReqOfficeDTO req) {
         return ResponseEntity.ok(officeService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
     @ApiMessage("Delete office success")
-    public ResponseEntity<Void> delete( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         officeService.delete(id);
         return ResponseEntity.noContent().build();
     }

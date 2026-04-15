@@ -36,7 +36,7 @@ public class InventoryLogController {
 
     @GetMapping("/product/{productId}")
     @ApiMessage("Get product inventory logs success")
-    public ResponseEntity<List<ResInventoryLogDTO>> findByProductId( @Positive(message = " must be greater than 0") Integer productId) {
+    public ResponseEntity<List<ResInventoryLogDTO>> findByProductId(@PathVariable("productId") @Positive(message = " must be greater than 0") Integer productId) {
         return ResponseEntity.ok(inventoryLogService.findByProductId(productId));
     }
 }

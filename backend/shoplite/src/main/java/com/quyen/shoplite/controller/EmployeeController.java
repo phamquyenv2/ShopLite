@@ -36,21 +36,21 @@ public class EmployeeController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get employee success")
-    public ResponseEntity<ResEmployeeDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<ResEmployeeDTO> findById(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(employeeService.findById(id));
     }
 
     @PutMapping("/{id}")
     @ApiMessage("Update employee success")
     public ResponseEntity<ResEmployeeDTO> update(
-             @Positive(message = " must be greater than 0") Integer id,
+            @PathVariable("id") @Positive(message = " must be greater than 0") Integer id,
             @Valid @RequestBody ReqEmployeeDTO req) {
         return ResponseEntity.ok(employeeService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
     @ApiMessage("Delete employee success")
-    public ResponseEntity<Void> delete( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         employeeService.delete(id);
         return ResponseEntity.noContent().build();
     }

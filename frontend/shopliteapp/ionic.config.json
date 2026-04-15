@@ -1,0 +1,7 @@
+{
+  "name": "shopliteapp",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}

@@ -30,7 +30,7 @@ public class CustomerController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get customer success")
-    public ResponseEntity<ResCustomerDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<ResCustomerDTO> findById(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(customerService.findById(id));
     }
 
@@ -42,13 +42,13 @@ public class CustomerController {
 
     @PutMapping("/{id}")
     @ApiMessage("Update customer success")
-    public ResponseEntity<ResCustomerDTO> update( @Positive(message = " must be greater than 0") Integer id, @Valid @RequestBody ReqCustomerUpsertDTO req) {
+    public ResponseEntity<ResCustomerDTO> update(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id, @Valid @RequestBody ReqCustomerUpsertDTO req) {
         return ResponseEntity.ok(customerService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
     @ApiMessage("Delete customer success")
-    public ResponseEntity<Void> delete( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         customerService.delete(id);
         return ResponseEntity.noContent().build();
     }

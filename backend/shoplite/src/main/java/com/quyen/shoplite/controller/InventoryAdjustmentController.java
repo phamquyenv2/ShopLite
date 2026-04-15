@@ -39,7 +39,7 @@ public class InventoryAdjustmentController {
     @GetMapping("/{id}")
     @ApiMessage("Get inventory adjustment success")
     public ResponseEntity<ResInventoryAdjustmentDTO> findById(
-             @Positive(message = " must be greater than 0") Integer id) {
+            @PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(inventoryAdjustmentService.findById(id));
     }
 }

@@ -34,7 +34,7 @@ public class ProductController {
      */
     @GetMapping("/{id}")
     @ApiMessage("Get product successfully")
-    public ResponseEntity<ResProductDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<ResProductDTO> findById(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(productService.findById(id));
     }
 
@@ -75,7 +75,7 @@ public class ProductController {
      */
     @PutMapping("/{id}")
     @ApiMessage("Update product successfully")
-    public ResponseEntity<ResProductDTO> update( @Positive(message = " must be greater than 0") Integer id,
+    public ResponseEntity<ResProductDTO> update(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id,
                                                 @Valid @RequestBody ReqProductUpsertDTO req) {
         return ResponseEntity.ok(productService.update(id, req));
     }
@@ -86,7 +86,7 @@ public class ProductController {
      */
     @DeleteMapping("/{id}")
     @ApiMessage("Soft delete product successfully")
-    public ResponseEntity<Void> softDelete( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<Void> softDelete(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         productService.softDelete(id);
         return ResponseEntity.noContent().build();
     }

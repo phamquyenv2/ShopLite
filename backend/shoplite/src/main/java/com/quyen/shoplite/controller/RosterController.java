@@ -34,7 +34,7 @@ public class RosterController {
     /** GET /api/v1/roster/{id} — Lấy một bản ghi roster theo ID */
     @GetMapping("/{id}")
     @ApiMessage("Get roster success")
-    public ResponseEntity<ResRosterDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<ResRosterDTO> findById(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(rosterService.findById(id));
     }
 
@@ -45,7 +45,7 @@ public class RosterController {
     @GetMapping("/employee/{employeeId}")
     @ApiMessage("Get roster by employee success")
     public ResponseEntity<List<ResRosterDTO>> findByEmployee(
-             @Positive(message = " must be greater than 0") Integer employeeId,
+            @PathVariable("employeeId") @Positive(message = " must be greater than 0") Integer employeeId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return ResponseEntity.ok(rosterService.findByEmployeeAndRange(employeeId, from, to));
@@ -66,7 +66,7 @@ public class RosterController {
     @PutMapping("/{id}")
     @ApiMessage("Update roster success")
     public ResponseEntity<ResRosterDTO> update(
-             @Positive(message = " must be greater than 0") Integer id,
+            @PathVariable("id") @Positive(message = " must be greater than 0") Integer id,
             @Valid @RequestBody ReqRosterDTO req) {
         return ResponseEntity.ok(rosterService.update(id, req));
     }
@@ -74,7 +74,7 @@ public class RosterController {
     /** DELETE /api/v1/roster/{id} — Xóa một bản ghi lịch */
     @DeleteMapping("/{id}")
     @ApiMessage("Delete roster success")
-    public ResponseEntity<Void> delete( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         rosterService.delete(id);
         return ResponseEntity.noContent().build();
     }

@@ -30,7 +30,7 @@ public class SupplierController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get supplier success")
-    public ResponseEntity<ResSupplierDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<ResSupplierDTO> findById(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(supplierService.findById(id));
     }
 
@@ -42,13 +42,13 @@ public class SupplierController {
 
     @PutMapping("/{id}")
     @ApiMessage("Update supplier success")
-    public ResponseEntity<ResSupplierDTO> update( @Positive(message = " must be greater than 0") Integer id, @Valid @RequestBody ReqSupplierDTO req) {
+    public ResponseEntity<ResSupplierDTO> update(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id, @Valid @RequestBody ReqSupplierDTO req) {
         return ResponseEntity.ok(supplierService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
     @ApiMessage("Delete supplier success")
-    public ResponseEntity<Void> delete( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         supplierService.delete(id);
         return ResponseEntity.noContent().build();
     }

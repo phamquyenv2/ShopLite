@@ -69,7 +69,7 @@ public class AttendanceController {
      */
     @GetMapping("/{id}")
     @ApiMessage("Get attendance success")
-    public ResponseEntity<ResAttendanceDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<ResAttendanceDTO> findById(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(attendanceService.findById(id));
     }
 }

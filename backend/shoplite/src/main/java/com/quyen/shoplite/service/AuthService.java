@@ -6,7 +6,6 @@ import com.quyen.shoplite.domain.response.ResLoginDTO;
 import com.quyen.shoplite.repository.UserRepository;
 import com.quyen.shoplite.repository.UserTokenRepository;
 import com.quyen.shoplite.util.SecurityUtil;
-import com.quyen.shoplite.util.error.IdInvalidException;
 import com.quyen.shoplite.util.error.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -49,7 +48,7 @@ public class AuthService {
         String roleName = (user.getRole() != null) ? user.getRole().getName() : "USER";
 
         // 3. Sinh tokens
-        String accessToken  = securityUtil.generateAccessToken(user.getUsername(), roleName);
+        String accessToken = securityUtil.generateAccessToken(user.getUsername(), roleName);
         String refreshToken = securityUtil.generateRefreshToken(user.getUsername());
 
         // 4. Lưu refresh token
@@ -83,7 +82,7 @@ public class AuthService {
 
         String roleName = (user.getRole() != null) ? user.getRole().getName() : "USER";
 
-        String newAccessToken  = securityUtil.generateAccessToken(user.getUsername(), roleName);
+        String newAccessToken = securityUtil.generateAccessToken(user.getUsername(), roleName);
         String newRefreshToken = securityUtil.generateRefreshToken(user.getUsername());
 
         // Thu hồi token cũ và tạo token mới

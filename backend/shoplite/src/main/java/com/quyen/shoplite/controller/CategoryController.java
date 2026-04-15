@@ -30,7 +30,7 @@ public class CategoryController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get category success")
-    public ResponseEntity<ResCategoryDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<ResCategoryDTO> findById(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(categoryService.findById(id));
     }
 
@@ -42,13 +42,13 @@ public class CategoryController {
 
     @PutMapping("/{id}")
     @ApiMessage("Update category success")
-    public ResponseEntity<ResCategoryDTO> update( @Positive(message = " must be greater than 0") Integer id, @Valid @RequestBody ReqCategoryUpsertDTO req) {
+    public ResponseEntity<ResCategoryDTO> update(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id, @Valid @RequestBody ReqCategoryUpsertDTO req) {
         return ResponseEntity.ok(categoryService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
     @ApiMessage("Delete category success")
-    public ResponseEntity<Void> delete( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         categoryService.delete(id);
         return ResponseEntity.noContent().build();
     }

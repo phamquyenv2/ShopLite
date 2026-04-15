@@ -32,7 +32,7 @@ public class OrderController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get order success")
-    public ResponseEntity<ResOrderDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<ResOrderDTO> findById(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(orderService.findById(id));
     }
 
@@ -45,14 +45,14 @@ public class OrderController {
     @PatchMapping("/{id}/status")
     @ApiMessage("Update order status success")
     public ResponseEntity<ResOrderDTO> updateStatus(
-             @Positive(message = " must be greater than 0") Integer id,
+            @PathVariable("id") @Positive(message = " must be greater than 0") Integer id,
             @RequestParam("status") StatusEnum status) {
         return ResponseEntity.ok(orderService.updateStatus(id, status));
     }
 
     @DeleteMapping("/{id}")
     @ApiMessage("Cancel order success")
-    public ResponseEntity<Void> cancel( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<Void> cancel(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         orderService.cancel(id);
         return ResponseEntity.noContent().build();
     }
@@ -60,14 +60,14 @@ public class OrderController {
     @PostMapping("/{id}/payments")
     @ApiMessage("Create payment for order success")
     public ResponseEntity<com.quyen.shoplite.domain.response.ResPaymentDTO> createPayment(
-             @Positive(message = " must be greater than 0") Integer id,
+            @PathVariable("id") @Positive(message = " must be greater than 0") Integer id,
             @Valid @RequestBody com.quyen.shoplite.domain.request.ReqPaymentDTO req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createPayment(id, req));
     }
 
     @GetMapping("/{id}/payments")
     @ApiMessage("Get payment for order success")
-    public ResponseEntity<com.quyen.shoplite.domain.response.ResPaymentDTO> getPaymentByOrderId( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<com.quyen.shoplite.domain.response.ResPaymentDTO> getPaymentByOrderId(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(paymentService.findByOrderId(id));
     }
 }

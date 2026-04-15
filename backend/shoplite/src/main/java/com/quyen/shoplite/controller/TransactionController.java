@@ -30,7 +30,7 @@ public class TransactionController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get transaction success")
-    public ResponseEntity<ResTransactionDTO> findById( @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<ResTransactionDTO> findById(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
         return ResponseEntity.ok(transactionService.findById(id));
     }
 
@@ -42,7 +42,7 @@ public class TransactionController {
 
     @GetMapping("/order/{orderId}")
     @ApiMessage("Get order transactions success")
-    public ResponseEntity<List<ResTransactionDTO>> findByOrderId( @Positive(message = " must be greater than 0") Integer orderId) {
+    public ResponseEntity<List<ResTransactionDTO>> findByOrderId(@PathVariable("orderId") @Positive(message = " must be greater than 0") Integer orderId) {
         return ResponseEntity.ok(transactionService.findByOrderId(orderId));
     }
 }
