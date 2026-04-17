@@ -23,12 +23,12 @@ public class UserDetailsCustom implements UserDetailsService {
     private final UserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy user: " + username));
+    public UserDetails loadUserByUsername(String phone) throws UsernameNotFoundException {
+        User user = userRepository.findByPhone(phone)
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy user với phone: " + phone));
 
         if (!user.isActive()) {
-            throw new IdInvalidException("Tài khoản '" + username + "' đã bị vô hiệu hóa");
+            throw new IdInvalidException("Tài khoản '" + user.getUsername() + "' đã bị vô hiệu hóa");
         }
 
         // Dùng role.name từ Role entity; fallback là "USER" nếu chưa gán role

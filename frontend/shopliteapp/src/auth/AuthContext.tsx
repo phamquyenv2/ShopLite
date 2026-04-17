@@ -17,7 +17,8 @@ export type AuthStatus = 'checking' | 'authenticated' | 'unauthenticated';
 export type AuthContextValue = {
     status: AuthStatus;
     user: AuthUser | null;
-    login: (username: string, password: string) => Promise<void>;
+    login: (phone: string, password: string) => Promise<void>;
+    register: (username: string, phone: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
     refreshSession: () => Promise<void>;
 };
@@ -56,9 +57,9 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         void refreshSession();
     }, [refreshSession]);
 
-    const login = useCallback(async (username: string, password: string) => {
+    const login = useCallback(async (phone: string, password: string) => {
         const client = createApiClient();
-        const res = await client.post<LoginResponse>(endpoints.login, { username, password });
+        const res = await client.post<LoginResponse>(endpoints.login, { phone, password });
         const stored = storeAuthFromPayload(res.data);
 
         if (!stored.accessToken || !stored.refreshToken) {
@@ -66,6 +67,26 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             setUser(null);
             setStatus('unauthenticated');
             throw new ApiError('Login response missing tokens', {
+                status: res.status,
+                data: res.data,
+                headers: res.headers,
+            });
+        }
+
+        setUser((stored.user as AuthUser | null) ?? getStoredUser<AuthUser>());
+        setStatus('authenticated');
+    }, []);
+
+    const register = useCallback(async (username: string, phone: string, password: string) => {
+        const client = createApiClient();
+        const res = await client.post<LoginResponse>(endpoints.register, { username, phone, password });
+        const stored = storeAuthFromPayload(res.data);
+
+        if (!stored.accessToken || !stored.refreshToken) {
+            clearStoredAuth();
+            setUser(null);
+            setStatus('unauthenticated');
+            throw new ApiError('Register response missing tokens', {
                 status: res.status,
                 data: res.data,
                 headers: res.headers,
@@ -93,8 +114,8 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     }, []);
 
     const value = useMemo<AuthContextValue>(
-        () => ({ status, user, login, logout, refreshSession }),
-        [status, user, login, logout, refreshSession],
+        () => ({ status, user, login, register, logout, refreshSession }),
+        [status, user, login, register, logout, refreshSession],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

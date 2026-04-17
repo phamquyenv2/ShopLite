@@ -2,66 +2,163 @@ import {
   IonButton,
   IonContent,
   IonHeader,
-  IonItem,
-  IonList,
+  IonIcon,
   IonPage,
-  IonText,
-  IonTitle,
   IonToolbar,
+  IonBadge,
+  IonFab,
+  IonFabButton,
 } from '@ionic/react';
+import {
+  searchOutline,
+  personCircleOutline,
+  cashOutline,
+  cartOutline,
+  cubeOutline,
+  peopleOutline,
+  logInOutline,
+  addOutline,
+  homeOutline,
+  gridOutline,
+  storefrontOutline,
+  personAddOutline,
+  reorderThreeOutline
+} from 'ionicons/icons';
 import './Home.css';
-import { useAuth } from '../auth/useAuth';
 
 const Home: React.FC = () => {
-  const { user, logout } = useAuth();
-
   return (
     <IonPage>
-      <IonHeader>
+      <IonHeader className="ion-no-border home-header">
         <IonToolbar>
-          <IonTitle>ShopLite</IonTitle>
+          <div className="header-container">
+            <IonIcon icon={personCircleOutline} className="user-avatar" />
+            <div className="header-title">
+              <h1>Minimart</h1>
+            </div>
+            <IonIcon icon={searchOutline} className="search-icon" />
+          </div>
         </IonToolbar>
       </IonHeader>
-      <IonContent fullscreen>
-        <IonHeader collapse="condense">
-          <IonToolbar>
-            <IonTitle size="large">ShopLite</IonTitle>
-          </IonToolbar>
-        </IonHeader>
 
-        <div className="ion-padding">
-          <IonText color="medium">
-            Signed in as <strong>{user?.username ?? 'User'}</strong>
-          </IonText>
+      <IonContent className="home-content">
+        {/* Thẻ doanh thu chính */}
+        <div className="revenue-main-card">
+          <div className="revenue-info">
+            <p className="label1">DOANH THU HÔM NAY</p>
+            <h2 className="amount">12.450.000đ</h2>
+            <div className="trend-badge">
+              <IonIcon icon={cashOutline} />
+              <span>+12% so với hôm qua</span>
+            </div>
+          </div>
+          <IonIcon icon={cashOutline} className="bg-icon" />
         </div>
 
-        <IonList inset>
-          <IonItem routerLink="/products" button>
-            Products
-          </IonItem>
-          <IonItem routerLink="/customers" button>
-            Customers
-          </IonItem>
-          <IonItem routerLink="/orders" button>
-            Orders
-          </IonItem>
-          <IonItem routerLink="/transactions" button>
-            Transactions
-          </IonItem>
-          <IonItem routerLink="/inventory/adjustments" button>
-            Inventory Adjustments
-          </IonItem>
-          <IonItem routerLink="/inventory/logs" button>
-            Inventory Logs
-          </IonItem>
-        </IonList>
-
-        <div className="ion-padding">
-          <IonButton expand="block" color="medium" onClick={() => void logout()}>
-            Sign out
-          </IonButton>
+        <div className="stats-row">
+          <div className="stats-card">
+            <p className="label1">ĐƠN HÀNG</p>
+            <h3 className="value">48</h3>
+            <p className="sub-label">Hoàn thành 42</p>
+          </div>
+          <div className="stats-card">
+            <p className="label1">LỢI NHUẬN</p>
+            <h3 className="value">3.240.000đ</h3>
+            <p className="sub-label warning">Tỷ suất 26%</p>
+          </div>
         </div>
+
+        {/* Phím tắt nhanh */}
+        <div className="section-container">
+          <h4 className="section-title">Phím tắt nhanh</h4>
+          <div className="shortcut-grid">
+            <div className="shortcut-item">
+              <div className="icon-box blue"><IonIcon icon={cartOutline} /></div>
+              <span>Tạo đơn</span>
+            </div>
+            <div className="shortcut-item">
+              <div className="icon-box indigo"><IonIcon icon={cubeOutline} /></div>
+              <span>Sản phẩm</span>
+            </div>
+            <div className="shortcut-item">
+              <div className="icon-box orange"><IonIcon icon={peopleOutline} /></div>
+              <span>Nhân viên</span>
+            </div>
+            <div className="shortcut-item">
+              <div className="icon-box red"><IonIcon icon={logInOutline} /></div>
+              <span>Nhập hàng</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Đơn hàng mới */}
+        <div className="section-container">
+          <div className="section-header">
+            <h4 className="section-title">Đơn hàng mới</h4>
+            <span className="view-all">Xem tất cả</span>
+          </div>
+
+          <div className="order-card">
+            <div className="order-user-icon blue"><IonIcon icon={personCircleOutline} /></div>
+            <div className="order-info">
+              <div className="order-row">
+                <span className="name">Anh Hoàng (Minimart)</span>
+                <span className="amount">540.000đ</span>
+              </div>
+              <div className="order-row">
+                <span className="detail">2 phút trước • 3 sản phẩm</span>
+                <span className="status-badge blue">Chờ giao</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="order-card">
+            <div className="order-user-icon orange"><IonIcon icon={personCircleOutline} /></div>
+            <div className="order-info">
+              <div className="order-row">
+                <span className="name">Chị Lan Tây Hồ</span>
+                <span className="amount">1.200.000đ</span>
+              </div>
+              <div className="order-row">
+                <span className="detail">15 phút trước • 1 sản phẩm</span>
+                <span className="status-badge orange">CHỜ XỬ LÝ</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bottom-spacer"></div>
+
+        <IonFab vertical="bottom" horizontal="end" slot="fixed" className="home-fab">
+          <IonFabButton>
+            <IonIcon icon={addOutline} />
+          </IonFabButton>
+        </IonFab>
       </IonContent>
+
+      {/* Thanh Tab giả lập theo ảnh */}
+      <div className="custom-tab-bar">
+        <div className="tab-item active">
+          <IonIcon icon={homeOutline} />
+          <span>Tổng quan</span>
+        </div>
+        <div className="tab-item">
+          <IonIcon icon={gridOutline} />
+          <span>Hàng hóa</span>
+        </div>
+        <div className="tab-item">
+          <IonIcon icon={storefrontOutline} />
+          <span>Bán hàng</span>
+        </div>
+        <div className="tab-item">
+          <IonIcon icon={personAddOutline} />
+          <span>Đối tác</span>
+        </div>
+        <div className="tab-item">
+          <IonIcon icon={reorderThreeOutline} />
+          <span>Khác</span>
+        </div>
+      </div>
     </IonPage>
   );
 };

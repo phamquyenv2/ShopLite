@@ -1,0 +1,180 @@
+.login-content {
+    --background: #ffffff;
+    /* Ensure Ionic components (Shadow DOM) and plain text use same font */
+    --ion-font-family: var(--app-font-family);
+    font-family: var(--ion-font-family);
+}
+
+.login-shell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 24px;
+    min-height: 100%;
+}
+
+/* Phần Logo và Tiêu đề */
+.login-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.login-appIcon {
+    background: #0062ff;
+    width: 82px;
+    height: 82px;
+    border-radius: 22px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 12px 24px rgba(0, 98, 255, 0.15);
+    margin-bottom: 18px;
+}
+
+.login-appIcon ion-icon {
+    font-size: 42px;
+    color: white;
+}
+
+.login-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: #1a1a1a;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.02em;
+}
+
+.login-subtitle {
+    font-size: 16px;
+    color: #707070;
+    margin: 0;
+    font-weight: 400;
+}
+
+/* Form nhập liệu */
+.login-form {
+    width: 100%;
+    max-width: 420px;
+}
+
+.login-label {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #444;
+}
+
+.login-input-item {
+    --background: #f0f4ff;
+    --border-radius: 18px;
+    --padding-start: 16px;
+    --highlight-height: 0;
+    --inner-padding-end: 12px;
+    margin-bottom: 22px;
+}
+
+.login-input-item ion-input {
+    font-size: 16px;
+    font-weight: 500;
+    font-family: inherit;
+}
+
+.login-input-item ion-input::part(native) {
+    font-family: inherit;
+}
+
+.login-icon-muted {
+    color: #8e8e93;
+    font-size: 20px;
+}
+
+.login-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.login-forgot,
+.signup-link {
+    background: transparent;
+    border: none;
+    color: #0062ff;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 0;
+}
+
+/* Nút bấm chính */
+.login-submit-btn {
+    --background: #0062ff;
+    --border-radius: 18px;
+    --padding-top: 18px;
+    --padding-bottom: 18px;
+    margin-top: 15px;
+    font-weight: 700;
+    font-size: 17px;
+    text-transform: none;
+    box-shadow: 0 10px 20px rgba(0, 98, 255, 0.2);
+}
+
+/* Đường gạch ngang */
+.login-divider {
+    display: flex;
+    align-items: center;
+    margin: 35px 0;
+}
+
+.login-divider .line {
+    flex: 1;
+    height: 1px;
+    background: #f0f0f0;
+}
+
+.login-divider .text {
+    padding: 0 15px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #aaa;
+    letter-spacing: 1px;
+}
+
+/* Social Login */
+.login-social-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.social-btn {
+    --background: #ffffff;
+    --border-radius: 16px;
+    --color: #333;
+    border: 1px solid #f0f0f0;
+    font-weight: 600;
+    text-transform: none;
+    height: 54px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+}
+
+.google-color {
+    color: #ea4335;
+}
+
+.login-eye-btn {
+    background: transparent;
+    border: none;
+    padding: 10px;
+    color: #8e8e93;
+    display: flex;
+    align-items: center;
+}
+
+.login-signup-footer {
+    text-align: center;
+    margin-top: 50px;
+    font-size: 15px;
+    color: #666;
+}

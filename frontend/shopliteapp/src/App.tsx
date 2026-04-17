@@ -3,6 +3,7 @@ import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Products from './pages/Products';
 import ProductUpsert from './pages/ProductUpsert';
 import Customers from './pages/Customers';
@@ -49,12 +50,18 @@ import '@ionic/react/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 
-setupIonicReact();
+setupIonicReact({ mode: 'md' });
 
 const LoginRoute: React.FC = () => {
   const { status } = useAuth();
   if (status === 'authenticated') return <Redirect to="/home" />;
   return <Login />;
+};
+
+const RegisterRoute: React.FC = () => {
+  const { status } = useAuth();
+  if (status === 'authenticated') return <Redirect to="/home" />;
+  return <Register />;
 };
 
 const App: React.FC = () => (
@@ -64,6 +71,10 @@ const App: React.FC = () => (
         <IonRouterOutlet>
           <Route exact path="/login">
             <LoginRoute />
+          </Route>
+
+          <Route exact path="/register">
+            <RegisterRoute />
           </Route>
 
           <PrivateRoute exact path="/home" component={Home} />

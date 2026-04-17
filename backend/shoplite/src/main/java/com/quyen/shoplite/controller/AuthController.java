@@ -1,12 +1,14 @@
 package com.quyen.shoplite.controller;
 
 import com.quyen.shoplite.domain.request.ReqLoginDTO;
+import com.quyen.shoplite.domain.request.ReqRegisterDTO;
 import com.quyen.shoplite.domain.response.ResLoginDTO;
 import com.quyen.shoplite.service.AuthService;
 import com.quyen.shoplite.util.annotation.ApiMessage;
 import com.quyen.shoplite.util.error.UnauthorizedException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -22,8 +24,15 @@ public class AuthController {
     @PostMapping("/login")
     @ApiMessage("Login success")
     public ResponseEntity<ResLoginDTO> login(@Valid @RequestBody ReqLoginDTO req) {
-        ResLoginDTO result = authService.login(req.getUsername(), req.getPassword());
+        ResLoginDTO result = authService.login(req.getPhone(), req.getPassword());
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/register")
+    @ApiMessage("Register success")
+    public ResponseEntity<ResLoginDTO> register(@Valid @RequestBody ReqRegisterDTO req) {
+        ResLoginDTO result = authService.register(req.getUsername(), req.getPhone(), req.getPassword());
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
     @PostMapping("/refresh")

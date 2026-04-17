@@ -28,6 +28,7 @@ export const STORAGE_KEYS = {
 export const endpoints = {
     // auth
     login: '/api/v1/auth/login',
+    register: '/api/v1/auth/register',
     refresh: '/api/v1/auth/refresh',
     me: '/api/v1/auth/me',
     logout: '/api/v1/auth/logout',

@@ -1,20 +1,31 @@
 import {
     IonButton,
     IonContent,
-    IonHeader,
     IonInput,
+    IonIcon,
     IonItem,
     IonList,
     IonPage,
     IonText,
-    IonTitle,
     IonToast,
-    IonToolbar,
 } from '@ionic/react';
 import { useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
+import {
+    arrowForwardOutline,
+    callOutline,
+    personOutline,
+    eyeOffOutline,
+    eyeOutline,
+    lockClosedOutline,
+    logoApple,
+    logoGoogle,
+    storefront,
+} from 'ionicons/icons';
 import { ApiError } from '../utils/Apis';
 import { useAuth } from '../auth/useAuth';
+
+import './Login.css';
 
 type LocationState = { from?: { pathname?: string } };
 
@@ -23,8 +34,9 @@ const Login: React.FC = () => {
     const history = useHistory();
     const location = useLocation<LocationState>();
 
-    const [username, setUsername] = useState('');
+    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [busy, setBusy] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
 
@@ -34,20 +46,16 @@ const Login: React.FC = () => {
     }, [location.state]);
 
     const onSubmit = async () => {
-        if (!username.trim() || !password) {
-            setToast('Please enter username and password');
+        if (!phone.trim() || !password) {
+            setToast('Vui lòng nhập số điện thoại và mật khẩu');
             return;
         }
         setBusy(true);
         try {
-            await login(username.trim(), password);
+            await login(phone.trim(), password);
             history.replace(redirectTo);
         } catch (err) {
-            if (err instanceof ApiError) {
-                setToast(err.message);
-            } else {
-                setToast('Login failed');
-            }
+            setToast(err instanceof ApiError ? err.message : 'Đăng nhập thất bại');
         } finally {
             setBusy(false);
         }
@@ -55,48 +63,88 @@ const Login: React.FC = () => {
 
     return (
         <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    <IonTitle>ShopLite • Sign in</IonTitle>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent className="ion-padding">
-                <IonText color="medium">
-                    {status === 'checking'
-                        ? 'Checking existing session...'
-                        : 'Sign in to manage sales, customers, and inventory.'}
-                </IonText>
+            <IonContent className="login-content" fullscreen>
+                <div className="login-shell">
+                    <div className="login-hero">
+                        <div className="login-appIcon">
+                            <IonIcon icon={storefront} />
+                        </div>
+                        <h1 className="login-title">Minimart</h1>
+                        <p className="login-subtitle">Quản lý kinh doanh tinh gọn</p>
+                    </div>
 
-                <IonList inset>
-                    <IonItem>
-                        <IonInput
-                            label="Username"
-                            labelPlacement="stacked"
-                            value={username}
-                            onIonInput={(e) => setUsername(String(e.detail.value ?? ''))}
-                            autocomplete="username"
-                        />
-                    </IonItem>
-                    <IonItem>
-                        <IonInput
-                            label="Password"
-                            labelPlacement="stacked"
-                            type="password"
-                            value={password}
-                            onIonInput={(e) => setPassword(String(e.detail.value ?? ''))}
-                            autocomplete="current-password"
-                        />
-                    </IonItem>
-                </IonList>
+                    <div className="login-form">
+                        <div className="login-label">Số điện thoại</div>
+                        <IonItem className="login-input-item" lines="none">
+                            <IonIcon icon={callOutline} slot="start" className="login-icon-muted" />
+                            <IonInput
+                                value={phone}
+                                onIonInput={(e) => setPhone(String(e.detail.value ?? ''))}
+                                placeholder="Nhập số điện thoại"
+                                autocomplete="tel"
+                                inputmode="tel"
+                                disabled={busy}
+                            />
+                        </IonItem>
 
-                <IonButton expand="block" onClick={onSubmit} disabled={busy}>
-                    {busy ? 'Signing in…' : 'Sign in'}
-                </IonButton>
+                        <div className="login-row">
+                            <div className="login-label">Mật khẩu</div>
+                            <button
+                                type="button"
+                                className="login-forgot"
+                                onClick={() => setToast('Tính năng đang phát triển')}
+                            >
+                                Quên mật khẩu?
+                            </button>
+                        </div>
+
+                        <IonItem className="login-input-item" lines="none">
+                            <IonIcon icon={lockClosedOutline} slot="start" className="login-icon-muted" />
+                            <IonInput
+                                value={password}
+                                onIonInput={(e) => setPassword(String(e.detail.value ?? ''))}
+                                placeholder="Nhập mật khẩu"
+                                type={showPassword ? 'text' : 'password'}
+                                onKeyDown={(e) => e.key === 'Enter' && void onSubmit()}
+                                disabled={busy}
+                            />
+                            <button
+                                type="button"
+                                className="login-eye-btn"
+                                onClick={() => setShowPassword((v) => !v)}
+                            >
+                                <IonIcon icon={showPassword ? eyeOffOutline : eyeOutline} />
+                            </button>
+                        </IonItem>
+
+                        <IonButton
+                            className="login-submit-btn"
+                            expand="block"
+                            onClick={onSubmit}
+                            disabled={busy}
+                        >
+                            {busy ? 'Đang đăng nhập…' : 'Đăng nhập'}
+                            <IonIcon icon={arrowForwardOutline} slot="end" />
+                        </IonButton>
+
+                        <div className="login-signup-footer">
+                            Chưa có tài khoản?{' '}
+                            <button
+                                type="button"
+                                className="signup-link"
+                                onClick={() => history.push('/register')}
+                                disabled={busy}
+                            >
+                                Đăng ký ngay
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 <IonToast
                     isOpen={toast !== null}
                     message={toast ?? ''}
-                    duration={2500}
+                    duration={2000}
                     onDidDismiss={() => setToast(null)}
                 />
             </IonContent>
