@@ -8,15 +8,9 @@ import com.quyen.shoplite.util.constant.StatusEnum;
 import com.quyen.shoplite.util.constant.TypeTransactionEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -31,16 +25,6 @@ public class SePayService {
     private final OrderRepository orderRepository;
     private final TransactionRepository transactionRepository;
     private final FcmService fcmService;
-    private final RestTemplate restTemplate = new RestTemplate();
-
-    @Value("${shoplite.sepay.base-url}")
-    private String sepayBaseUrl;
-
-    @Value("${shoplite.sepay.client-id}")
-    private String clientId;
-
-    @Value("${shoplite.sepay.client-secret}")
-    private String clientSecret;
 
     public Map<String, Object> createPaymentSession(Integer orderId) {
         Order order = orderRepository.findById(orderId)
@@ -51,11 +35,8 @@ public class SePayService {
         }
 
         try {
-            // 1. Get Access Token
-            String accessToken = getAccessToken();
-            
-            // 2. Create Hosted Link Token
-            String paymentUrl = createLinkToken(accessToken, order);
+            // Mock returning the hosted URL
+            String paymentUrl = createLinkToken(order);
 
             return Map.of(
                     "payment_url", paymentUrl,
@@ -68,32 +49,7 @@ public class SePayService {
         }
     }
 
-    private String getAccessToken() {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            Map<String, String> request = Map.of(
-                    "client_id", clientId,
-                    "client_secret", clientSecret
-            );
-            
-            // Uncomment exact call when using real SePay endpoints
-            // ResponseEntity<Map> response = restTemplate.postForEntity(sepayBaseUrl + "/v1/token", new HttpEntity<>(request, headers), Map.class);
-            // return (String) response.getBody().get("access_token");
-            return "mocked_access_token_" + System.currentTimeMillis();
-        } catch (Exception ex) {
-            log.warn("SePay API call mocked/failed. Using fallback mock token.");
-            return "mock_access_token";
-        }
-    }
-
-    private String createLinkToken(String accessToken, Order order) {
-        // Implementation for SePay POST /v1/link-token/create
-        // HttpHeaders headers = new HttpHeaders();
-        // headers.setBearerAuth(accessToken);
-        // ...
-        
-        // Mock returning the hosted URL
+    private String createLinkToken(Order order) {
         return "https://sepay.vn/pay/" + order.getCode() + "?amount=" + order.getTotalAmount();
     }
 
@@ -111,7 +67,6 @@ public class SePayService {
         String content = String.valueOf(payload.get("content"));
 
         // Note: idempotency pre-check removed (no externalId field). Consider checking by content+orderId.
-
         // Step 3: Extract order_code
         String orderCode = extractOrderCode(content);
         if (orderCode == null || orderCode.isBlank()) {
@@ -175,14 +130,16 @@ public class SePayService {
     private String extractOrderCode(String content) {
         // Regex to extract order codes like ORDER_123 or similar structures. 
         // We will assume "ORDER_" followed by numbers or characters.
-        if (content == null) return null;
-        
+        if (content == null) {
+            return null;
+        }
+
         Pattern pattern = Pattern.compile("(ORDER_\\w+|OD_\\w+|[A-Z0-9]{8,15})");
         Matcher matcher = pattern.matcher(content);
         if (matcher.find()) {
             return matcher.group(1);
         }
-        
+
         // Fallback to exact match logic if Regex fails but content is fairly clean
         return content.trim();
     }

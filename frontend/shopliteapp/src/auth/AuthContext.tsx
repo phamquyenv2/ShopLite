@@ -1,11 +1,11 @@
-import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ApiError,
+    AUTH_INVALID_EVENT,
     authApis,
     clearStoredAuth,
     createApiClient,
     endpoints,
-    getStoredAccessToken,
     getStoredRefreshToken,
     getStoredUser,
     storeAuthFromPayload,
@@ -28,33 +28,74 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     const [status, setStatus] = useState<AuthStatus>('checking');
     const [user, setUser] = useState<AuthUser | null>(() => getStoredUser<AuthUser>());
+    const refreshingRef = useRef(false);
+
+    useEffect(() => {
+        const handler = () => {
+            setUser(null);
+            setStatus('unauthenticated');
+        };
+
+        globalThis.addEventListener(AUTH_INVALID_EVENT, handler as EventListener);
+        return () => {
+            globalThis.removeEventListener(AUTH_INVALID_EVENT, handler as EventListener);
+        };
+    }, []);
 
     const refreshSession = useCallback(async () => {
-        const accessToken = getStoredAccessToken();
         const refreshToken = getStoredRefreshToken();
 
-        if (!accessToken || !refreshToken) {
+        if (!refreshToken) {
             clearStoredAuth();
             setUser(null);
             setStatus('unauthenticated');
             return;
         }
 
+        if (refreshingRef.current) return;
+        refreshingRef.current = true;
+
         try {
-            // Uses access token and can auto-refresh via authApis()
-            await authApis().get(endpoints.me);
-            const stored = getStoredUser<AuthUser>();
-            setUser(stored);
+            // Always validate session by refreshing with refresh token.
+            // This ensures we also respect DB-level refresh token expiry.
+            const refreshClient = createApiClient({ getToken: () => refreshToken });
+            const res = await refreshClient.post<LoginResponse>(endpoints.refresh);
+            const stored = storeAuthFromPayload(res.data);
+
+            if (!stored.accessToken || !stored.refreshToken) {
+                clearStoredAuth();
+                setUser(null);
+                setStatus('unauthenticated');
+                return;
+            }
+
+            setUser((stored.user as AuthUser | null) ?? getStoredUser<AuthUser>());
             setStatus('authenticated');
         } catch {
             clearStoredAuth();
             setUser(null);
             setStatus('unauthenticated');
+        } finally {
+            refreshingRef.current = false;
         }
     }, []);
 
     useEffect(() => {
         void refreshSession();
+    }, [refreshSession]);
+
+    useEffect(() => {
+        const onFocus = () => void refreshSession();
+        const onVisibility = () => {
+            if (document.visibilityState === 'visible') void refreshSession();
+        };
+
+        globalThis.addEventListener('focus', onFocus);
+        document.addEventListener('visibilitychange', onVisibility);
+        return () => {
+            globalThis.removeEventListener('focus', onFocus);
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
     }, [refreshSession]);
 
     const login = useCallback(async (phone: string, password: string) => {

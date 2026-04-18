@@ -200,9 +200,12 @@ public class DatabaseInitializer implements CommandLineRunner {
         }
         roleRepository.save(adminRole);
 
-        // --- Ensure USER role has at least all GET permissions (chỉ thêm mới, không xoá) ---
+        // --- Ensure USER role has at least all GET permissions + attendance check-in/out (chỉ thêm mới, không xoá) ---
         List<Permission> desiredUserPermissions = allPermissions.stream()
-                .filter(p -> "GET".equals(p.getMethod()))
+                .filter(p -> "GET".equals(p.getMethod())
+                || ("POST".equals(p.getMethod())
+                && ("/api/v1/attendance/check-in".equals(p.getApiPath())
+                || "/api/v1/attendance/check-out".equals(p.getApiPath()))))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
 
         Role userRole = roleRepository.findByName("USER").orElse(null);
@@ -230,7 +233,6 @@ public class DatabaseInitializer implements CommandLineRunner {
         Role adminRole = roleRepository.findByName("ADMIN").orElse(null);
         User admin = User.builder()
                 .username("admin")
-                .phone("0383870916")
                 .password(passwordEncoder.encode("admin123"))
                 .role(adminRole)
                 .isActive(true)

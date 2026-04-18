@@ -1,5 +1,6 @@
 package com.quyen.shoplite.domain.response;
 
+import com.quyen.shoplite.domain.ProductStatus;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,6 +9,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class ResProductDTO {
+
     private Integer id;
     private Integer categoryId;
     private String categoryName;
@@ -15,10 +17,16 @@ public class ResProductDTO {
     private String unitName;
     private String name;
     private String sku;
-    private Long barcode;
+    private String barcode;
     private Integer stock;
-    private Double price;
+    private Double costPrice;
+    private Double sellingPrice;
+    private Integer minStock;
+    private Integer maxStock;
+    private String image;
+    private ProductStatus status;
     private boolean isDeleted;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private Integer version;
 }

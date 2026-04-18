@@ -17,7 +17,9 @@ public class DTOMapper {
 
     // ==================== User ====================
     public static ResUserDTO toResUserDTO(User user) {
-        if (user == null) return null;
+        if (user == null) {
+            return null;
+        }
         ResUserDTO dto = new ResUserDTO();
         dto.setId(user.getId());
         dto.setUsername(user.getUsername());
@@ -32,7 +34,9 @@ public class DTOMapper {
 
     // ==================== Permission ====================
     public static ResPermissionDTO toResPermissionDTO(Permission p) {
-        if (p == null) return null;
+        if (p == null) {
+            return null;
+        }
         ResPermissionDTO dto = new ResPermissionDTO();
         dto.setId(p.getId());
         dto.setName(p.getName());
@@ -48,7 +52,9 @@ public class DTOMapper {
 
     // ==================== Role ====================
     public static ResRoleDTO toResRoleDTO(Role role) {
-        if (role == null) return null;
+        if (role == null) {
+            return null;
+        }
         ResRoleDTO dto = new ResRoleDTO();
         dto.setId(role.getId());
         dto.setName(role.getName());
@@ -67,7 +73,9 @@ public class DTOMapper {
 
     // ==================== Category ====================
     public static ResCategoryDTO toResCategoryDTO(Category category) {
-        if (category == null) return null;
+        if (category == null) {
+            return null;
+        }
         ResCategoryDTO dto = new ResCategoryDTO();
         dto.setId(category.getId());
         dto.setName(category.getName());
@@ -76,7 +84,9 @@ public class DTOMapper {
 
     // ==================== Unit ====================
     public static ResUnitDTO toResUnitDTO(Unit unit) {
-        if (unit == null) return null;
+        if (unit == null) {
+            return null;
+        }
         ResUnitDTO dto = new ResUnitDTO();
         dto.setId(unit.getId());
         dto.setName(unit.getName());
@@ -86,16 +96,24 @@ public class DTOMapper {
 
     // ==================== Product ====================
     public static ResProductDTO toResProductDTO(Product product) {
-        if (product == null) return null;
+        if (product == null) {
+            return null;
+        }
         ResProductDTO dto = new ResProductDTO();
         dto.setId(product.getId());
         dto.setName(product.getName());
         dto.setSku(product.getSku());
         dto.setBarcode(product.getBarcode());
         dto.setStock(product.getStock());
-        dto.setPrice(product.getPrice());
+        dto.setCostPrice(product.getCostPrice());
+        dto.setSellingPrice(product.getSellingPrice());
+        dto.setMinStock(product.getMinStock());
+        dto.setMaxStock(product.getMaxStock());
+        dto.setImage(product.getImage());
+        dto.setStatus(product.getStatus());
         dto.setDeleted(product.isDeleted());
         dto.setCreatedAt(product.getCreatedAt());
+        dto.setUpdatedAt(product.getUpdatedAt());
         dto.setVersion(product.getVersion());
         if (product.getCategory() != null) {
             dto.setCategoryId(product.getCategory().getId());
@@ -110,7 +128,9 @@ public class DTOMapper {
 
     // ==================== Customer ====================
     public static ResCustomerDTO toResCustomerDTO(Customer customer) {
-        if (customer == null) return null;
+        if (customer == null) {
+            return null;
+        }
         ResCustomerDTO dto = new ResCustomerDTO();
         dto.setId(customer.getId());
         dto.setName(customer.getName());
@@ -121,7 +141,9 @@ public class DTOMapper {
 
     // ==================== Supplier ====================
     public static ResSupplierDTO toResSupplierDTO(Supplier supplier) {
-        if (supplier == null) return null;
+        if (supplier == null) {
+            return null;
+        }
         ResSupplierDTO dto = new ResSupplierDTO();
         dto.setId(supplier.getId());
         dto.setName(supplier.getName());
@@ -134,7 +156,9 @@ public class DTOMapper {
 
     // ==================== Office ====================
     public static ResOfficeDTO toResOfficeDTO(Office office) {
-        if (office == null) return null;
+        if (office == null) {
+            return null;
+        }
         ResOfficeDTO dto = new ResOfficeDTO();
         dto.setId(office.getId());
         dto.setName(office.getName());
@@ -150,7 +174,9 @@ public class DTOMapper {
 
     // ==================== Employee ====================
     public static ResEmployeeDTO toResEmployeeDTO(Employee employee) {
-        if (employee == null) return null;
+        if (employee == null) {
+            return null;
+        }
         ResEmployeeDTO dto = new ResEmployeeDTO();
         dto.setId(employee.getId());
         dto.setSalaryRate(employee.getSalaryRate());
@@ -170,7 +196,9 @@ public class DTOMapper {
 
     // ==================== Attendance ====================
     public static ResAttendanceDTO toResAttendanceDTO(Attendance attendance) {
-        if (attendance == null) return null;
+        if (attendance == null) {
+            return null;
+        }
         ResAttendanceDTO dto = new ResAttendanceDTO();
         dto.setId(attendance.getId());
         dto.setCheckIn(attendance.getCheckIn());
@@ -207,7 +235,9 @@ public class DTOMapper {
 
     // ==================== Payroll ====================
     public static ResPayrollDTO toResPayrollDTO(Payroll payroll) {
-        if (payroll == null) return null;
+        if (payroll == null) {
+            return null;
+        }
         ResPayrollDTO dto = new ResPayrollDTO();
         dto.setId(payroll.getId());
         dto.setPeriod(payroll.getPeriod());
@@ -227,7 +257,9 @@ public class DTOMapper {
 
     // ==================== Payment ====================
     public static ResPaymentDTO toResPaymentDTO(Payment payment) {
-        if (payment == null) return null;
+        if (payment == null) {
+            return null;
+        }
         ResPaymentDTO dto = new ResPaymentDTO();
         dto.setId(payment.getId());
         dto.setMethod(payment.getMethod());
@@ -243,7 +275,9 @@ public class DTOMapper {
 
     // ==================== ImportItem ====================
     public static ResImportItemDTO toResImportItemDTO(ImportItem item) {
-        if (item == null) return null;
+        if (item == null) {
+            return null;
+        }
         ResImportItemDTO dto = new ResImportItemDTO();
         dto.setId(item.getId());
         dto.setQuantity(item.getQuantity());
@@ -259,7 +293,9 @@ public class DTOMapper {
 
     // ==================== ImportOrder ====================
     public static ResImportOrderDTO toResImportOrderDTO(ImportOrder importOrder, List<ImportItem> items) {
-        if (importOrder == null) return null;
+        if (importOrder == null) {
+            return null;
+        }
         ResImportOrderDTO dto = new ResImportOrderDTO();
         dto.setId(importOrder.getId());
         dto.setTax(importOrder.getTax());
@@ -283,7 +319,9 @@ public class DTOMapper {
 
     // ==================== InventoryAdjustment ====================
     public static ResInventoryAdjustmentDTO toResInventoryAdjustmentDTO(InventoryAdjustment adjustment, List<InventoryLogs> logs) {
-        if (adjustment == null) return null;
+        if (adjustment == null) {
+            return null;
+        }
         ResInventoryAdjustmentDTO dto = new ResInventoryAdjustmentDTO();
         dto.setId(adjustment.getId());
         dto.setReason(adjustment.getReason());
@@ -300,7 +338,9 @@ public class DTOMapper {
 
     // ==================== OrderItems ====================
     public static ResOrderItemDTO toResOrderItemDTO(OrderItems item) {
-        if (item == null) return null;
+        if (item == null) {
+            return null;
+        }
         ResOrderItemDTO dto = new ResOrderItemDTO();
         dto.setId(item.getId());
         dto.setProductName(item.getProductName());
@@ -315,7 +355,9 @@ public class DTOMapper {
 
     // ==================== Order ====================
     public static ResOrderDTO toResOrderDTO(Order order) {
-        if (order == null) return null;
+        if (order == null) {
+            return null;
+        }
         ResOrderDTO dto = new ResOrderDTO();
         dto.setId(order.getId());
         dto.setCode(order.getCode());
@@ -338,7 +380,9 @@ public class DTOMapper {
 
     // ==================== Transaction ====================
     public static ResTransactionDTO toResTransactionDTO(Transaction transaction) {
-        if (transaction == null) return null;
+        if (transaction == null) {
+            return null;
+        }
         ResTransactionDTO dto = new ResTransactionDTO();
         dto.setId(transaction.getId());
         dto.setAmount(transaction.getAmount());
@@ -364,7 +408,9 @@ public class DTOMapper {
 
     // ==================== InventoryLogs ====================
     public static ResInventoryLogDTO toResInventoryLogDTO(InventoryLogs log) {
-        if (log == null) return null;
+        if (log == null) {
+            return null;
+        }
         ResInventoryLogDTO dto = new ResInventoryLogDTO();
         dto.setId(log.getId());
         dto.setQuantityIn(log.getQuantityIn());
@@ -383,7 +429,9 @@ public class DTOMapper {
 
     // ==================== Roster ====================
     public static ResRosterDTO toResRosterDTO(Roster roster) {
-        if (roster == null) return null;
+        if (roster == null) {
+            return null;
+        }
         ResRosterDTO dto = new ResRosterDTO();
         dto.setId(roster.getId());
         dto.setWorkingDay(roster.getWorkingDay());

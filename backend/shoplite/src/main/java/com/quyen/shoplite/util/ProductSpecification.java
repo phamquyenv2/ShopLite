@@ -8,14 +8,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Specification để lọc sản phẩm động theo keyword, category, price.
+ * Specification để lọc sản phẩm động theo keyword, category, sellingPrice.
  */
 public class ProductSpecification {
 
-    private ProductSpecification() {}
+    private ProductSpecification() {
+    }
 
     public static Specification<Product> filter(String keyword, Integer categoryId,
-                                                Double minPrice, Double maxPrice, Integer unitId) {
+            Double minPrice, Double maxPrice, Integer unitId) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -38,12 +39,12 @@ public class ProductSpecification {
 
             // Lọc theo giá tối thiểu
             if (minPrice != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("price"), minPrice));
+                predicates.add(cb.greaterThanOrEqualTo(root.get("sellingPrice"), minPrice));
             }
 
             // Lọc theo giá tối đa
             if (maxPrice != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("price"), maxPrice));
+                predicates.add(cb.lessThanOrEqualTo(root.get("sellingPrice"), maxPrice));
             }
 
             // Lọc theo unitId

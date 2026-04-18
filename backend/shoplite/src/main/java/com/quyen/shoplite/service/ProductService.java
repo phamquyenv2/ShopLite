@@ -2,6 +2,7 @@ package com.quyen.shoplite.service;
 
 import com.quyen.shoplite.domain.Category;
 import com.quyen.shoplite.domain.Product;
+import com.quyen.shoplite.domain.ProductStatus;
 import com.quyen.shoplite.domain.Unit;
 import com.quyen.shoplite.domain.request.ReqProductUpsertDTO;
 import com.quyen.shoplite.domain.response.ResProductDTO;
@@ -22,8 +23,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -34,8 +33,11 @@ public class ProductService {
 
     @Transactional
     public ResProductDTO create(ReqProductUpsertDTO req) {
-        if (req.getPrice() < 0) {
-            throw new BadRequestException("Price cannot be negative");
+        if (req.getSellingPrice() < 0) {
+            throw new BadRequestException("Selling price cannot be negative");
+        }
+        if (req.getCostPrice() < 0) {
+            throw new BadRequestException("Cost price cannot be negative");
         }
         if (req.getStock() < 0) {
             throw new BadRequestException("Stock cannot be negative");
@@ -50,7 +52,7 @@ public class ProductService {
             normalizedSku = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         }
 
-        if (req.getBarcode() != null && productRepository.existsByBarcode(req.getBarcode())) {
+        if (hasText(req.getBarcode()) && productRepository.existsByBarcode(req.getBarcode().trim())) {
             throw new BadRequestException("Barcode already exists: " + req.getBarcode());
         }
 
@@ -64,11 +66,15 @@ public class ProductService {
                 .unit(unit)
                 .name(req.getName().trim())
                 .sku(normalizedSku)
-                .barcode(req.getBarcode())
+                .barcode(normalize(req.getBarcode()))
                 .stock(req.getStock())
-                .price(req.getPrice())
+                .sellingPrice(req.getSellingPrice())
+                .costPrice(req.getCostPrice())
+                .minStock(req.getMinStock())
+                .maxStock(req.getMaxStock())
+                .image(normalize(req.getImage()))
+                .status(determineStatus(req.getStatus(), req.getStock()))
                 .isDeleted(false)
-                .createdAt(LocalDateTime.now())
                 .build();
 
         return DTOMapper.toResProductDTO(productRepository.save(product));
@@ -84,8 +90,8 @@ public class ProductService {
     }
 
     public ResProductPageDTO getProducts(String keyword, Integer categoryId,
-                                         Double minPrice, Double maxPrice,
-                                         int page, int size, String sortBy, String sortDir, Integer unitId) {
+            Double minPrice, Double maxPrice,
+            int page, int size, String sortBy, String sortDir, Integer unitId) {
         Sort sort = sortDir.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()
                 : Sort.by(sortBy).ascending();
@@ -114,8 +120,11 @@ public class ProductService {
             throw new ResourceNotFoundException("Product not found with id=" + id);
         }
 
-        if (req.getPrice() < 0) {
-            throw new BadRequestException("Price cannot be negative");
+        if (req.getSellingPrice() < 0) {
+            throw new BadRequestException("Selling price cannot be negative");
+        }
+        if (req.getCostPrice() < 0) {
+            throw new BadRequestException("Cost price cannot be negative");
         }
 
         if (req.getVersion() != null && !req.getVersion().equals(product.getVersion())) {
@@ -130,7 +139,8 @@ public class ProductService {
             product.setSku(normalizedSku);
         }
 
-        if (req.getBarcode() != null && productRepository.existsByBarcodeAndIdNot(req.getBarcode(), id)) {
+        String normalizedBarcode = normalize(req.getBarcode());
+        if (hasText(normalizedBarcode) && productRepository.existsByBarcodeAndIdNot(normalizedBarcode, id)) {
             throw new BadRequestException("Barcode already exists: " + req.getBarcode());
         }
 
@@ -142,9 +152,14 @@ public class ProductService {
         product.setCategory(category);
         product.setUnit(unit);
         product.setName(req.getName().trim());
-        product.setBarcode(req.getBarcode());
+        product.setBarcode(normalizedBarcode);
         // do not update stock according to controller comment
-        product.setPrice(req.getPrice());
+        product.setSellingPrice(req.getSellingPrice());
+        product.setCostPrice(req.getCostPrice());
+        product.setMinStock(req.getMinStock());
+        product.setMaxStock(req.getMaxStock());
+        product.setImage(normalize(req.getImage()));
+        product.setStatus(determineStatus(req.getStatus(), product.getStock()));
 
         return DTOMapper.toResProductDTO(productRepository.save(product));
     }
@@ -179,5 +194,13 @@ public class ProductService {
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
     }
-}
 
+    private ProductStatus determineStatus(ProductStatus requested, Integer stock) {
+        ProductStatus result = requested != null ? requested : ProductStatus.ACTIVE;
+        int safeStock = stock == null ? 0 : stock;
+        if (safeStock <= 0 && result != ProductStatus.INACTIVE) {
+            return ProductStatus.OUT_OF_STOCK;
+        }
+        return result;
+    }
+}

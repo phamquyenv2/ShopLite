@@ -1,27 +1,25 @@
 package com.quyen.shoplite.domain.request;
 
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import com.quyen.shoplite.domain.ProductStatus;
+
 @Getter
 @Setter
 public class ReqProductUpsertDTO {
 
-    
     @Positive(message = "categoryId must be greater than 0")
-@NotNull(message = "categoryId must not be null")
+    @NotNull(message = "categoryId must not be null")
     private Integer categoryId;
 
-    
     @Positive(message = "unitId must be greater than 0")
-@NotNull(message = "unitId must not be null")
+    @NotNull(message = "unitId must not be null")
     private Integer unitId;
 
     @NotBlank(message = "name must not be blank")
@@ -31,19 +29,31 @@ public class ReqProductUpsertDTO {
     @Size(max = 100, message = "sku must be less than or equal to 100 characters")
     private String sku;
 
-    @Min(value = 0, message = "barcode must be greater than or equal to 0")
-    private Long barcode;
+    @Size(max = 100, message = "barcode must be less than or equal to 100 characters")
+    private String barcode;
 
-    
     @PositiveOrZero(message = "stock must be greater than or equal to 0")
-@NotNull(message = "stock must not be null")
+    @NotNull(message = "stock must not be null")
     private Integer stock;
 
-    
-    @PositiveOrZero(message = "price must be greater than or equal to 0")
-@NotNull(message = "price must not be null")
-    private Double price;
+    @PositiveOrZero(message = "sellingPrice must be greater than or equal to 0")
+    @NotNull(message = "sellingPrice must not be null")
+    private Double sellingPrice;
+
+    @PositiveOrZero(message = "costPrice must be greater than or equal to 0")
+    @NotNull(message = "costPrice must not be null")
+    private Double costPrice;
+
+    @PositiveOrZero(message = "minStock must be greater than or equal to 0")
+    private Integer minStock;
+
+    @PositiveOrZero(message = "maxStock must be greater than or equal to 0")
+    private Integer maxStock;
+
+    @Size(max = 500, message = "image must be less than or equal to 500 characters")
+    private String image;
+
+    private ProductStatus status;
 
     private Integer version;
 }
-

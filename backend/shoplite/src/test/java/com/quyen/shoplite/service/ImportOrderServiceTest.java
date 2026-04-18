@@ -35,12 +35,18 @@ import static org.mockito.Mockito.*;
 class ImportOrderServiceTest {
 
     // ------------------------------------------------------------------ mocks
-    @Mock private ImportOrderRepository importOrderRepository;
-    @Mock private ImportItemRepository  importItemRepository;
-    @Mock private SupplierRepository    supplierRepository;
-    @Mock private ProductRepository     productRepository;
-    @Mock private InventoryLogsRepository inventoryLogsRepository;
-    @Mock private TransactionRepository transactionRepository;
+    @Mock
+    private ImportOrderRepository importOrderRepository;
+    @Mock
+    private ImportItemRepository importItemRepository;
+    @Mock
+    private SupplierRepository supplierRepository;
+    @Mock
+    private ProductRepository productRepository;
+    @Mock
+    private InventoryLogsRepository inventoryLogsRepository;
+    @Mock
+    private TransactionRepository transactionRepository;
 
     @InjectMocks
     private ImportOrderService importOrderService;
@@ -54,7 +60,9 @@ class ImportOrderServiceTest {
         validator = Validation.buildDefaultValidatorFactory().getValidator();
     }
 
-    /** Build a minimal valid Supplier stub */
+    /**
+     * Build a minimal valid Supplier stub
+     */
     private Supplier makeSupplier(int id) {
         Supplier s = new Supplier();
         s.setId(id);
@@ -62,21 +70,26 @@ class ImportOrderServiceTest {
         return s;
     }
 
-    /** Build a minimal valid Product stub */
+    /**
+     * Build a minimal valid Product stub
+     */
     private Product makeProduct(int id, int stock) {
         Product p = new Product();
         p.setId(id);
         p.setName("Product " + id);
         p.setSku("SKU-" + id);
         p.setStock(stock);
-        p.setPrice(10.0);
+        p.setSellingPrice(10.0);
+        p.setCostPrice(0.0);
         return p;
     }
 
-    /** Build a single-item request with the given price / quantity */
+    /**
+     * Build a single-item request with the given price / quantity
+     */
     private ReqImportOrderDTO buildRequest(int supplierId, int productId,
-                                           int qty, double price,
-                                           Double tax, Double discount) {
+            int qty, double price,
+            Double tax, Double discount) {
         ReqImportItemDTO item = new ReqImportItemDTO();
         item.setProductId(productId);
         item.setQuantity(qty);
@@ -90,7 +103,9 @@ class ImportOrderServiceTest {
         return req;
     }
 
-    /** Build an ImportOrder stub already saved in the DB */
+    /**
+     * Build an ImportOrder stub already saved in the DB
+     */
     private ImportOrder makeOrder(int id, ImportOrderStatusEnum status, double total) {
         ImportOrder o = new ImportOrder();
         o.setId(id);
@@ -100,9 +115,11 @@ class ImportOrderServiceTest {
         return o;
     }
 
-    /** Build an ImportItem linked to an ImportOrder */
+    /**
+     * Build an ImportItem linked to an ImportOrder
+     */
     private ImportItem makeItem(int id, ImportOrder order, Product product,
-                                int qty, double price) {
+            int qty, double price) {
         ImportItem item = new ImportItem();
         item.setId(id);
         item.setImportOrder(order);
@@ -125,7 +142,7 @@ class ImportOrderServiceTest {
         void create_Success_TotalComputed() {
             // Arrange
             Supplier supplier = makeSupplier(1);
-            Product  product  = makeProduct(1, 100);
+            Product product = makeProduct(1, 100);
 
             when(supplierRepository.findById(1)).thenReturn(Optional.of(supplier));
             when(productRepository.findById(1)).thenReturn(Optional.of(product));
@@ -151,9 +168,9 @@ class ImportOrderServiceTest {
             ImportOrder captured = orderCaptor.getValue();
             assertEquals(supplier, captured.getSupplier());
             assertEquals(160.0, captured.getTotalAmount(), 1e-9);
-            assertEquals(20.0,  captured.getTax(),         1e-9);
-            assertEquals(10.0,  captured.getDiscount(),    1e-9);
-            assertEquals(0.0,   captured.getAmountPaid(),  1e-9);
+            assertEquals(20.0, captured.getTax(), 1e-9);
+            assertEquals(10.0, captured.getDiscount(), 1e-9);
+            assertEquals(0.0, captured.getAmountPaid(), 1e-9);
             assertEquals(ImportOrderStatusEnum.PENDING, captured.getStatus());
             assertEquals("test note", captured.getNote());
             assertNotNull(captured.getCreatedAt());
@@ -183,8 +200,8 @@ class ImportOrderServiceTest {
             ArgumentCaptor<ImportOrder> captor = ArgumentCaptor.forClass(ImportOrder.class);
             verify(importOrderRepository).save(captor.capture());
             assertEquals(200.0, captor.getValue().getTotalAmount(), 1e-9);
-            assertEquals(0.0,   captor.getValue().getTax(),         1e-9);
-            assertEquals(0.0,   captor.getValue().getDiscount(),    1e-9);
+            assertEquals(0.0, captor.getValue().getTax(), 1e-9);
+            assertEquals(0.0, captor.getValue().getDiscount(), 1e-9);
         }
 
         @Test
@@ -192,13 +209,17 @@ class ImportOrderServiceTest {
         void create_Success_MultipleItems() {
             // Arrange
             Supplier supplier = makeSupplier(1);
-            Product  p1       = makeProduct(1, 10);
-            Product  p2       = makeProduct(2, 20);
+            Product p1 = makeProduct(1, 10);
+            Product p2 = makeProduct(2, 20);
 
             ReqImportItemDTO i1 = new ReqImportItemDTO();
-            i1.setProductId(1); i1.setQuantity(2); i1.setImportPrice(50.0);  // 100
+            i1.setProductId(1);
+            i1.setQuantity(2);
+            i1.setImportPrice(50.0);  // 100
             ReqImportItemDTO i2 = new ReqImportItemDTO();
-            i2.setProductId(2); i2.setQuantity(3); i2.setImportPrice(30.0);  //  90
+            i2.setProductId(2);
+            i2.setQuantity(3);
+            i2.setImportPrice(30.0);  //  90
             // total = 190, no tax/discount
 
             ReqImportOrderDTO req = new ReqImportOrderDTO();
@@ -221,13 +242,13 @@ class ImportOrderServiceTest {
 
             // Items list saved with correct subtotals
             @SuppressWarnings("unchecked")
-            ArgumentCaptor<List<ImportItem>> itemsCaptor =
-                    ArgumentCaptor.forClass((Class) List.class);
+            ArgumentCaptor<List<ImportItem>> itemsCaptor
+                    = ArgumentCaptor.forClass((Class) List.class);
             verify(importItemRepository).saveAll(itemsCaptor.capture());
             List<ImportItem> savedItems = itemsCaptor.getValue();
             assertEquals(2, savedItems.size());
             assertEquals(100.0, savedItems.get(0).getSubTotal(), 1e-9);
-            assertEquals(90.0,  savedItems.get(1).getSubTotal(), 1e-9);
+            assertEquals(90.0, savedItems.get(1).getSubTotal(), 1e-9);
         }
 
         @Test
@@ -249,7 +270,6 @@ class ImportOrderServiceTest {
         }
 
         // -------------------------------------------------------------- failure
-
         @Test
         @DisplayName("Failure – supplier not found throws IdInvalidException")
         void create_SupplierNotFound() {
@@ -351,7 +371,7 @@ class ImportOrderServiceTest {
         @DisplayName("Success – returns all orders with their items")
         void findAll_Success() {
             // Arrange
-            ImportOrder o1 = makeOrder(1, ImportOrderStatusEnum.PENDING,   100.0);
+            ImportOrder o1 = makeOrder(1, ImportOrderStatusEnum.PENDING, 100.0);
             ImportOrder o2 = makeOrder(2, ImportOrderStatusEnum.COMPLETED, 200.0);
             o1.setSupplier(makeSupplier(1));
             o2.setSupplier(makeSupplier(2));
@@ -394,8 +414,8 @@ class ImportOrderServiceTest {
         void complete_IncreasesStock() {
             // Arrange
             ImportOrder order = makeOrder(1, ImportOrderStatusEnum.PENDING, 500.0);
-            Product     product = makeProduct(1, 10);   // initial stock = 10
-            ImportItem  item    = makeItem(5, order, product, 4, 100.0); // add 4
+            Product product = makeProduct(1, 10);   // initial stock = 10
+            ImportItem item = makeItem(5, order, product, 4, 100.0); // add 4
 
             when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -417,9 +437,9 @@ class ImportOrderServiceTest {
         @DisplayName("Success – creates IMPORT inventory log with correct fields")
         void complete_CreatesInventoryLog() {
             // Arrange
-            ImportOrder order   = makeOrder(1, ImportOrderStatusEnum.PENDING, 300.0);
-            Product     product = makeProduct(2, 5);
-            ImportItem  item    = makeItem(7, order, product, 3, 100.0);
+            ImportOrder order = makeOrder(1, ImportOrderStatusEnum.PENDING, 300.0);
+            Product product = makeProduct(2, 5);
+            ImportItem item = makeItem(7, order, product, 3, 100.0);
 
             when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -437,12 +457,12 @@ class ImportOrderServiceTest {
             verify(inventoryLogsRepository).save(logCaptor.capture());
             InventoryLogs log = logCaptor.getValue();
 
-            assertEquals(product,              log.getProduct());
-            assertEquals(item,                 log.getImportItem());
-            assertEquals(3,                    log.getQuantityIn());
-            assertNull(                         log.getQuantityOut()); // not an outgoing move
-            assertEquals(8,                    log.getBalanceAfter());   // 5 + 3
-            assertEquals(8,                    log.getCurrentStock());
+            assertEquals(product, log.getProduct());
+            assertEquals(item, log.getImportItem());
+            assertEquals(3, log.getQuantityIn());
+            assertNull(log.getQuantityOut()); // not an outgoing move
+            assertEquals(8, log.getBalanceAfter());   // 5 + 3
+            assertEquals(8, log.getCurrentStock());
             assertEquals(TypeInventoryEnum.IMPORT, log.getType());
             assertNotNull(log.getCreatedAt());
         }
@@ -451,9 +471,9 @@ class ImportOrderServiceTest {
         @DisplayName("Success – creates EXPENSE transaction linked to import order")
         void complete_CreatesExpenseTransaction() {
             // Arrange
-            ImportOrder order   = makeOrder(1, ImportOrderStatusEnum.PENDING, 750.0);
-            Product     product = makeProduct(1, 20);
-            ImportItem  item    = makeItem(3, order, product, 5, 150.0);
+            ImportOrder order = makeOrder(1, ImportOrderStatusEnum.PENDING, 750.0);
+            Product product = makeProduct(1, 20);
+            ImportItem item = makeItem(3, order, product, 5, 150.0);
 
             when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -471,9 +491,9 @@ class ImportOrderServiceTest {
             verify(transactionRepository).save(txCaptor.capture());
             Transaction tx = txCaptor.getValue();
 
-            assertEquals(750.0,                      tx.getAmount(), 1e-9);
+            assertEquals(750.0, tx.getAmount(), 1e-9);
             assertEquals(TypeTransactionEnum.EXPENSE, tx.getType());
-            assertEquals(order,                       tx.getImportOrder());
+            assertEquals(order, tx.getImportOrder());
             assertNotNull(tx.getContent());
             assertTrue(tx.getContent().contains("1")); // order id in content
             assertNotNull(tx.getTransactionTime());
@@ -514,8 +534,8 @@ class ImportOrderServiceTest {
         void complete_SetsStatusToCompleted() {
             // Arrange
             ImportOrder order = makeOrder(1, ImportOrderStatusEnum.PENDING, 200.0);
-            Product product   = makeProduct(1, 5);
-            ImportItem item   = makeItem(1, order, product, 1, 200.0);
+            Product product = makeProduct(1, 5);
+            ImportItem item = makeItem(1, order, product, 1, 200.0);
 
             when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -535,7 +555,6 @@ class ImportOrderServiceTest {
         }
 
         // -------------------------------------------------------------- failure
-
         @Test
         @DisplayName("Failure – import order not found throws IdInvalidException")
         void complete_OrderNotFound() {
@@ -558,10 +577,10 @@ class ImportOrderServiceTest {
             assertTrue(ex.getMessage().contains("hoàn tất"));
 
             // No side effects should run
-            verify(importItemRepository,      never()).findByImportOrder_Id(anyInt());
-            verify(productRepository,         never()).save(any());
-            verify(inventoryLogsRepository,   never()).save(any());
-            verify(transactionRepository,     never()).save(any());
+            verify(importItemRepository, never()).findByImportOrder_Id(anyInt());
+            verify(productRepository, never()).save(any());
+            verify(inventoryLogsRepository, never()).save(any());
+            verify(transactionRepository, never()).save(any());
         }
 
         @Test
@@ -574,8 +593,8 @@ class ImportOrderServiceTest {
                     () -> importOrderService.updateStatus(1, ImportOrderStatusEnum.COMPLETED));
             assertTrue(ex.getMessage().contains("huỷ"));
 
-            verify(productRepository,       never()).save(any());
-            verify(transactionRepository,   never()).save(any());
+            verify(productRepository, never()).save(any());
+            verify(transactionRepository, never()).save(any());
         }
 
         @Test
@@ -593,10 +612,10 @@ class ImportOrderServiceTest {
             assertTrue(ex.getMessage().contains("đã được xử lý"));
 
             // Side effects must NOT run
-            verify(productRepository,       never()).save(any());
+            verify(productRepository, never()).save(any());
             verify(inventoryLogsRepository, never()).save(any());
             // transactionRepository.save() should NOT be called (only existsByImportOrder_Id was)
-            verify(transactionRepository,   never()).save(any());
+            verify(transactionRepository, never()).save(any());
         }
     }
 
@@ -622,9 +641,9 @@ class ImportOrderServiceTest {
             assertEquals(ImportOrderStatusEnum.CANCELLED, captor.getValue().getStatus());
 
             // Stock, logs, transaction untouched
-            verify(productRepository,       never()).save(any());
+            verify(productRepository, never()).save(any());
             verify(inventoryLogsRepository, never()).save(any());
-            verify(transactionRepository,   never()).save(any());
+            verify(transactionRepository, never()).save(any());
         }
     }
 
@@ -667,7 +686,9 @@ class ImportOrderServiceTest {
         @DisplayName("ReqImportOrderDTO – negative tax violates @PositiveOrZero")
         void validate_NegativeTax() {
             ReqImportItemDTO item = new ReqImportItemDTO();
-            item.setProductId(1); item.setQuantity(1); item.setImportPrice(10.0);
+            item.setProductId(1);
+            item.setQuantity(1);
+            item.setImportPrice(10.0);
 
             ReqImportOrderDTO req = new ReqImportOrderDTO();
             req.setSupplierId(1);
@@ -683,7 +704,9 @@ class ImportOrderServiceTest {
         @DisplayName("ReqImportOrderDTO – negative discount violates @PositiveOrZero")
         void validate_NegativeDiscount() {
             ReqImportItemDTO item = new ReqImportItemDTO();
-            item.setProductId(1); item.setQuantity(1); item.setImportPrice(10.0);
+            item.setProductId(1);
+            item.setQuantity(1);
+            item.setImportPrice(10.0);
 
             ReqImportOrderDTO req = new ReqImportOrderDTO();
             req.setSupplierId(1);

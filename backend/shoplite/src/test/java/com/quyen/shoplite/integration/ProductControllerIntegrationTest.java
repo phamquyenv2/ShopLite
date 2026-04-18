@@ -67,15 +67,16 @@ class ProductControllerIntegrationTest {
         ReqProductUpsertDTO req = new ReqProductUpsertDTO();
         req.setName("Prod IT");
         req.setSku("SKUIT");
-        req.setBarcode(111222L);
+        req.setBarcode("111222");
         req.setCategoryId(categoryItId);
         req.setUnitId(unitItId);
         req.setStock(50);
-        req.setPrice(10.5);
+        req.setSellingPrice(10.5);
+        req.setCostPrice(8.0);
 
         mockMvc.perform(post("/api/v1/products")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("Prod IT"))
                 .andExpect(jsonPath("$.data.categoryId").value(categoryItId));
@@ -89,15 +90,16 @@ class ProductControllerIntegrationTest {
         ReqProductUpsertDTO req = new ReqProductUpsertDTO();
         req.setName("Prod IT");
         req.setSku("SKUIT");
-        req.setBarcode(111222L);
+        req.setBarcode("111222");
         req.setCategoryId(9999);
         req.setUnitId(unitItId);
         req.setStock(50);
-        req.setPrice(10.5);
+        req.setSellingPrice(10.5);
+        req.setCostPrice(8.0);
 
         mockMvc.perform(post("/api/v1/products")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("Category not found with id=9999"));
@@ -109,15 +111,16 @@ class ProductControllerIntegrationTest {
         ReqProductUpsertDTO req = new ReqProductUpsertDTO();
         req.setName("Prod IT");
         req.setSku("SKUIT");
-        req.setBarcode(111222L);
+        req.setBarcode("111222");
         req.setCategoryId(categoryItId);
         req.setUnitId(9999);
         req.setStock(50);
-        req.setPrice(10.5);
+        req.setSellingPrice(10.5);
+        req.setCostPrice(8.0);
 
         mockMvc.perform(post("/api/v1/products")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("Unit not found with id=9999"));
@@ -131,24 +134,26 @@ class ProductControllerIntegrationTest {
                 .unit(unitRepository.findById(unitItId).get())
                 .name("Exst Prod")
                 .sku("SKUIT")
-                .barcode(999L)
+                .barcode("999")
                 .stock(10)
-                .price(10.0)
+                .sellingPrice(10.0)
+                .costPrice(0.0)
                 .createdAt(LocalDateTime.now())
                 .build());
 
         ReqProductUpsertDTO req = new ReqProductUpsertDTO();
         req.setName("Prod IT");
         req.setSku("SKUIT");
-        req.setBarcode(111222L);
+        req.setBarcode("111222");
         req.setCategoryId(categoryItId);
         req.setUnitId(unitItId);
         req.setStock(50);
-        req.setPrice(10.5);
+        req.setSellingPrice(10.5);
+        req.setCostPrice(8.0);
 
         mockMvc.perform(post("/api/v1/products")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value("SKU already exists: SKUIT"));
@@ -162,24 +167,26 @@ class ProductControllerIntegrationTest {
                 .unit(unitRepository.findById(unitItId).get())
                 .name("Exst Prod")
                 .sku("SKU999")
-                .barcode(111222L)
+                .barcode("111222")
                 .stock(10)
-                .price(10.0)
+                .sellingPrice(10.0)
+                .costPrice(0.0)
                 .createdAt(LocalDateTime.now())
                 .build());
 
         ReqProductUpsertDTO req = new ReqProductUpsertDTO();
         req.setName("Prod IT");
         req.setSku("SKUIT");
-        req.setBarcode(111222L);
+        req.setBarcode("111222");
         req.setCategoryId(categoryItId);
         req.setUnitId(unitItId);
         req.setStock(50);
-        req.setPrice(10.5);
+        req.setSellingPrice(10.5);
+        req.setCostPrice(8.0);
 
         mockMvc.perform(post("/api/v1/products")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value("Barcode already exists: 111222"));
@@ -191,15 +198,16 @@ class ProductControllerIntegrationTest {
         ReqProductUpsertDTO req = new ReqProductUpsertDTO();
         req.setName("Prod IT");
         req.setSku("SKUIT");
-        req.setBarcode(111222L);
+        req.setBarcode("111222");
         req.setCategoryId(categoryItId);
         req.setUnitId(unitItId);
         req.setStock(50);
-        req.setPrice(-10.5); // Invalid
+        req.setSellingPrice(-10.5); // Invalid
+        req.setCostPrice(0.0);
 
         mockMvc.perform(post("/api/v1/products")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.errors").isArray());
@@ -211,15 +219,16 @@ class ProductControllerIntegrationTest {
         ReqProductUpsertDTO req = new ReqProductUpsertDTO();
         req.setName("Prod IT");
         req.setSku("SKUIT");
-        req.setBarcode(111222L);
+        req.setBarcode("111222");
         req.setCategoryId(categoryItId);
         req.setUnitId(unitItId);
         req.setStock(-5); // Invalid
-        req.setPrice(10.5);
+        req.setSellingPrice(10.5);
+        req.setCostPrice(8.0);
 
         mockMvc.perform(post("/api/v1/products")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.errors").isArray());
@@ -234,7 +243,8 @@ class ProductControllerIntegrationTest {
                 .name("TestProd")
                 .sku("SKU12345")
                 .stock(10)
-                .price(10.0)
+                .sellingPrice(10.0)
+                .costPrice(0.0)
                 .createdAt(LocalDateTime.now())
                 .isDeleted(false)
                 .build());
@@ -263,7 +273,8 @@ class ProductControllerIntegrationTest {
                 .name("OldProd")
                 .sku("SKU111")
                 .stock(10)
-                .price(10.0)
+                .sellingPrice(10.0)
+                .costPrice(0.0)
                 .createdAt(LocalDateTime.now())
                 .isDeleted(false)
                 .build());
@@ -275,12 +286,13 @@ class ProductControllerIntegrationTest {
         req.setCategoryId(categoryItId);
         req.setUnitId(unitItId);
         req.setStock(20);
-        req.setPrice(25.0);
+        req.setSellingPrice(25.0);
+        req.setCostPrice(12.0);
         req.setVersion(p.getVersion());
 
         mockMvc.perform(put("/api/v1/products/" + p.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("UpdatedProd"))
                 .andExpect(jsonPath("$.data.sku").value("SKU222"));
@@ -299,7 +311,8 @@ class ProductControllerIntegrationTest {
                 .name("ToDelProd")
                 .sku("SKUDEL")
                 .stock(10)
-                .price(10.0)
+                .sellingPrice(10.0)
+                .costPrice(0.0)
                 .createdAt(LocalDateTime.now())
                 .isDeleted(false)
                 .build());

@@ -33,6 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class AuthControllerIntegrationTest {
 
+    private static final String TEST_PHONE = "0900000001";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -50,15 +52,21 @@ class AuthControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        if (!userRepository.existsByUsername("auth_test_user")) {
+        userRepository.findByUsername("auth_test_user").ifPresentOrElse(user -> {
+            user.setPhone(TEST_PHONE);
+            user.setPassword(passwordEncoder.encode("Password123!"));
+            user.setActive(true);
+            userRepository.save(user);
+        }, () -> {
             User user = User.builder()
                     .username("auth_test_user")
+                    .phone(TEST_PHONE)
                     .password(passwordEncoder.encode("Password123!"))
                     .isActive(true)
                     .createdAt(LocalDateTime.now())
                     .build();
             userRepository.save(user);
-        }
+        });
     }
 
     @AfterEach
@@ -75,12 +83,12 @@ class AuthControllerIntegrationTest {
     @DisplayName("login success")
     void login_Success() throws Exception {
         ReqLoginDTO req = new ReqLoginDTO();
-        req.setUsername("auth_test_user");
+        req.setPhone(TEST_PHONE);
         req.setPassword("Password123!");
 
         mockMvc.perform(post("/api/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.data.refreshToken").isNotEmpty());
@@ -90,12 +98,12 @@ class AuthControllerIntegrationTest {
     @DisplayName("login invalid password")
     void login_InvalidPassword() throws Exception {
         ReqLoginDTO req = new ReqLoginDTO();
-        req.setUsername("auth_test_user");
+        req.setPhone(TEST_PHONE);
         req.setPassword("WrongPassword!");
 
         mockMvc.perform(post("/api/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.statusCode").value(401))
                 .andExpect(jsonPath("$.message").value("Tên đăng nhập hoặc mật khẩu không đúng"));
@@ -105,12 +113,12 @@ class AuthControllerIntegrationTest {
     @DisplayName("login unknown username")
     void login_UnknownUsername() throws Exception {
         ReqLoginDTO req = new ReqLoginDTO();
-        req.setUsername("unknown_user");
+        req.setPhone("0999999999");
         req.setPassword("Password123!");
 
         mockMvc.perform(post("/api/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.statusCode").value(401))
                 .andExpect(jsonPath("$.message").value("Tên đăng nhập hoặc mật khẩu không đúng"));
@@ -121,12 +129,12 @@ class AuthControllerIntegrationTest {
     void refresh_Success() throws Exception {
         // 1. Login to get token
         ReqLoginDTO req = new ReqLoginDTO();
-        req.setUsername("auth_test_user");
+        req.setPhone(TEST_PHONE);
         req.setPassword("Password123!");
 
         MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
@@ -134,17 +142,45 @@ class AuthControllerIntegrationTest {
 
         // 2. Perform refresh
         mockMvc.perform(post("/api/v1/auth/refresh")
-                        .header("Authorization", "Bearer " + refreshToken))
+                .header("Authorization", "Bearer " + refreshToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.data.refreshToken").isNotEmpty());
     }
 
     @Test
+    @DisplayName("refresh expired token in DB returns 401")
+    void refresh_ExpiredTokenInDb() throws Exception {
+        // 1. Login to get refresh token
+        ReqLoginDTO req = new ReqLoginDTO();
+        req.setPhone(TEST_PHONE);
+        req.setPassword("Password123!");
+
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        String refreshToken = JsonPath.read(responseBody, "$.data.refreshToken");
+
+        // 2. Force token to be expired in DB
+        UserToken token = userTokenRepository.findByRefreshTokenAndRevokedFalse(refreshToken)
+                .orElseThrow();
+        token.setExpiresAt(LocalDateTime.now().minusSeconds(1));
+        userTokenRepository.save(token);
+
+        // 3. Perform refresh - expect 401
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                .header("Authorization", "Bearer " + refreshToken))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     @DisplayName("refresh invalid token")
     void refresh_InvalidToken() throws Exception {
         mockMvc.perform(post("/api/v1/auth/refresh")
-                        .header("Authorization", "Bearer invalid.fake.token"))
+                .header("Authorization", "Bearer invalid.fake.token"))
                 .andExpect(status().isUnauthorized()); // Spring Security will block it before reaching controller if totally invalid
     }
 
@@ -153,12 +189,12 @@ class AuthControllerIntegrationTest {
     void logout_Success() throws Exception {
         // 1. Login to get token
         ReqLoginDTO req = new ReqLoginDTO();
-        req.setUsername("auth_test_user");
+        req.setPhone(TEST_PHONE);
         req.setPassword("Password123!");
 
         MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
@@ -166,7 +202,7 @@ class AuthControllerIntegrationTest {
 
         // 2. Perform logout - expect 204
         mockMvc.perform(post("/api/v1/auth/logout")
-                        .header("Authorization", "Bearer " + refreshToken))
+                .header("Authorization", "Bearer " + refreshToken))
                 .andExpect(status().isNoContent());
 
         // 3. Verify the token has been marked revoked in the DB

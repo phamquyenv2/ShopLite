@@ -17,11 +17,17 @@ export type Product = {
     unitName?: string | null;
     name: string;
     sku?: string | null;
-    barcode?: number | null;
+    barcode?: string | null;
     stock: number;
-    price: number;
+    costPrice: number;
+    sellingPrice: number;
+    minStock?: number | null;
+    maxStock?: number | null;
+    image?: string | null;
+    status?: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK';
     deleted?: boolean;
     createdAt?: string;
+    updatedAt?: string;
     version?: number | null;
 };
 
@@ -38,9 +44,14 @@ export type ProductUpsert = {
     unitId: number;
     name: string;
     sku?: string | null;
-    barcode?: number | null;
+    barcode?: string | null;
     stock: number;
-    price: number;
+    sellingPrice: number;
+    costPrice: number;
+    minStock?: number | null;
+    maxStock?: number | null;
+    image?: string | null;
+    status?: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK';
     version?: number | null;
 };
 

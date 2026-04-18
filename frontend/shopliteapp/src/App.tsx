@@ -99,7 +99,7 @@ const App: React.FC = () => (
           <PrivateRoute exact path="/inventory/logs" component={InventoryLogs} />
 
           <Route exact path="/">
-            <Redirect to="/home" />
+            <Redirect to="/login" />
           </Route>
         </IonRouterOutlet>
       </IonReactRouter>

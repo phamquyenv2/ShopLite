@@ -43,10 +43,15 @@ const ProductUpsertPage: React.FC = () => {
         name: '',
         sku: '',
         barcode: null,
+        image: null,
         categoryId: 0,
         unitId: 0,
         stock: 0,
-        price: 0,
+        sellingPrice: 0,
+        costPrice: 0,
+        minStock: null,
+        maxStock: null,
+        status: 'ACTIVE',
         version: null,
     });
 
@@ -79,10 +84,15 @@ const ProductUpsertPage: React.FC = () => {
                 name: p.name ?? '',
                 sku: p.sku ?? '',
                 barcode: p.barcode ?? null,
+                image: p.image ?? null,
                 categoryId: p.categoryId ?? 0,
                 unitId: p.unitId ?? 0,
                 stock: p.stock ?? 0,
-                price: p.price ?? 0,
+                sellingPrice: p.sellingPrice ?? 0,
+                costPrice: p.costPrice ?? 0,
+                minStock: p.minStock ?? null,
+                maxStock: p.maxStock ?? null,
+                status: p.status ?? 'ACTIVE',
                 version: p.version ?? null,
             });
         } catch (err) {
@@ -116,9 +126,13 @@ const ProductUpsertPage: React.FC = () => {
                 ...form,
                 name: form.name.trim(),
                 sku: form.sku?.trim() || null,
-                barcode: form.barcode ? Number(form.barcode) : null,
+                barcode: (form.barcode ?? '').trim() ? String(form.barcode).trim() : null,
+                image: (form.image ?? '').trim() ? String(form.image).trim() : null,
                 stock: Number(form.stock) || 0,
-                price: Number(form.price) || 0,
+                sellingPrice: Number(form.sellingPrice) || 0,
+                costPrice: Number(form.costPrice) || 0,
+                minStock: form.minStock === null ? null : Number(form.minStock) || 0,
+                maxStock: form.maxStock === null ? null : Number(form.maxStock) || 0,
             };
 
             if (editingId) {
@@ -179,11 +193,19 @@ const ProductUpsertPage: React.FC = () => {
                         <IonInput
                             label="Barcode"
                             labelPlacement="stacked"
-                            inputmode="numeric"
+                            inputmode="text"
                             value={form.barcode ?? ''}
-                            onIonInput={(e) =>
-                                setForm((p) => ({ ...p, barcode: toNumber(e.detail.value) }))
-                            }
+                            onIonInput={(e) => setForm((p) => ({ ...p, barcode: String(e.detail.value ?? '') }))}
+                        />
+                    </IonItem>
+
+                    <IonItem>
+                        <IonInput
+                            label="Image URL"
+                            labelPlacement="stacked"
+                            inputmode="url"
+                            value={form.image ?? ''}
+                            onIonInput={(e) => setForm((p) => ({ ...p, image: String(e.detail.value ?? '') }))}
                         />
                     </IonItem>
 
@@ -221,6 +243,7 @@ const ProductUpsertPage: React.FC = () => {
                             labelPlacement="stacked"
                             inputmode="numeric"
                             value={form.stock}
+                            disabled={Boolean(editingId)}
                             onIonInput={(e) => {
                                 const n = toNumber(e.detail.value);
                                 setForm((p) => ({ ...p, stock: n === null ? 0 : n }));
@@ -230,15 +253,57 @@ const ProductUpsertPage: React.FC = () => {
 
                     <IonItem>
                         <IonInput
-                            label="Price"
+                            label="Selling price"
                             labelPlacement="stacked"
                             inputmode="decimal"
-                            value={form.price}
+                            value={form.sellingPrice}
                             onIonInput={(e) => {
                                 const n = toNumber(e.detail.value);
-                                setForm((p) => ({ ...p, price: n === null ? 0 : n }));
+                                setForm((p) => ({ ...p, sellingPrice: n === null ? 0 : n }));
                             }}
                         />
+                    </IonItem>
+
+                    <IonItem>
+                        <IonInput
+                            label="Cost price"
+                            labelPlacement="stacked"
+                            inputmode="decimal"
+                            value={form.costPrice}
+                            onIonInput={(e) => {
+                                const n = toNumber(e.detail.value);
+                                setForm((p) => ({ ...p, costPrice: n === null ? 0 : n }));
+                            }}
+                        />
+                    </IonItem>
+
+                    <IonItem>
+                        <IonInput
+                            label="Min stock"
+                            labelPlacement="stacked"
+                            inputmode="numeric"
+                            value={form.minStock ?? ''}
+                            onIonInput={(e) => setForm((p) => ({ ...p, minStock: toNumber(e.detail.value) }))}
+                        />
+                    </IonItem>
+
+                    <IonItem>
+                        <IonInput
+                            label="Max stock"
+                            labelPlacement="stacked"
+                            inputmode="numeric"
+                            value={form.maxStock ?? ''}
+                            onIonInput={(e) => setForm((p) => ({ ...p, maxStock: toNumber(e.detail.value) }))}
+                        />
+                    </IonItem>
+
+                    <IonItem>
+                        <IonLabel>Status</IonLabel>
+                        <IonSelect value={form.status ?? 'ACTIVE'} onIonChange={(e) => setForm((p) => ({ ...p, status: e.detail.value }))}>
+                            <IonSelectOption value="ACTIVE">ACTIVE</IonSelectOption>
+                            <IonSelectOption value="INACTIVE">INACTIVE</IonSelectOption>
+                            <IonSelectOption value="OUT_OF_STOCK">OUT_OF_STOCK</IonSelectOption>
+                        </IonSelect>
                     </IonItem>
                 </IonList>
 

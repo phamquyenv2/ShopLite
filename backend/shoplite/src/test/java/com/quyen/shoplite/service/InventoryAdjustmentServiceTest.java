@@ -36,9 +36,12 @@ import static org.mockito.Mockito.*;
 class InventoryAdjustmentServiceTest {
 
     // ------------------------------------------------------------------ mocks
-    @Mock private InventoryAdjustmentRepository adjustmentRepository;
-    @Mock private InventoryLogsRepository       inventoryLogsRepository;
-    @Mock private ProductRepository             productRepository;
+    @Mock
+    private InventoryAdjustmentRepository adjustmentRepository;
+    @Mock
+    private InventoryLogsRepository inventoryLogsRepository;
+    @Mock
+    private ProductRepository productRepository;
 
     @InjectMocks
     private InventoryAdjustmentService service;
@@ -66,11 +69,15 @@ class InventoryAdjustmentServiceTest {
         p.setName("Product " + id);
         p.setSku("SKU-" + id);
         p.setStock(stock);
-        p.setPrice(10.0);
+        p.setSellingPrice(10.0);
+        p.setCostPrice(0.0);
         return p;
     }
 
-    /** Single-item adjustment request: productId, actualQty with default header fields */
+    /**
+     * Single-item adjustment request: productId, actualQty with default header
+     * fields
+     */
     private ReqInventoryAdjustmentDTO singleItemRequest(int productId, int actualQty) {
         ReqAdjustmentItemDTO item = new ReqAdjustmentItemDTO();
         item.setProductId(productId);
@@ -157,14 +164,14 @@ class InventoryAdjustmentServiceTest {
             service.create(req);
 
             // Assert
-            ArgumentCaptor<InventoryAdjustment> adjCaptor =
-                    ArgumentCaptor.forClass(InventoryAdjustment.class);
+            ArgumentCaptor<InventoryAdjustment> adjCaptor
+                    = ArgumentCaptor.forClass(InventoryAdjustment.class);
             verify(adjustmentRepository).save(adjCaptor.capture());
             InventoryAdjustment captured = adjCaptor.getValue();
 
-            assertEquals("Year-end count",        captured.getReason());
-            assertEquals("full warehouse check",  captured.getNote());
-            assertEquals("manager",               captured.getCreatedBy());
+            assertEquals("Year-end count", captured.getReason());
+            assertEquals("full warehouse check", captured.getNote());
+            assertEquals("manager", captured.getCreatedBy());
             assertNotNull(captured.getCreatedAt());
         }
 
@@ -188,12 +195,12 @@ class InventoryAdjustmentServiceTest {
             verify(inventoryLogsRepository).save(logCaptor.capture());
             InventoryLogs log = logCaptor.getValue();
 
-            assertEquals(product,                  log.getProduct());
-            assertEquals(savedAdj,                 log.getAdjustment());
-            assertEquals(3,                        log.getQuantityIn());
+            assertEquals(product, log.getProduct());
+            assertEquals(savedAdj, log.getAdjustment());
+            assertEquals(3, log.getQuantityIn());
             assertNull(log.getQuantityOut());
-            assertEquals(13,                       log.getBalanceAfter());
-            assertEquals(13,                       log.getCurrentStock());
+            assertEquals(13, log.getBalanceAfter());
+            assertEquals(13, log.getCurrentStock());
             assertEquals(TypeInventoryEnum.ADJUST, log.getType());
             assertNotNull(log.getCreatedAt());
         }
@@ -219,9 +226,9 @@ class InventoryAdjustmentServiceTest {
             InventoryLogs log = logCaptor.getValue();
 
             assertNull(log.getQuantityIn());
-            assertEquals(6,  log.getQuantityOut());
-            assertEquals(9,  log.getBalanceAfter());
-            assertEquals(9,  log.getCurrentStock());
+            assertEquals(6, log.getQuantityOut());
+            assertEquals(9, log.getBalanceAfter());
+            assertEquals(9, log.getCurrentStock());
             assertEquals(TypeInventoryEnum.ADJUST, log.getType());
         }
 
@@ -254,9 +261,11 @@ class InventoryAdjustmentServiceTest {
             Product p2 = makeProduct(2, 20);
 
             ReqAdjustmentItemDTO i1 = new ReqAdjustmentItemDTO();
-            i1.setProductId(1); i1.setActualQuantity(12);
+            i1.setProductId(1);
+            i1.setActualQuantity(12);
             ReqAdjustmentItemDTO i2 = new ReqAdjustmentItemDTO();
-            i2.setProductId(2); i2.setActualQuantity(17);
+            i2.setProductId(2);
+            i2.setActualQuantity(17);
 
             ReqInventoryAdjustmentDTO req = new ReqInventoryAdjustmentDTO();
             req.setReason("Multi-product count");
@@ -382,10 +391,12 @@ class InventoryAdjustmentServiceTest {
             Product p1 = makeProduct(1, 10);
 
             ReqAdjustmentItemDTO i1 = new ReqAdjustmentItemDTO();
-            i1.setProductId(1);   i1.setActualQuantity(15); // delta=+5
+            i1.setProductId(1);
+            i1.setActualQuantity(15); // delta=+5
 
             ReqAdjustmentItemDTO i2 = new ReqAdjustmentItemDTO();
-            i2.setProductId(999); i2.setActualQuantity(5);  // product missing
+            i2.setProductId(999);
+            i2.setActualQuantity(5);  // product missing
 
             ReqInventoryAdjustmentDTO req = new ReqInventoryAdjustmentDTO();
             req.setReason("Count");
@@ -413,9 +424,11 @@ class InventoryAdjustmentServiceTest {
             Product p2 = makeProduct(2, 8);  // actual=8  → delta=0 → should throw
 
             ReqAdjustmentItemDTO i1 = new ReqAdjustmentItemDTO();
-            i1.setProductId(1); i1.setActualQuantity(15);
+            i1.setProductId(1);
+            i1.setActualQuantity(15);
             ReqAdjustmentItemDTO i2 = new ReqAdjustmentItemDTO();
-            i2.setProductId(2); i2.setActualQuantity(8);  // zero delta
+            i2.setProductId(2);
+            i2.setActualQuantity(8);  // zero delta
 
             ReqInventoryAdjustmentDTO req = new ReqInventoryAdjustmentDTO();
             req.setReason("Count");
@@ -435,7 +448,7 @@ class InventoryAdjustmentServiceTest {
             verify(productRepository, never()).save(any());
             verify(inventoryLogsRepository, never()).save(any());
             assertEquals(10, p1.getStock());
-            assertEquals(8,  p2.getStock());
+            assertEquals(8, p2.getStock());
         }
     }
 
@@ -450,7 +463,7 @@ class InventoryAdjustmentServiceTest {
         @DisplayName("Success – returns adjustment with its logs")
         void findById_Success() {
             InventoryAdjustment adj = savedAdjustment(1);
-            InventoryLogs logEntry  = new InventoryLogs();
+            InventoryLogs logEntry = new InventoryLogs();
             logEntry.setId(10);
             logEntry.setType(TypeInventoryEnum.ADJUST);
 
@@ -460,9 +473,9 @@ class InventoryAdjustmentServiceTest {
             ResInventoryAdjustmentDTO result = service.findById(1);
 
             assertNotNull(result);
-            assertEquals(1,               result.getId());
+            assertEquals(1, result.getId());
             assertEquals("Stock count Q1", result.getReason());
-            assertEquals(1,               result.getLogs().size());
+            assertEquals(1, result.getLogs().size());
 
             verify(adjustmentRepository).findById(1);
             verify(inventoryLogsRepository).findByAdjustment_Id(1);
@@ -528,7 +541,8 @@ class InventoryAdjustmentServiceTest {
         @DisplayName("ReqInventoryAdjustmentDTO – blank reason fails @NotBlank")
         void validate_BlankReason() {
             ReqAdjustmentItemDTO item = new ReqAdjustmentItemDTO();
-            item.setProductId(1); item.setActualQuantity(5);
+            item.setProductId(1);
+            item.setActualQuantity(5);
 
             ReqInventoryAdjustmentDTO req = new ReqInventoryAdjustmentDTO();
             req.setReason("   ");        // blank
@@ -544,7 +558,8 @@ class InventoryAdjustmentServiceTest {
         @DisplayName("ReqInventoryAdjustmentDTO – null reason fails @NotBlank")
         void validate_NullReason() {
             ReqAdjustmentItemDTO item = new ReqAdjustmentItemDTO();
-            item.setProductId(1); item.setActualQuantity(5);
+            item.setProductId(1);
+            item.setActualQuantity(5);
 
             ReqInventoryAdjustmentDTO req = new ReqInventoryAdjustmentDTO();
             req.setReason(null);
@@ -560,7 +575,8 @@ class InventoryAdjustmentServiceTest {
         @DisplayName("ReqInventoryAdjustmentDTO – null createdBy fails @NotBlank")
         void validate_NullCreatedBy() {
             ReqAdjustmentItemDTO item = new ReqAdjustmentItemDTO();
-            item.setProductId(1); item.setActualQuantity(5);
+            item.setProductId(1);
+            item.setActualQuantity(5);
 
             ReqInventoryAdjustmentDTO req = new ReqInventoryAdjustmentDTO();
             req.setReason("Count");

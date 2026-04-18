@@ -68,7 +68,7 @@ const Products: React.FC = () => {
                                     {p.categoryName ?? `Category #${p.categoryId}`} • {p.unitName ?? `Unit #${p.unitId}`}
                                 </p>
                                 <p>
-                                    Stock: {p.stock} • Price: {p.price}
+                                    Stock: {p.stock} • Selling: {p.sellingPrice}
                                 </p>
                             </IonLabel>
                         </IonItem>

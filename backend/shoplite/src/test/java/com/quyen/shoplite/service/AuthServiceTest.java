@@ -19,6 +19,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.oauth2.jwt.Jwt;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -48,7 +49,7 @@ class AuthServiceTest {
         // Arrange
         String username = "testuser";
         String password = "password";
-        
+
         Role role = new Role();
         role.setName("ADMIN");
 
@@ -60,7 +61,7 @@ class AuthServiceTest {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(new UsernamePasswordAuthenticationToken(username, password));
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
-        
+
         when(securityUtil.generateAccessToken(username, "ADMIN")).thenReturn("access_token");
         when(securityUtil.generateRefreshToken(username)).thenReturn("refresh_token");
         when(securityUtil.getRefreshTokenExpiration()).thenReturn(3600L);
@@ -72,10 +73,10 @@ class AuthServiceTest {
         assertNotNull(res);
         assertEquals("access_token", res.getAccessToken());
         assertEquals("refresh_token", res.getRefreshToken());
-        
+
         ArgumentCaptor<UserToken> tokenCaptor = ArgumentCaptor.forClass(UserToken.class);
         verify(userTokenRepository, times(1)).save(tokenCaptor.capture());
-        
+
         UserToken savedToken = tokenCaptor.getValue();
         assertEquals("refresh_token", savedToken.getRefreshToken());
         assertFalse(savedToken.isRevoked());
@@ -124,10 +125,11 @@ class AuthServiceTest {
         UserToken oldToken = new UserToken();
         oldToken.setRefreshToken("old_refresh_token");
         oldToken.setRevoked(false);
+        oldToken.setExpiresAt(LocalDateTime.now().plusMinutes(5));
 
         when(userTokenRepository.findByRefreshTokenAndRevokedFalse("old_refresh_token")).thenReturn(Optional.of(oldToken));
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
-        
+
         when(securityUtil.generateAccessToken("testuser", "USER")).thenReturn("new_access");
         when(securityUtil.generateRefreshToken("testuser")).thenReturn("new_refresh");
         when(securityUtil.getRefreshTokenExpiration()).thenReturn(3600L);
@@ -139,9 +141,34 @@ class AuthServiceTest {
         assertNotNull(res);
         assertEquals("new_access", res.getAccessToken());
         assertEquals("new_refresh", res.getRefreshToken());
-        
+
         verify(userTokenRepository, times(2)).save(any(UserToken.class));
         assertTrue(oldToken.isRevoked()); // Verify old token is revoked
+    }
+
+    @Test
+    void refresh_expiredTokenInDb_throwsExceptionAndRevokes() {
+        // Arrange
+        Jwt refreshJwt = mock(Jwt.class);
+        when(refreshJwt.getTokenValue()).thenReturn("old_refresh_token");
+
+        UserToken oldToken = new UserToken();
+        oldToken.setRefreshToken("old_refresh_token");
+        oldToken.setRevoked(false);
+        oldToken.setExpiresAt(LocalDateTime.now().minusSeconds(1));
+
+        when(userTokenRepository.findByRefreshTokenAndRevokedFalse("old_refresh_token"))
+                .thenReturn(Optional.of(oldToken));
+
+        // Act & Assert
+        UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> authService.refresh(refreshJwt));
+        assertTrue(ex.getMessage().contains("hết hạn"));
+
+        assertTrue(oldToken.isRevoked());
+        verify(userTokenRepository, times(1)).save(oldToken);
+        verifyNoInteractions(userRepository);
+        verify(securityUtil, never()).generateAccessToken(any(), any());
+        verify(securityUtil, never()).generateRefreshToken(any());
     }
 
     @Test

@@ -25,6 +25,18 @@ export const STORAGE_KEYS = {
     user: 'userdata',
 } as const;
 
+export const AUTH_INVALID_EVENT = 'shoplite:auth-invalid';
+
+export type AuthInvalidReason = 'missing_refresh_token' | 'refresh_failed' | 'unauthorized';
+
+export const emitAuthInvalid = (reason: AuthInvalidReason): void => {
+    try {
+        globalThis.dispatchEvent(new CustomEvent(AUTH_INVALID_EVENT, { detail: { reason } }));
+    } catch {
+        // ignore
+    }
+};
+
 export const endpoints = {
     // auth
     login: '/api/v1/auth/login',
@@ -359,12 +371,14 @@ export const authApis = (token?: string | null): ApiClient => {
         onUnauthorized: async ({ retry, originalPath }) => {
             // Avoid refresh loops.
             if (originalPath === endpoints.refresh || originalPath === endpoints.logout || originalPath === endpoints.login) {
+                emitAuthInvalid('unauthorized');
                 throw new ApiError('Unauthorized', { status: 401, data: null, headers: new Headers() });
             }
 
             const refreshToken = getStoredRefreshToken();
             if (!refreshToken) {
                 clearStoredAuth();
+                emitAuthInvalid('missing_refresh_token');
                 throw new ApiError('Missing refresh token', { status: 401, data: null, headers: new Headers() });
             }
 
@@ -386,6 +400,7 @@ export const authApis = (token?: string | null): ApiClient => {
                 }
 
                 clearStoredAuth();
+                emitAuthInvalid('refresh_failed');
                 throw new ApiError('Refresh token failed', {
                     status: 401,
                     data: res.data,
@@ -393,6 +408,7 @@ export const authApis = (token?: string | null): ApiClient => {
                 });
             } catch (refreshErr) {
                 clearStoredAuth();
+                emitAuthInvalid('refresh_failed');
                 throw refreshErr;
             }
         },

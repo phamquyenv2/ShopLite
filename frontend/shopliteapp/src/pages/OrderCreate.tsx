@@ -78,7 +78,7 @@ const OrderCreatePage: React.FC = () => {
             {
                 productId: first.id,
                 quantity: 1,
-                price: first.price ?? 0,
+                price: first.sellingPrice ?? 0,
             },
         ]);
     };
@@ -184,7 +184,7 @@ const OrderCreatePage: React.FC = () => {
                                         onIonChange={(e) => {
                                             const productId = Number(e.detail.value);
                                             const p = products.find((x) => x.id === productId);
-                                            updateItem(idx, { productId, price: p?.price ?? it.price });
+                                            updateItem(idx, { productId, price: p?.sellingPrice ?? it.price });
                                         }}
                                     >
                                         {products.map((p) => (

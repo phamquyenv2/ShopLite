@@ -39,16 +39,26 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ImportOrderControllerIntegrationTest {
 
     // ----------------------------------------------------------------- injects
-    @Autowired private MockMvc              mockMvc;
-    @Autowired private ObjectMapper         objectMapper;
-    @Autowired private SupplierRepository   supplierRepository;
-    @Autowired private CategoryRepository   categoryRepository;
-    @Autowired private UnitRepository        unitRepository;
-    @Autowired private ProductRepository    productRepository;
-    @Autowired private ImportOrderRepository importOrderRepository;
-    @Autowired private ImportItemRepository  importItemRepository;
-    @Autowired private InventoryLogsRepository inventoryLogsRepository;
-    @Autowired private TransactionRepository transactionRepository;
+    @Autowired
+    private MockMvc mockMvc;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private SupplierRepository supplierRepository;
+    @Autowired
+    private CategoryRepository categoryRepository;
+    @Autowired
+    private UnitRepository unitRepository;
+    @Autowired
+    private ProductRepository productRepository;
+    @Autowired
+    private ImportOrderRepository importOrderRepository;
+    @Autowired
+    private ImportItemRepository importItemRepository;
+    @Autowired
+    private InventoryLogsRepository inventoryLogsRepository;
+    @Autowired
+    private TransactionRepository transactionRepository;
 
     // ---------------------------------------------------------- shared test IDs
     private Integer supplierId;
@@ -74,7 +84,8 @@ class ImportOrderControllerIntegrationTest {
                 .name("Import Product A")
                 .sku("IMP-SKU-A-" + System.nanoTime())
                 .stock(10)
-                .price(50.0)
+                .sellingPrice(50.0)
+                .costPrice(0.0)
                 .isDeleted(false)
                 .createdAt(LocalDateTime.now())
                 .build());
@@ -85,7 +96,8 @@ class ImportOrderControllerIntegrationTest {
                 .name("Import Product B")
                 .sku("IMP-SKU-B-" + System.nanoTime())
                 .stock(5)
-                .price(30.0)
+                .sellingPrice(30.0)
+                .costPrice(0.0)
                 .isDeleted(false)
                 .createdAt(LocalDateTime.now())
                 .build());
@@ -108,24 +120,28 @@ class ImportOrderControllerIntegrationTest {
         return req;
     }
 
-    /** POST /import-orders and return the created order id from response */
+    /**
+     * POST /import-orders and return the created order id from response
+     */
     private Integer createImportOrder(ReqImportOrderDTO req) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/import-orders")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString())
                 .path("data").path("id").asInt();
     }
 
-    /** PATCH /import-orders/{id}/status to COMPLETED */
+    /**
+     * PATCH /import-orders/{id}/status to COMPLETED
+     */
     private void completeImportOrder(Integer id) throws Exception {
         ReqUpdateImportOrderStatusDTO statusReq = new ReqUpdateImportOrderStatusDTO();
         statusReq.setStatus(ImportOrderStatusEnum.COMPLETED);
         mockMvc.perform(put("/api/v1/import-orders/" + id + "/status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(statusReq)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(statusReq)))
                 .andExpect(status().isOk());
     }
 
@@ -143,8 +159,8 @@ class ImportOrderControllerIntegrationTest {
             ReqImportOrderDTO req = validRequest();
 
             mockMvc.perform(post("/api/v1/import-orders")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(req)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.statusCode").value(201))
                     .andExpect(jsonPath("$.data.id").isNumber())
@@ -177,8 +193,8 @@ class ImportOrderControllerIntegrationTest {
             // tax and discount intentionally omitted → null
 
             mockMvc.perform(post("/api/v1/import-orders")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(req)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.data.totalAmount").value(100.0))
                     .andExpect(jsonPath("$.data.tax").value(0.0))
@@ -189,9 +205,13 @@ class ImportOrderControllerIntegrationTest {
         @DisplayName("Success – multi-item order, each item's subTotal correct")
         void createImportOrder_MultiItem_Success() throws Exception {
             ReqImportItemDTO i1 = new ReqImportItemDTO();
-            i1.setProductId(productId);  i1.setQuantity(4); i1.setImportPrice(10.0); // 40
+            i1.setProductId(productId);
+            i1.setQuantity(4);
+            i1.setImportPrice(10.0); // 40
             ReqImportItemDTO i2 = new ReqImportItemDTO();
-            i2.setProductId(product2Id); i2.setQuantity(2); i2.setImportPrice(15.0); // 30
+            i2.setProductId(product2Id);
+            i2.setQuantity(2);
+            i2.setImportPrice(15.0); // 30
             // total = 70
 
             ReqImportOrderDTO req = new ReqImportOrderDTO();
@@ -199,15 +219,14 @@ class ImportOrderControllerIntegrationTest {
             req.setItems(List.of(i1, i2));
 
             mockMvc.perform(post("/api/v1/import-orders")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(req)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.data.totalAmount").value(70.0))
                     .andExpect(jsonPath("$.data.items.length()").value(2));
         }
 
         // ---- failures ----
-
         @Test
         @DisplayName("Failure – missing supplierId → 400 with field error")
         void createImportOrder_NullSupplierId_Failure() throws Exception {
@@ -215,8 +234,8 @@ class ImportOrderControllerIntegrationTest {
             req.setSupplierId(null);
 
             mockMvc.perform(post("/api/v1/import-orders")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(req)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.statusCode").value(400))
                     .andExpect(jsonPath("$.message").value(containsString("supplierId")))
@@ -230,8 +249,8 @@ class ImportOrderControllerIntegrationTest {
             req.setSupplierId(99999);
 
             mockMvc.perform(post("/api/v1/import-orders")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(req)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.statusCode").value(400))
                     .andExpect(jsonPath("$.message").value(containsString("Supplier")))
@@ -245,8 +264,8 @@ class ImportOrderControllerIntegrationTest {
             req.setItems(List.of());
 
             mockMvc.perform(post("/api/v1/import-orders")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(req)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.statusCode").value(400))
                     .andExpect(jsonPath("$.message").value(containsString("items")))
@@ -266,8 +285,8 @@ class ImportOrderControllerIntegrationTest {
             req.setItems(List.of(item));
 
             mockMvc.perform(post("/api/v1/import-orders")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(req)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.statusCode").value(400))
                     .andExpect(jsonPath("$.message").value(containsString("Product")))
@@ -287,8 +306,8 @@ class ImportOrderControllerIntegrationTest {
             req.setItems(List.of(item));
 
             mockMvc.perform(post("/api/v1/import-orders")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(req)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.statusCode").value(400))
                     .andExpect(jsonPath("$.errors").isArray())
@@ -309,8 +328,8 @@ class ImportOrderControllerIntegrationTest {
             req.setItems(List.of(item));
 
             mockMvc.perform(post("/api/v1/import-orders")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(req)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.statusCode").value(400))
                     .andExpect(jsonPath("$.errors").isArray());
@@ -329,8 +348,8 @@ class ImportOrderControllerIntegrationTest {
             req.setItems(List.of(item));
 
             mockMvc.perform(post("/api/v1/import-orders")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(req)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.statusCode").value(400))
                     .andExpect(jsonPath("$.errors").isArray())
@@ -345,8 +364,8 @@ class ImportOrderControllerIntegrationTest {
             req.setTax(-10.0);
 
             mockMvc.perform(post("/api/v1/import-orders")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(req)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.statusCode").value(400))
                     .andExpect(jsonPath("$.errors").isArray())
@@ -360,8 +379,8 @@ class ImportOrderControllerIntegrationTest {
             req.setDiscount(-5.0);
 
             mockMvc.perform(post("/api/v1/import-orders")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(req)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.statusCode").value(400))
                     .andExpect(jsonPath("$.errors").isArray())
@@ -382,8 +401,8 @@ class ImportOrderControllerIntegrationTest {
             req.setDiscount(500.0);    // makes total negative
 
             mockMvc.perform(post("/api/v1/import-orders")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(req)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.statusCode").value(400))
                     .andExpect(jsonPath("$.message").value(containsString("âm")));
@@ -471,8 +490,8 @@ class ImportOrderControllerIntegrationTest {
             statusReq.setStatus(ImportOrderStatusEnum.COMPLETED);
 
             mockMvc.perform(put("/api/v1/import-orders/" + id + "/status")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(statusReq)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(statusReq)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.statusCode").value(200))
                     .andExpect(jsonPath("$.data.id").value(id))
@@ -520,7 +539,7 @@ class ImportOrderControllerIntegrationTest {
             // Filter to those linked to our import order
             txs = txs.stream()
                     .filter(t -> t.getImportOrder() != null
-                            && t.getImportOrder().getId().equals(id))
+                    && t.getImportOrder().getId().equals(id))
                     .toList();
 
             assertThat(txs).hasSize(1);
@@ -538,9 +557,13 @@ class ImportOrderControllerIntegrationTest {
             // item1: productId qty=3  (stock 10 → 13)
             // item2: product2Id qty=2 (stock 5 → 7)
             ReqImportItemDTO i1 = new ReqImportItemDTO();
-            i1.setProductId(productId);  i1.setQuantity(3); i1.setImportPrice(10.0);
+            i1.setProductId(productId);
+            i1.setQuantity(3);
+            i1.setImportPrice(10.0);
             ReqImportItemDTO i2 = new ReqImportItemDTO();
-            i2.setProductId(product2Id); i2.setQuantity(2); i2.setImportPrice(15.0);
+            i2.setProductId(product2Id);
+            i2.setQuantity(2);
+            i2.setImportPrice(15.0);
 
             ReqImportOrderDTO req = new ReqImportOrderDTO();
             req.setSupplierId(supplierId);
@@ -559,7 +582,6 @@ class ImportOrderControllerIntegrationTest {
         }
 
         // ---- failures ----
-
         @Test
         @DisplayName("Failure – duplicate completion → 400, side effects not doubled")
         void completeImportOrder_DuplicateCompletion_Failure() throws Exception {
@@ -573,8 +595,8 @@ class ImportOrderControllerIntegrationTest {
             statusReq.setStatus(ImportOrderStatusEnum.COMPLETED);
 
             mockMvc.perform(put("/api/v1/import-orders/" + id + "/status")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(statusReq)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(statusReq)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.statusCode").value(400))
                     .andExpect(jsonPath("$.message").value(containsString("hoàn tất")));
@@ -588,7 +610,7 @@ class ImportOrderControllerIntegrationTest {
             List<Transaction> txs = transactionRepository.findAllByType(TypeTransactionEnum.EXPENSE)
                     .stream()
                     .filter(t -> t.getImportOrder() != null
-                            && t.getImportOrder().getId().equals(id))
+                    && t.getImportOrder().getId().equals(id))
                     .toList();
             assertThat(txs).hasSize(1);
         }
@@ -600,8 +622,8 @@ class ImportOrderControllerIntegrationTest {
             statusReq.setStatus(ImportOrderStatusEnum.COMPLETED);
 
             mockMvc.perform(put("/api/v1/import-orders/99999/status")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(statusReq)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(statusReq)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.statusCode").value(400))
                     .andExpect(jsonPath("$.message").value(containsString("ImportOrder")))
@@ -614,8 +636,8 @@ class ImportOrderControllerIntegrationTest {
             Integer id = createImportOrder(validRequest());
 
             mockMvc.perform(put("/api/v1/import-orders/" + id + "/status")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"status\": null}"))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"status\": null}"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.statusCode").value(400));
         }
@@ -637,8 +659,8 @@ class ImportOrderControllerIntegrationTest {
             statusReq.setStatus(ImportOrderStatusEnum.CANCELLED);
 
             mockMvc.perform(put("/api/v1/import-orders/" + id + "/status")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(statusReq)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(statusReq)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.status").value("CANCELLED"));
 
@@ -650,7 +672,7 @@ class ImportOrderControllerIntegrationTest {
             assertThat(inventoryLogsRepository.findAllByProduct_Id(productId)).isEmpty();
             assertThat(transactionRepository.findAllByType(TypeTransactionEnum.EXPENSE)
                     .stream().filter(t -> t.getImportOrder() != null
-                            && t.getImportOrder().getId().equals(id))
+                    && t.getImportOrder().getId().equals(id))
                     .toList()).isEmpty();
         }
 
@@ -664,14 +686,14 @@ class ImportOrderControllerIntegrationTest {
 
             // First cancel
             mockMvc.perform(put("/api/v1/import-orders/" + id + "/status")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(cancelReq)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(cancelReq)))
                     .andExpect(status().isOk());
 
             // Second cancel
             mockMvc.perform(put("/api/v1/import-orders/" + id + "/status")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(cancelReq)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(cancelReq)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.statusCode").value(400))
                     .andExpect(jsonPath("$.message").value(containsString("huỷ")));

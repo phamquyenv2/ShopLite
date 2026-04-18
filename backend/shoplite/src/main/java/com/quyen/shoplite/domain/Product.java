@@ -33,15 +33,30 @@ public class Product {
     private String sku;
 
     @Column(unique = true)
-    private Long barcode;
+    private String barcode;
 
     @Column(nullable = false)
     private Integer stock;
 
-    @Column(nullable = false)
-    private Double price;
+    @Column(name = "cost_price", nullable = false)
+    private Double costPrice;
 
-    /** Optimistic locking version */
+    @Column(name = "selling_price", nullable = false)
+    private Double sellingPrice;
+
+    @Column(name = "min_stock")
+    private Integer minStock;
+
+    @Column(name = "max_stock")
+    private Integer maxStock;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ProductStatus status;
+
+    /**
+     * Optimistic locking version
+     */
     @Version
     private Integer version;
 
@@ -53,4 +68,35 @@ public class Product {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = now;
+        }
+        if (updatedAt == null) {
+            updatedAt = now;
+        }
+        if (status == null) {
+            status = ProductStatus.ACTIVE;
+        }
+        if (costPrice == null) {
+            costPrice = 0d;
+        }
+        if (sellingPrice == null) {
+            sellingPrice = 0d;
+        }
+        if (stock == null) {
+            stock = 0;
+        }
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

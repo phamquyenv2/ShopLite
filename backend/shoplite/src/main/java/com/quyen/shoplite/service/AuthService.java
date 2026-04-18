@@ -97,6 +97,13 @@ public class AuthService {
         UserToken token = userTokenRepository.findByRefreshTokenAndRevokedFalse(tokenValue)
                 .orElseThrow(() -> new UnauthorizedException("Refresh token không tồn tại hoặc đã bị thu hồi"));
 
+        LocalDateTime now = LocalDateTime.now();
+        if (token.getExpiresAt() == null || !token.getExpiresAt().isAfter(now)) {
+            token.setRevoked(true);
+            userTokenRepository.save(token);
+            throw new UnauthorizedException("Refresh token đã hết hạn");
+        }
+
         String username = refreshJwt.getSubject();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy user: " + username));

@@ -11,12 +11,14 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ReqUpdateProductDTO {
+
     @Positive(message = "categoryId must be greater than 0")
-private Integer categoryId;
+    private Integer categoryId;
     private String name;
 
-    @Positive(message = "price phải lớn hơn 0")
-    @PositiveOrZero(message = "price must be greater than or equal to 0")
-private Double price;
-}
+    @PositiveOrZero(message = "sellingPrice must be greater than or equal to 0")
+    private Double sellingPrice;
 
+    @PositiveOrZero(message = "costPrice must be greater than or equal to 0")
+    private Double costPrice;
+}

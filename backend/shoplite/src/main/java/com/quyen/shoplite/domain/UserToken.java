@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import org.checkerframework.checker.units.qual.C;
+
 @Entity
 @Table(name = "user_tokens")
 @Getter
@@ -34,7 +36,7 @@ public class UserToken {
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
-    @Column(nullable = false)
+    @Column(name = "revoked", columnDefinition = "TINYINT(1)", nullable = false)
     @Builder.Default
     private boolean revoked = false;
 

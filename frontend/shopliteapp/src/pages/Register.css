@@ -27,7 +27,7 @@
     --color: #000000;
     font-family: var(--ion-font-family);
     font-size: 20px;
-    font-weight: bold;
+    font-weight: 700;
     text-align: start;
 }
 
@@ -74,7 +74,7 @@
 
 .register-title {
     font-size: 32px;
-    font-weight: 800;
+    font-weight: 700;
     color: #1a1a1a;
     margin: 0 0 6px 0;
     letter-spacing: -0.02em;

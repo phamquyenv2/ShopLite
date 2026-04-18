@@ -128,12 +128,6 @@ const Home: React.FC = () => {
         </div>
 
         <div className="bottom-spacer"></div>
-
-        <IonFab vertical="bottom" horizontal="end" slot="fixed" className="home-fab">
-          <IonFabButton>
-            <IonIcon icon={addOutline} />
-          </IonFabButton>
-        </IonFab>
       </IonContent>
 
       {/* Thanh Tab giả lập theo ảnh */}
