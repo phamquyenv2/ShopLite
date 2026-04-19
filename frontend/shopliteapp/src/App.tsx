@@ -9,7 +9,9 @@ import OrderCreate from './pages/OrderCreate';
 import SalesPage from './pages/SalesPage';
 import DraftOrdersPage from './pages/DraftOrdersPage';
 import ProductsPage from './pages/ProductsPage';
+import ProductAddPage from './pages/ProductAddPage';
 import ProductDetailPage from './pages/ProductDetailPage';
+import ProductEditPage from './pages/ProductEditPage';
 import { AuthProvider } from './auth/AuthContext';
 import { useAuth } from './auth/useAuth';
 import PrivateRoute from './auth/PrivateRoute';
@@ -74,7 +76,9 @@ const App: React.FC = () => (
           <PrivateRoute exact path="/home" component={Home} />
 
           <PrivateRoute exact path="/products" component={ProductsPage} />
+          <PrivateRoute exact path="/product/new" component={ProductAddPage} />
           <PrivateRoute exact path="/products/:id" component={ProductDetailPage} />
+          <PrivateRoute exact path="/products/:id/edit" component={ProductEditPage} />
           
           <PrivateRoute exact path="/orders" component={Orders} />
           <PrivateRoute exact path="/orders/draft" component={DraftOrdersPage} />

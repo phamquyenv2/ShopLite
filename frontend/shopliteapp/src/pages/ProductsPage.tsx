@@ -183,7 +183,7 @@ const ProductsPage: React.FC = () => {
                 </div>
 
                 <IonFab vertical="bottom" horizontal="end" slot="fixed" style={{ marginBottom: '20px', marginRight: '8px' }}>
-                    <IonFabButton className="products-fab" onClick={() => setToast('Tính năng thêm sản phẩm đang phát triển')}>
+                    <IonFabButton className="products-fab" onClick={() => ionRouter.push('/product/new')}>
                         <IonIcon icon={addOutline} />
                     </IonFabButton>
                 </IonFab>

@@ -108,11 +108,7 @@ const ProductDetailPage: React.FC = () => {
                         </button>
                         <div className="product-detail-title">Chi tiết hàng hóa</div>
                     </div>
-                    <div className="products-toolbar-right" slot="end">
-                        <button className="product-detail-icon" type="button" aria-label="Options">
-                            <IonIcon icon={ellipsisVerticalOutline} />
-                        </button>
-                    </div>
+
                 </IonToolbar>
             </IonHeader>
 
@@ -235,7 +231,7 @@ const ProductDetailPage: React.FC = () => {
             </IonContent>
 
             <div className="pd-bottom-bar">
-                <button className="pd-btn pd-btn-outline">
+                <button className="pd-btn pd-btn-outline" onClick={() => ionRouter.push(`/products/${id}/edit`)}>
                     <IonIcon icon={pencilOutline} />
                     Chỉnh sửa
                 </button>
