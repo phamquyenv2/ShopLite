@@ -113,7 +113,8 @@ public class ImportOrderService {
 
     @Transactional
     public ResImportOrderDTO updateStatus(Integer id, ImportOrderStatusEnum newStatus) {
-        ImportOrder order = importOrderRepository.findById(id)
+        // BUG-08: Pessimistic lock to prevent concurrent status transitions
+        ImportOrder order = importOrderRepository.findByIdWithLock(id)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy ImportOrder id=" + id));
 
         ImportOrderStatusEnum currentStatus = order.getStatus();
@@ -140,7 +141,10 @@ public class ImportOrderService {
 
             // For each item: increase product stock + write IMPORT inventory log
             for (ImportItem item : items) {
-                Product product = item.getProduct();
+                // BUG-08: Lock product row before modifying stock
+                Product product = productRepository.findByIdWithLock(item.getProduct().getId())
+                        .orElseThrow(() -> new IdInvalidException(
+                                "Không tìm thấy Product id=" + item.getProduct().getId()));
                 int addedQty = item.getQuantity();
                 int newStock = product.getStock() + addedQty;
                 product.setStock(newStock);

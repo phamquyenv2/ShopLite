@@ -89,6 +89,7 @@ export const endpoints = {
     orders: '/api/v1/orders',
     'order-detail': (id: number | string) => `/api/v1/orders/${id}`,
     'order-status': (id: number | string) => `/api/v1/orders/${id}/status`,
+    'order-confirm': (id: number | string) => `/api/v1/orders/${id}/confirm`,
     'order-payments': (id: number | string) => `/api/v1/orders/${id}/payments`,
 
     // transactions

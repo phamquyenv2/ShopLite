@@ -10,6 +10,7 @@ import java.util.List;
 @Setter
 public class ResRoleDTO {
     private Long id;
+    private Integer version;
     private String name;
     private String description;
     private boolean active;

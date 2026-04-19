@@ -18,10 +18,6 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Bọc tất cả response trả về thành JSON tiêu chuẩn:
- * { "statusCode": 200, "message": "...", "data": {...} }
- */
 @RestControllerAdvice
 public class FormatRestResponse implements ResponseBodyAdvice<Object> {
 

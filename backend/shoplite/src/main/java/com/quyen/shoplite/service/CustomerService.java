@@ -51,6 +51,9 @@ public class CustomerService {
     @Transactional
     public ResCustomerDTO update(Integer id, ReqCustomerUpsertDTO req) {
         Customer customer = findEntityById(id);
+        if (req.getVersion() != null && !req.getVersion().equals(customer.getVersion())) {
+            throw new BadRequestException("Customer has been modified by another user. Please refresh and try again.");
+        }
         String phone = normalize(req.getPhone());
         if (customerRepository.existsByPhoneAndIdNot(phone, id)) {
             throw new BadRequestException("Phone already exists: " + phone);
@@ -77,5 +80,17 @@ public class CustomerService {
             return null;
         }
         return value.trim();
+    }
+
+    /**
+     * POS quick search — find customers by partial phone number.
+     */
+    public List<ResCustomerDTO> searchByPhone(String phone) {
+        if (phone == null || phone.isBlank()) {
+            return List.of();
+        }
+        return customerRepository.findByPhoneContaining(phone.trim()).stream()
+                .map(DTOMapper::toResCustomerDTO)
+                .toList();
     }
 }

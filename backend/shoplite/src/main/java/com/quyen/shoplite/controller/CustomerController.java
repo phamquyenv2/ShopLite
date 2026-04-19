@@ -8,7 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
 import jakarta.validation.constraints.Positive;
 import org.springframework.validation.annotation.Validated;
 
@@ -21,6 +21,16 @@ import java.util.List;
 public class CustomerController {
 
     private final CustomerService customerService;
+
+    /**
+     * GET /api/v1/customers/search?phone= — Tìm nhanh khách tại quầy
+     */
+    @GetMapping("/search")
+    @ApiMessage("Search customers success")
+    public ResponseEntity<List<ResCustomerDTO>> searchByPhone(
+            @RequestParam("phone") String phone) {
+        return ResponseEntity.ok(customerService.searchByPhone(phone));
+    }
 
     @PostMapping
     @ApiMessage("Create customer success")
@@ -53,5 +63,3 @@ public class CustomerController {
         return ResponseEntity.noContent().build();
     }
 }
-
-

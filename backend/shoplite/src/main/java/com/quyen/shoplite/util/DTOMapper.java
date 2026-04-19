@@ -22,6 +22,7 @@ public class DTOMapper {
         }
         ResUserDTO dto = new ResUserDTO();
         dto.setId(user.getId());
+        dto.setVersion(user.getVersion());
         dto.setUsername(user.getUsername());
         dto.setActive(user.isActive());
         dto.setCreatedAt(user.getCreatedAt());
@@ -57,6 +58,7 @@ public class DTOMapper {
         }
         ResRoleDTO dto = new ResRoleDTO();
         dto.setId(role.getId());
+        dto.setVersion(role.getVersion());
         dto.setName(role.getName());
         dto.setDescription(role.getDescription());
         dto.setActive(role.isActive());
@@ -133,6 +135,7 @@ public class DTOMapper {
         }
         ResCustomerDTO dto = new ResCustomerDTO();
         dto.setId(customer.getId());
+        dto.setVersion(customer.getVersion());
         dto.setName(customer.getName());
         dto.setPhone(customer.getPhone());
         dto.setPoints(customer.getPoints());
@@ -146,6 +149,7 @@ public class DTOMapper {
         }
         ResSupplierDTO dto = new ResSupplierDTO();
         dto.setId(supplier.getId());
+        dto.setVersion(supplier.getVersion());
         dto.setName(supplier.getName());
         dto.setPhone(supplier.getPhone());
         dto.setAddress(supplier.getAddress());
@@ -366,6 +370,7 @@ public class DTOMapper {
         dto.setDiscount(order.getDiscount());
         dto.setStatus(order.getStatus());
         dto.setCreatedAt(order.getCreatedAt());
+        dto.setConfirmedAt(order.getConfirmedAt());
         dto.setPaidAt(order.getPaidAt());
         if (order.getCustomer() != null) {
             dto.setCustomerId(order.getCustomer().getId());

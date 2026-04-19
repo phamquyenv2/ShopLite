@@ -5,10 +5,9 @@ import com.quyen.shoplite.domain.Role;
 import com.quyen.shoplite.domain.request.ReqRoleDTO;
 import com.quyen.shoplite.domain.response.ResRoleDTO;
 import com.quyen.shoplite.repository.RoleRepository;
-import com.quyen.shoplite.util.error.BadRequestException;
-import com.quyen.shoplite.util.error.IdInvalidException;
-import com.quyen.shoplite.util.error.ResourceNotFoundException;
 import com.quyen.shoplite.util.DTOMapper;
+import com.quyen.shoplite.util.error.BadRequestException;
+import com.quyen.shoplite.util.error.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,11 +26,10 @@ public class RoleService {
     private final RoleRepository roleRepository;
     private final PermissionService permissionService;
 
-    // ─── Create ────────────────────────────────────────────────────────────────
     @Transactional
     public ResRoleDTO create(ReqRoleDTO req) {
         if (roleRepository.existsByName(req.getName())) {
-            throw new BadRequestException("Role '" + req.getName() + "' đã tồn tại");
+            throw new BadRequestException("Role '" + req.getName() + "' Ä‘Ã£ tá»“n táº¡i");
         }
         List<Permission> permissions = resolvePermissions(req.getPermissionIds());
         Role role = Role.builder()
@@ -44,27 +42,32 @@ public class RoleService {
         return DTOMapper.toResRoleDTO(roleRepository.save(role));
     }
 
-    // ─── Get by ID ─────────────────────────────────────────────────────────────
     public ResRoleDTO findById(Long id) {
         Role role = roleRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Role id=" + id));
+                .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y Role id=" + id));
         return DTOMapper.toResRoleDTO(role);
     }
 
-    // ─── Update ────────────────────────────────────────────────────────────────
     @Transactional
     public ResRoleDTO update(Long id, ReqRoleDTO req) {
         Role role = roleRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Role id=" + id));
+                .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y Role id=" + id));
 
-        // Kiểm tra tên trùng với role khác
-        if (req.getName() != null && !req.getName().isBlank()
-                && roleRepository.existsByNameAndIdNot(req.getName(), id)) {
-            throw new BadRequestException("Role '" + req.getName() + "' đã tồn tại");
+        if (req.getVersion() != null && !req.getVersion().equals(role.getVersion())) {
+            throw new BadRequestException("Role has been modified by another user. Please refresh and try again.");
         }
 
-        if (req.getName() != null && !req.getName().isBlank()) role.setName(req.getName());
-        if (req.getDescription() != null) role.setDescription(req.getDescription());
+        if (req.getName() != null && !req.getName().isBlank()
+                && roleRepository.existsByNameAndIdNot(req.getName(), id)) {
+            throw new BadRequestException("Role '" + req.getName() + "' Ä‘Ã£ tá»“n táº¡i");
+        }
+
+        if (req.getName() != null && !req.getName().isBlank()) {
+            role.setName(req.getName());
+        }
+        if (req.getDescription() != null) {
+            role.setDescription(req.getDescription());
+        }
         role.setActive(req.isActive());
         role.setUpdatedAt(LocalDateTime.now());
 
@@ -75,15 +78,13 @@ public class RoleService {
         return DTOMapper.toResRoleDTO(roleRepository.save(role));
     }
 
-    // ─── Delete ────────────────────────────────────────────────────────────────
     public void delete(Long id) {
         if (!roleRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Không tìm thấy Role id=" + id);
+            throw new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y Role id=" + id);
         }
         roleRepository.deleteById(id);
     }
 
-    // ─── Get All (paginated) ───────────────────────────────────────────────────
     public Map<String, Object> getAll(Pageable pageable) {
         Page<Role> page = roleRepository.findAll(pageable);
         Map<String, Object> result = new LinkedHashMap<>();
@@ -95,15 +96,14 @@ public class RoleService {
         return result;
     }
 
-    // ─── Internal: find entity by name ────────────────────────────────────────
     public Role findEntityByName(String name) {
         return roleRepository.findByName(name).orElse(null);
     }
 
-    // ─── Helper ────────────────────────────────────────────────────────────────
     private List<Permission> resolvePermissions(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) return List.of();
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
         return permissionService.findAllByIds(ids);
     }
-
 }

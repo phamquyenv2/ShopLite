@@ -9,6 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ReqUserDTO {
+    private Integer version;
     @NotBlank(message = "username không được để trống")
     private String username;
 

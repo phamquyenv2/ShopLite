@@ -9,6 +9,7 @@ import java.util.List;
 @Getter
 @Setter
 public class ReqRoleDTO {
+    private Integer version;
 
     @NotBlank(message = "name không được để trống")
     private String name;

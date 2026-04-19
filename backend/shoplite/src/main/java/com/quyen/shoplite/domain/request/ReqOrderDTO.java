@@ -24,7 +24,6 @@ public class ReqOrderDTO {
 
     
     @Positive(message = "customerId must be greater than 0")
-@NotNull(message = "customerId must not be null")
     private Integer customerId;
 
     

@@ -1,13 +1,9 @@
 import {
-  IonButton,
   IonContent,
   IonHeader,
   IonIcon,
   IonPage,
   IonToolbar,
-  IonBadge,
-  IonFab,
-  IonFabButton,
 } from '@ionic/react';
 import {
   searchOutline,
@@ -17,16 +13,18 @@ import {
   cubeOutline,
   peopleOutline,
   logInOutline,
-  addOutline,
   homeOutline,
   gridOutline,
   storefrontOutline,
   personAddOutline,
   reorderThreeOutline
 } from 'ionicons/icons';
+import { useHistory } from 'react-router-dom';
 import './Home.css';
 
 const Home: React.FC = () => {
+  const history = useHistory();
+
   return (
     <IonPage>
       <IonHeader className="ion-no-border home-header">
@@ -76,7 +74,7 @@ const Home: React.FC = () => {
               <div className="icon-box blue"><IonIcon icon={cartOutline} /></div>
               <span>Tạo đơn</span>
             </div>
-            <div className="shortcut-item">
+            <div className="shortcut-item" onClick={() => history.push('/products')}>
               <div className="icon-box indigo"><IonIcon icon={cubeOutline} /></div>
               <span>Sản phẩm</span>
             </div>
@@ -132,23 +130,23 @@ const Home: React.FC = () => {
 
       {/* Thanh Tab giả lập theo ảnh */}
       <div className="custom-tab-bar">
-        <div className="tab-item active">
+        <div className="tab-item active" role="button" tabIndex={0}>
           <IonIcon icon={homeOutline} />
           <span>Tổng quan</span>
         </div>
-        <div className="tab-item">
+        <div className="tab-item" role="button" tabIndex={0} onClick={() => history.push('/products')}>
           <IonIcon icon={gridOutline} />
           <span>Hàng hóa</span>
         </div>
-        <div className="tab-item">
+        <div className="tab-item" role="button" tabIndex={0} onClick={() => history.push('/sales')}>
           <IonIcon icon={storefrontOutline} />
           <span>Bán hàng</span>
         </div>
-        <div className="tab-item">
+        <div className="tab-item" role="button" tabIndex={0} onClick={() => history.push('/customers')}>
           <IonIcon icon={personAddOutline} />
           <span>Đối tác</span>
         </div>
-        <div className="tab-item">
+        <div className="tab-item" role="button" tabIndex={0}>
           <IonIcon icon={reorderThreeOutline} />
           <span>Khác</span>
         </div>

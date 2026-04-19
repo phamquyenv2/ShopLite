@@ -11,6 +11,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
     List<Transaction> findAllByOrder_Id(Integer orderId);
     List<Transaction> findAllByType(TypeTransactionEnum type);
     boolean existsByImportOrder_Id(Integer importOrderId);
+    boolean existsByOrder_IdAndType(Integer orderId, TypeTransactionEnum type);
     Optional<Transaction> findByPayroll_IdAndType(Integer payrollId, TypeTransactionEnum type);
 }
 

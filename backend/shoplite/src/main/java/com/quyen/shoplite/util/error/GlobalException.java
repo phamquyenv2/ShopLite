@@ -145,6 +145,6 @@ public class GlobalException {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(buildError(500, "Đã xảy ra lỗi hệ thống, vui lòng thử lại sau."));
+                .body(buildError(500, e.getMessage() != null ? e.getMessage() : e.getClass().getName()));
     }
 }

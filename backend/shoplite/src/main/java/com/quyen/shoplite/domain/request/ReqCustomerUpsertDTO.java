@@ -9,6 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ReqCustomerUpsertDTO {
+    private Integer version;
 
     @NotBlank(message = "name must not be blank")
     @Size(max = 200, message = "name must be less than or equal to 200 characters")

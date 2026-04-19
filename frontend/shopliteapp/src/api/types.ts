@@ -76,7 +76,7 @@ export type OrderItemUpsert = {
 export type OrderUpsert = {
     userId: number;
     requestId?: string | null;
-    customerId: number;
+    customerId?: number | null;
     discount?: number | null;
     items: OrderItemUpsert[];
 };
@@ -94,11 +94,11 @@ export type Order = {
     id: number;
     code?: string | null;
     requestId?: string | null;
-    customerId: number;
+    customerId?: number | null;
     customerName?: string | null;
     totalAmount?: number | null;
     discount?: number | null;
-    status?: 'PENDING' | 'COMPLETED' | 'FAIL' | 'CANCELLED';
+    status?: 'DRAFT' | 'PENDING' | 'PENDING_PAYMENT' | 'COMPLETED' | 'FAIL' | 'CANCELLED';
     createdAt?: string;
     paidAt?: string | null;
     userId?: number | null;

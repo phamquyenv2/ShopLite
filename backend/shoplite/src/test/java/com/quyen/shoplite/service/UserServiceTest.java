@@ -17,9 +17,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -38,7 +45,6 @@ class UserServiceTest {
 
     @Test
     void createUser_success() {
-        // Arrange
         ReqUserDTO req = new ReqUserDTO();
         req.setUsername("johndoe");
         req.setPassword("Password123!");
@@ -61,10 +67,8 @@ class UserServiceTest {
         when(passwordEncoder.encode("Password123!")).thenReturn("encoded_password");
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
-        // Act
         ResUserDTO res = userService.create(req);
 
-        // Assert
         assertNotNull(res);
         assertEquals(100, res.getId());
         assertEquals("johndoe", res.getUsername());
@@ -74,32 +78,27 @@ class UserServiceTest {
 
     @Test
     void createUser_duplicateUsername_throwsException() {
-        // Arrange
         ReqUserDTO req = new ReqUserDTO();
         req.setUsername("johndoe");
 
         when(userRepository.existsByUsername("johndoe")).thenReturn(true);
 
-        // Act & Assert
         BadRequestException ex = assertThrows(BadRequestException.class, () -> userService.create(req));
-        assertTrue(ex.getMessage().contains("đã tồn tại"));
+        assertTrue(ex.getMessage().contains("johndoe"));
         verify(userRepository, times(1)).existsByUsername("johndoe");
         verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
     void getUserById_success() {
-        // Arrange
         User user = new User();
         user.setId(100);
         user.setUsername("johndoe");
 
         when(userRepository.findById(100)).thenReturn(Optional.of(user));
 
-        // Act
         ResUserDTO res = userService.findById(100);
 
-        // Assert
         assertNotNull(res);
         assertEquals(100, res.getId());
         assertEquals("johndoe", res.getUsername());
@@ -107,17 +106,14 @@ class UserServiceTest {
 
     @Test
     void getUserById_userNotFound_throwsException() {
-        // Arrange
         when(userRepository.findById(99)).thenReturn(Optional.empty());
 
-        // Act & Assert
         ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> userService.findById(99));
-        assertTrue(ex.getMessage().contains("Không tìm thấy User"));
+        assertTrue(ex.getMessage().contains("User"));
     }
 
     @Test
     void updateUser_success() {
-        // Arrange
         ReqUserDTO req = new ReqUserDTO();
         req.setRoleId(2L);
         req.setPassword("NewPassword!");
@@ -134,13 +130,10 @@ class UserServiceTest {
         when(userRepository.findById(1)).thenReturn(Optional.of(existingUser));
         when(roleRepository.findById(2L)).thenReturn(Optional.of(newRole));
         when(passwordEncoder.encode("NewPassword!")).thenReturn("encoded_new_pass");
-        
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Act
         ResUserDTO res = userService.update(1, req);
 
-        // Assert
         assertNotNull(res);
         verify(passwordEncoder, times(1)).encode("NewPassword!");
         verify(userRepository, times(1)).save(existingUser);

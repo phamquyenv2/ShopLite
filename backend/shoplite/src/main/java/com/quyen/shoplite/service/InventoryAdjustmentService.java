@@ -55,8 +55,8 @@ public class InventoryAdjustmentService {
         List<ItemWork> workItems = new ArrayList<>();
 
         for (ReqAdjustmentItemDTO itemReq : req.getItems()) {
-            // 2a. Product must exist
-            Product product = productRepository.findById(itemReq.getProductId())
+            // 2a. Product must exist — lock row to prevent concurrent stock corruption (BUG-08)
+            Product product = productRepository.findByIdWithLock(itemReq.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Không tìm thấy Product id=" + itemReq.getProductId()));
 

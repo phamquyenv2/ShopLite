@@ -1,0 +1,229 @@
+.products-page-header {
+    --background: #fff;
+    --border-color: #eee;
+}
+
+.products-toolbar {
+    --padding-top: 8px;
+    --padding-bottom: 8px;
+    --padding-start: 8px;
+    --padding-end: 8px;
+}
+
+.products-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.products-toolbar-icon {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: #333;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.products-toolbar-icon:active {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.products-toolbar-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.products-toolbar-right {
+    display: flex;
+    align-items: center;
+}
+
+.products-content {
+    --background: #f8f9fa;
+}
+
+.products-search-container {
+    padding: 12px 16px;
+    background: #fff;
+    border-bottom: 1px solid #f0f2f5;
+}
+
+.products-search-box {
+    display: flex;
+    align-items: center;
+    background: #f0f2f5;
+    border-radius: 8px;
+    padding: 8px 12px;
+    gap: 8px;
+}
+
+.products-search-box ion-icon {
+    color: #888;
+    font-size: 20px;
+}
+
+.products-search-box input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    color: #333;
+}
+
+.products-search-box input::placeholder {
+    color: #aaa;
+}
+
+.products-search-barcode {
+    color: #0d6efd !important;
+    font-size: 24px !important;
+}
+
+.products-categories-scroll {
+    display: flex;
+    overflow-x: auto;
+    padding: 12px 16px;
+    gap: 12px;
+    scrollbar-width: none; /* Firefox */
+}
+
+.products-categories-scroll::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+}
+
+.products-category-pill {
+    white-space: nowrap;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    background: #f0f2f5;
+    color: #444;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+}
+
+.products-category-pill.active {
+    background: #0d6efd;
+    color: #fff;
+}
+
+.products-list {
+    padding: 4px 16px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.products-page-card {
+    display: flex;
+    background: #fff;
+    border-radius: 12px;
+    padding: 12px;
+    gap: 16px;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    cursor: pointer;
+}
+
+.products-page-card:active {
+    background: #fafafa;
+}
+
+.products-page-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: #f5f5f5;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #aaa;
+    font-size: 24px;
+}
+
+.products-page-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.products-page-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #222;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.products-page-code {
+    font-size: 12px;
+    color: #666;
+}
+
+.products-page-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.products-page-price {
+    font-size: 15px;
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+.products-page-stock-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.products-stock-good {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.products-stock-low {
+    background: #fbe9e7;
+    color: #d84315;
+}
+
+.products-stock-out {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.products-fab {
+    --background: #0d6efd;
+    --background-hover: #0b5ed7;
+    --box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4);
+}
+
+.products-loader, .products-error, .products-empty {
+    text-align: center;
+    padding: 32px 16px;
+    color: #888;
+    font-size: 14px;
+}
+
+.products-error {
+    color: #dc3545;
+}

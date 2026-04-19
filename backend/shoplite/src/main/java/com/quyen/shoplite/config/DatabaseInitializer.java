@@ -20,10 +20,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Tự động seed dữ liệu khởi tạo: - Role ADMIN với đầy đủ quyền - Role USER với
- * quyền đọc cơ bản - Tài khoản admin mặc định
- */
 @Component
 @Order(0)
 @RequiredArgsConstructor
@@ -34,19 +30,23 @@ public class DatabaseInitializer implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Override
     @Transactional
     public void run(String... args) {
+        jdbcTemplate.update("UPDATE roles SET version = 0 WHERE version IS NULL");
+        jdbcTemplate.update("UPDATE users SET version = 0 WHERE version IS NULL");
+
         seedPermissionsAndRoles();
         seedAdminUser();
     }
 
     private void seedPermissionsAndRoles() {
-        // --- Seed permissions cho từng module (idempotent: chỉ thêm mới, không xoá) ---
         List<Permission> desiredPermissions = List.of(
                 // AUTH
                 buildPermission("Login", "/api/v1/auth/login", "POST", "AUTH"),
+                buildPermission("Confirm order", "/api/v1/orders/{id}/confirm", "PATCH", "ORDERS"),
                 buildPermission("Register", "/api/v1/auth/register", "POST", "AUTH"),
                 buildPermission("Refresh token", "/api/v1/auth/refresh", "POST", "AUTH"),
                 buildPermission("Get current user", "/api/v1/auth/me", "GET", "AUTH"),
@@ -65,6 +65,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                 buildPermission("Xóa danh mục", "/api/v1/categories/{id}", "DELETE", "CATEGORIES"),
                 // CUSTOMERS
                 buildPermission("Xem danh sách khách hàng", "/api/v1/customers", "GET", "CUSTOMERS"),
+                buildPermission("Xác nhận đơn hàng", "/api/v1/orders/confirm", "PATCH", "ORDERS"),
                 buildPermission("Xem khách hàng theo ID", "/api/v1/customers/{id}", "GET", "CUSTOMERS"),
                 buildPermission("Tạo khách hàng", "/api/v1/customers", "POST", "CUSTOMERS"),
                 buildPermission("Cập nhật khách hàng", "/api/v1/customers/{id}", "PUT", "CUSTOMERS"),
@@ -83,9 +84,10 @@ public class DatabaseInitializer implements CommandLineRunner {
                 buildPermission("Xóa đơn vị", "/api/v1/units/{id}", "DELETE", "UNITS"),
                 // ORDERS
                 buildPermission("Xem danh sách đơn hàng", "/api/v1/orders", "GET", "ORDERS"),
+                buildPermission("Xác nhận đơn hàng", "/api/v1/orders/confirm", "PATCH", "ORDERS"),
                 buildPermission("Xem đơn hàng theo ID", "/api/v1/orders/{id}", "GET", "ORDERS"),
                 buildPermission("Tạo đơn hàng", "/api/v1/orders", "POST", "ORDERS"),
-                // NOTE: controller đang dùng PATCH, giữ lại PUT permission cũ (nếu DB cũ đã có)
+                buildPermission("Cập nhật đơn hàng", "/api/v1/orders/{id}", "PUT", "ORDERS"),
                 buildPermission("Cập nhật trạng thái ĐH", "/api/v1/orders/{id}/status", "PUT", "ORDERS"),
                 buildPermission("Cập nhật trạng thái ĐH", "/api/v1/orders/{id}/status", "PATCH", "ORDERS"),
                 buildPermission("Hủy đơn hàng", "/api/v1/orders/{id}", "DELETE", "ORDERS"),
@@ -194,11 +196,18 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .active(true)
                     .permissions(allPermissions)
                     .createdAt(LocalDateTime.now())
+                    .version(0)
                     .build();
+            roleRepository.save(adminRole);
         } else {
-            adminRole.setPermissions(mergePermissions(adminRole.getPermissions(), allPermissions));
+            // Check if we actually need to update permissions to avoid unnecessary dirty state
+            List<Permission> merged = mergePermissions(adminRole.getPermissions(), allPermissions);
+            if (merged.size() != adminRole.getPermissions().size()) {
+                adminRole.getPermissions().clear();
+                adminRole.getPermissions().addAll(merged);
+                roleRepository.save(adminRole);
+            }
         }
-        roleRepository.save(adminRole);
 
         // --- Ensure USER role has at least all GET permissions + attendance check-in/out (chỉ thêm mới, không xoá) ---
         List<Permission> desiredUserPermissions = allPermissions.stream()
@@ -216,30 +225,37 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .active(true)
                     .permissions(desiredUserPermissions)
                     .createdAt(LocalDateTime.now())
+                    .version(0)
                     .build();
+            roleRepository.save(userRole);
         } else {
-            userRole.setPermissions(mergePermissions(userRole.getPermissions(), desiredUserPermissions));
+            List<Permission> mergedUser = mergePermissions(userRole.getPermissions(), desiredUserPermissions);
+            if (mergedUser.size() != userRole.getPermissions().size()) {
+                userRole.getPermissions().clear();
+                userRole.getPermissions().addAll(mergedUser);
+                roleRepository.save(userRole);
+            }
         }
-        roleRepository.save(userRole);
 
         log.info("Đã đảm bảo roles: ADMIN, USER");
     }
 
     private void seedAdminUser() {
-        if (userRepository.existsByUsername("admin")) {
+        if (userRepository.existsByUsername("1") || userRepository.existsByPhone("1")) {
             return;
         }
 
         Role adminRole = roleRepository.findByName("ADMIN").orElse(null);
         User admin = User.builder()
-                .username("admin")
-                .password(passwordEncoder.encode("admin123"))
+                .username("1")
+                .phone("1")
+                .password(passwordEncoder.encode("1"))
                 .role(adminRole)
                 .isActive(true)
                 .createdAt(LocalDateTime.now())
                 .build();
         userRepository.save(admin);
-        log.info("Tạo tài khoản mặc định: username=admin / password=admin123");
+        log.info("Tạo tài khoản mặc định: username=1 / password=1");
     }
 
     private Permission buildPermission(String name, String apiPath, String method, String module) {

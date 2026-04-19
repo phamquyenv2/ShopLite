@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Setter
 public class ResSupplierDTO {
     private Integer id;
+    private Integer version;
     private String name;
     private String phone;
     private String address;

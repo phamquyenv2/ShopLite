@@ -7,9 +7,6 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Specification để lọc sản phẩm động theo keyword, category, sellingPrice.
- */
 public class ProductSpecification {
 
     private ProductSpecification() {

@@ -1,0 +1,147 @@
+.draft-page-header {
+    --background: #fff;
+    --border-color: #eee;
+}
+
+.draft-toolbar {
+    --padding-top: 8px;
+    --padding-bottom: 8px;
+    --padding-start: 8px;
+    --padding-end: 8px;
+}
+
+.draft-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.draft-toolbar-icon {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: #333;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.draft-toolbar-icon:active {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.draft-toolbar-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.draft-content {
+    --background: #f0f2f5;
+}
+
+.draft-error {
+    background: #ffebee;
+    color: #c62828;
+    padding: 12px 16px;
+    margin: 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.draft-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: #888;
+    font-size: 15px;
+}
+
+.draft-group {
+    margin-bottom: 16px;
+}
+
+.draft-group-title {
+    padding: 16px 16px 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+}
+
+.draft-card {
+    margin: 0 16px 8px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    display: flex;
+    gap: 16px;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.draft-card:active {
+    transform: scale(0.98);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.draft-card-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    background: #f5f5f5;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    font-size: 18px;
+    border: 1px solid #e0e0e0;
+}
+
+.draft-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.draft-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.draft-card-amount {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+.draft-card-time {
+    font-size: 12px;
+    color: #888;
+}
+
+.draft-card-customer {
+    font-size: 13px;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 4px;
+}
+
+.draft-card-items {
+    font-size: 13px;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+}
+
+.draft-bottom-spacer {
+    height: 300px;
+}

@@ -23,6 +23,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -202,5 +204,31 @@ public class ProductService {
             return ProductStatus.OUT_OF_STOCK;
         }
         return result;
+    }
+
+    /**
+     * POS-optimized search: barcode takes priority (exact match),
+     * otherwise fuzzy search by name/SKU. Max 20 results.
+     */
+    public List<ResProductDTO> searchForPOS(String keyword, String barcode) {
+        // Barcode scan — exact match, return single result
+        if (hasText(barcode)) {
+            return productRepository.findByBarcodeAndIsDeletedFalse(barcode.trim())
+                    .map(DTOMapper::toResProductDTO)
+                    .map(List::of)
+                    .orElse(List.of());
+        }
+
+        // Keyword search — name/SKU LIKE
+        if (hasText(keyword)) {
+            Specification<Product> spec = ProductSpecification.filter(keyword, null, null, null, null);
+            Pageable pageable = PageRequest.of(0, 20, Sort.by("name").ascending());
+            return productRepository.findAll(spec, pageable)
+                    .getContent().stream()
+                    .map(DTOMapper::toResProductDTO)
+                    .toList();
+        }
+
+        return List.of();
     }
 }

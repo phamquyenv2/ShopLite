@@ -9,6 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ReqSupplierDTO {
+    private Integer version;
 
     @NotBlank(message = "name must not be blank")
     private String name;

@@ -8,7 +8,6 @@ import com.quyen.shoplite.repository.RoleRepository;
 import com.quyen.shoplite.repository.UserRepository;
 import com.quyen.shoplite.util.DTOMapper;
 import com.quyen.shoplite.util.error.BadRequestException;
-import com.quyen.shoplite.util.error.IdInvalidException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,7 +26,7 @@ public class UserService {
 
     public ResUserDTO create(ReqUserDTO req) {
         if (userRepository.existsByUsername(req.getUsername())) {
-            throw new BadRequestException("Username '" + req.getUsername() + "' đã tồn tại");
+            throw new BadRequestException("Username '" + req.getUsername() + "' Ä‘Ã£ tá»“n táº¡i");
         }
         Role role = resolveRole(req.getRoleId());
         User user = User.builder()
@@ -42,7 +41,7 @@ public class UserService {
 
     public ResUserDTO findById(Integer id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với id=" + id));
+                .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y User vá»›i id=" + id));
         return DTOMapper.toResUserDTO(user);
     }
 
@@ -54,7 +53,12 @@ public class UserService {
 
     public ResUserDTO update(Integer id, ReqUserDTO req) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với id=" + id));
+                .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y User vá»›i id=" + id));
+
+        if (req.getVersion() != null && !req.getVersion().equals(user.getVersion())) {
+            throw new BadRequestException("User has been modified by another user. Please refresh and try again.");
+        }
+
         if (req.getRoleId() != null) {
             user.setRole(resolveRole(req.getRoleId()));
         }
@@ -67,19 +71,21 @@ public class UserService {
 
     public void delete(Integer id) {
         if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Không tìm thấy User với id=" + id);
+            throw new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y User vá»›i id=" + id);
         }
         userRepository.deleteById(id);
     }
 
     public User findEntityByUsername(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y User: " + username));
     }
 
     private Role resolveRole(Long roleId) {
-        if (roleId == null) return null;
+        if (roleId == null) {
+            return null;
+        }
         return roleRepository.findById(roleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Role id=" + roleId));
+                .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y Role id=" + roleId));
     }
 }

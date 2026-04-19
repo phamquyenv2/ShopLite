@@ -47,6 +47,9 @@ public class SupplierService {
     @Transactional
     public ResSupplierDTO update(Integer id, ReqSupplierDTO req) {
         Supplier supplier = findEntityById(id);
+        if (req.getVersion() != null && !req.getVersion().equals(supplier.getVersion())) {
+            throw new BadRequestException("Supplier has been modified by another user. Please refresh and try again.");
+        }
         validateDuplicateName(req.getName(), id);
 
         supplier.setName(req.getName().trim());

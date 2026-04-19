@@ -64,8 +64,9 @@ class PaymentServiceTest {
         order.setId(orderId);
         order.setCode("ORD-123");
         order.setStatus(StatusEnum.PENDING);
+        order.setTotalAmount(100.0);
 
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdWithLock(orderId)).thenReturn(Optional.of(order));
         when(paymentRepository.findByOrder_Id(orderId)).thenReturn(Optional.empty());
 
         Payment savedPayment = new Payment();
@@ -108,7 +109,7 @@ class PaymentServiceTest {
     void createPayment_OrderNotFound_ThrowsException() {
         Integer orderId = 999;
         ReqPaymentDTO req = new ReqPaymentDTO();
-        when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
+        when(orderRepository.findByIdWithLock(orderId)).thenReturn(Optional.empty());
 
         IdInvalidException ex = assertThrows(IdInvalidException.class, () -> paymentService.createPayment(orderId, req));
         assertTrue(ex.getMessage().contains("Không tìm thấy Order"));
@@ -119,7 +120,7 @@ class PaymentServiceTest {
         Integer orderId = 1;
         ReqPaymentDTO req = new ReqPaymentDTO();
 
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(new Order()));
+        when(orderRepository.findByIdWithLock(orderId)).thenReturn(Optional.of(new Order()));
         when(paymentRepository.findByOrder_Id(orderId)).thenReturn(Optional.of(new Payment()));
 
         IdInvalidException ex = assertThrows(IdInvalidException.class, () -> paymentService.createPayment(orderId, req));

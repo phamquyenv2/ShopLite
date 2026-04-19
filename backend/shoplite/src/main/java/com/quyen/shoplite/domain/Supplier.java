@@ -18,6 +18,9 @@ public class Supplier {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Version
+    private Integer version;
+
     @Column(nullable = false, length = 200)
     private String name;
 

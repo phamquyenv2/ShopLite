@@ -1,0 +1,463 @@
+:root {
+    --sales-primary: #0d66eb;
+}
+
+.sales-header {
+    --background: var(--sales-primary);
+    background: var(--sales-primary);
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    overflow: hidden;
+}
+
+.sales-toolbar {
+    --background: var(--sales-primary);
+    --color: #ffffff;
+}
+
+.sales-toolbar-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding-left: 4px;
+}
+
+.sales-toolbar-title {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.sales-toolbar-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    color: #ffffff;
+    padding: 0;
+}
+
+.sales-toolbar-icon ion-icon {
+    font-size: 22px;
+}
+
+.sales-header-body {
+    padding: 10px 14px 12px;
+    background: var(--sales-primary);
+}
+
+.sales-search {
+    --background: #ffffff;
+    --color: #111827;
+    --placeholder-color: #6b7280;
+    --icon-color: #6b7280;
+    --border-radius: 12px;
+    padding: 0;
+}
+
+.sales-search .searchbar-input-container {
+    height: 40px;
+}
+
+.sales-chips-wrap {
+    position: relative;
+    margin-top: 10px;
+}
+
+.sales-chips {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 42px 4px 0;
+}
+
+.sales-chips::-webkit-scrollbar {
+    height: 0;
+}
+
+.sales-chip {
+    white-space: nowrap;
+    border: 0;
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+}
+
+.sales-chip.is-active {
+    background: #ffffff;
+    color: var(--sales-primary);
+}
+
+.sales-chips-next {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 0;
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.sales-chips-next ion-icon {
+    font-size: 18px;
+}
+
+.sales-content {
+    --background: #f0f3fa;
+}
+
+.sales-grid {
+    padding: 14px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.product-card {
+    text-align: left;
+    background: #ffffff;
+    border: 0;
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    position: relative;
+}
+
+.product-card.is-disabled {
+    opacity: 0.55;
+}
+
+.product-thumb {
+    height: 78px;
+    border-radius: 10px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    overflow: hidden;
+}
+
+.product-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.product-thumb ion-icon {
+    font-size: 30px;
+}
+
+.product-qty-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    background: #f1f5f9;
+    border-radius: 10px;
+    padding: 4px;
+}
+
+.qty-mini-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 0;
+    background: #ffffff;
+    color: #111827;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.qty-mini-btn ion-icon {
+    font-size: 14px;
+}
+
+.qty-mini-btn.is-plus {
+    color: #16a34a;
+}
+
+.qty-mini-value {
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 16px;
+    text-align: center;
+}
+
+.stock-badge {
+    background: #e2e8f0;
+    color: #334155;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 2px 6px;
+}
+
+.stock-badge.is-zero {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.product-name {
+    margin-top: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #111827;
+    line-height: 1.2;
+    min-height: 28px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;
+    overflow: hidden;
+}
+
+.product-meta {
+    margin-top: 6px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 10px;
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.product-sku {
+    background: #eef2f7;
+    border-radius: 6px;
+    padding: 2px 6px;
+}
+
+.product-stock {
+    background: #eef2f7;
+    border-radius: 6px;
+    padding: 2px 6px;
+}
+
+.product-price {
+    margin-top: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--sales-primary);
+}
+
+.sales-bottom-bar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 10px;
+    height: 62px;
+    background: var(--sales-primary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    border-radius: 14px;
+    z-index: 20;
+}
+
+.sales-bottom-bar.is-disabled {
+    opacity: 0.8;
+}
+
+.sales-bottom-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sales-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    background: #0b1220;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    position: relative;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.sales-badge {
+    position: absolute;
+    right: -4px;
+    top: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #22c55e;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sales-count {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.sales-total {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+
+.sales-bottom-spacer {
+    height: 120px;
+}
+
+.sales-continue-btn {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    height: 48px;
+    border: 0;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #0d66eb 0%, #0d66eb 100%);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    box-shadow: 0 8px 16px rgba(22, 163, 74, 0.35);
+    z-index: 30;
+}
+
+.continue-price {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.continue-price ion-icon {
+    font-size: 16px;
+}
+
+.continue-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.sales-detail-btn {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 80px;
+    height: 48px;
+    border: 0;
+    border-radius: 12px;
+    background: #ffffff;
+    color: var(--sales-primary);
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 8px 16px rgba(13, 102, 235, 0.18);
+    z-index: 30;
+}
+
+.sales-theme-fab {
+    margin-bottom: 72px;
+    margin-right: 10px;
+}
+
+.sales-theme-fab-btn {
+    --background: #ffffff;
+    --color: var(--sales-primary);
+    --box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+    width: 38px;
+    height: 38px;
+}
+
+.sales-theme-mark {
+    width: 18px;
+    height: 18px;
+    position: relative;
+    display: block;
+}
+
+.sales-theme-mark::before,
+.sales-theme-mark::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+}
+
+.sales-theme-mark::before {
+    left: 1px;
+    top: 3px;
+    background: #7c3aed;
+}
+
+.sales-theme-mark::after {
+    right: 1px;
+    bottom: 3px;
+    background: #22d3ee;
+}
+
+.sales-theme-mark i {
+    position: absolute;
+    left: 6px;
+    bottom: 0px;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #fb923c;
+    display: block;
+}
+
+.sales-empty {
+    padding: 24px 14px;
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.sales-error {
+    padding: 24px 14px;
+    color: #ef4444;
+    font-weight: 700;
+}
+
+.sales-continue-btn:disabled {
+    opacity: 0.65;
+}
+
+.sales-continue-btn:disabled {
+    opacity: 0.65;
+}

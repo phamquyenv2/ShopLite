@@ -58,7 +58,7 @@ const Orders: React.FC = () => {
                         <IonItem key={o.id} routerLink={`/orders/${o.id}`} button>
                             <IonLabel>
                                 <h2>{o.code ?? `Order #${o.id}`}</h2>
-                                <p>{o.customerName ?? `Customer #${o.customerId}`}</p>
+                                <p>{o.customerName ?? (o.customerId ? `Customer #${o.customerId}` : 'Khach le')}</p>
                                 <p>
                                     Total: {o.totalAmount ?? 0} • Status: {o.status ?? 'PENDING'}
                                 </p>

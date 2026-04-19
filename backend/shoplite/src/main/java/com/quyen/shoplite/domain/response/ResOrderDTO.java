@@ -19,6 +19,7 @@ public class ResOrderDTO {
     private Double discount;
     private StatusEnum status;
     private LocalDateTime createdAt;
+    private LocalDateTime confirmedAt;
     private LocalDateTime paidAt;
     private Integer userId;
     private String username;

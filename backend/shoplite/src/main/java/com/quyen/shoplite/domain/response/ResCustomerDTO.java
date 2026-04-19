@@ -7,6 +7,7 @@ import lombok.Setter;
 @Setter
 public class ResCustomerDTO {
     private Integer id;
+    private Integer version;
     private String name;
     private String phone;
     private Integer points;

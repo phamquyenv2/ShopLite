@@ -49,4 +49,7 @@ public class Order {
 
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
+
+    @Column(name = "confirmed_at")
+    private LocalDateTime confirmedAt;
 }
