@@ -30,17 +30,17 @@ public class RoleController {
 
     @GetMapping("/{id}")
     @ApiMessage("Lấy thông tin role")
-    public ResponseEntity<ResRoleDTO> findById(@PathVariable Long id) {
+    public ResponseEntity<ResRoleDTO> findById(@PathVariable("id") Long id) {
         return ResponseEntity.ok(roleService.findById(id));
     }
 
     @GetMapping
     @ApiMessage("Danh sách roles")
     public ResponseEntity<Map<String, Object>> getAll(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir) {
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "sortBy", defaultValue = "createdAt") String sortBy,
+            @RequestParam(name = "sortDir", defaultValue = "desc") String sortDir) {
 
         Sort sort = sortDir.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
@@ -50,14 +50,14 @@ public class RoleController {
 
     @PutMapping("/{id}")
     @ApiMessage("Cập nhật role thành công")
-    public ResponseEntity<ResRoleDTO> update(@PathVariable Long id,
+    public ResponseEntity<ResRoleDTO> update(@PathVariable("id") Long id,
                                              @Valid @RequestBody ReqRoleDTO req) {
         return ResponseEntity.ok(roleService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
     @ApiMessage("Xoá role thành công")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
         roleService.delete(id);
         return ResponseEntity.noContent().build();
     }

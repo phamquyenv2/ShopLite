@@ -81,6 +81,13 @@ public class PermissionService {
         return result;
     }
 
+    // ─── Get All (no pagination) ────────────────────────────────────────────────
+    public List<ResPermissionDTO> findAll() {
+        return permissionRepository.findAll().stream()
+                .map(DTOMapper::toResPermissionDTO)
+                .toList();
+    }
+
     // ─── Internal: find entities by IDs (used by RoleService) ─────────────────
     public List<Permission> findAllByIds(List<Long> ids) {
         return permissionRepository.findAllById(ids);

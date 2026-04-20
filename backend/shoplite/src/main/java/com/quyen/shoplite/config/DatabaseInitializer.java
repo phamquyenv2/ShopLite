@@ -1,8 +1,12 @@
 package com.quyen.shoplite.config;
 
+import com.quyen.shoplite.domain.Employee;
+import com.quyen.shoplite.domain.Office;
 import com.quyen.shoplite.domain.Permission;
 import com.quyen.shoplite.domain.Role;
 import com.quyen.shoplite.domain.User;
+import com.quyen.shoplite.repository.EmployeeRepository;
+import com.quyen.shoplite.repository.OfficeRepository;
 import com.quyen.shoplite.repository.PermissionRepository;
 import com.quyen.shoplite.repository.RoleRepository;
 import com.quyen.shoplite.repository.UserRepository;
@@ -14,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -29,6 +34,8 @@ public class DatabaseInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
+    private final EmployeeRepository employeeRepository;
+    private final OfficeRepository officeRepository;
     private final PasswordEncoder passwordEncoder;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
@@ -40,6 +47,7 @@ public class DatabaseInitializer implements CommandLineRunner {
 
         seedPermissionsAndRoles();
         seedAdminUser();
+        seedEmployees();
     }
 
     private void seedPermissionsAndRoles() {
@@ -140,7 +148,8 @@ public class DatabaseInitializer implements CommandLineRunner {
                 buildPermission("Tạo import order", "/api/v1/import-orders", "POST", "IMPORT_ORDERS"),
                 buildPermission("Xem danh sách import orders", "/api/v1/import-orders", "GET", "IMPORT_ORDERS"),
                 buildPermission("Xem import order theo ID", "/api/v1/import-orders/{id}", "GET", "IMPORT_ORDERS"),
-                buildPermission("Cập nhật trạng thái import order", "/api/v1/import-orders/{id}/status", "PUT", "IMPORT_ORDERS"),
+                buildPermission("Sửa import order", "/api/v1/import-orders/{id}", "PUT", "IMPORT_ORDERS"),
+                buildPermission("Cập nhật trạng thái", "/api/v1/import-orders/{id}/status", "PUT", "IMPORT_ORDERS"),
                 // INVENTORY
                 buildPermission("Xem inventory log", "/api/v1/inventory-logs", "GET", "INVENTORY"),
                 buildPermission("Tạo inventory log", "/api/v1/inventory-logs", "POST", "INVENTORY"),
@@ -187,57 +196,79 @@ public class DatabaseInitializer implements CommandLineRunner {
             log.info("Permissions đã đầy đủ (tổng mong muốn: {})", desiredPermissions.size());
         }
 
-        // --- Ensure ADMIN role has all permissions (chỉ thêm mới, không xoá) ---
-        Role adminRole = roleRepository.findByName("ADMIN").orElse(null);
-        if (adminRole == null) {
-            adminRole = Role.builder()
-                    .name("ADMIN")
-                    .description("Quản trị viên hệ thống - toàn quyền")
-                    .active(true)
-                    .permissions(allPermissions)
-                    .createdAt(LocalDateTime.now())
-                    .version(0)
-                    .build();
-            roleRepository.save(adminRole);
-        } else {
-            // Check if we actually need to update permissions to avoid unnecessary dirty state
-            List<Permission> merged = mergePermissions(adminRole.getPermissions(), allPermissions);
-            if (merged.size() != adminRole.getPermissions().size()) {
-                adminRole.getPermissions().clear();
-                adminRole.getPermissions().addAll(merged);
-                roleRepository.save(adminRole);
-            }
-        }
-
-        // --- Ensure USER role has at least all GET permissions + attendance check-in/out (chỉ thêm mới, không xoá) ---
-        List<Permission> desiredUserPermissions = allPermissions.stream()
-                .filter(p -> "GET".equals(p.getMethod())
-                || ("POST".equals(p.getMethod())
-                && ("/api/v1/attendance/check-in".equals(p.getApiPath())
-                || "/api/v1/attendance/check-out".equals(p.getApiPath()))))
+        // --- ORDER_STAFF: Nhân viên ghi đơn - tạo đơn, xem sản phẩm ---
+        List<Permission> orderStaffPermissions = allPermissions.stream()
+                .filter(p -> {
+                    String path = p.getApiPath();
+                    String method = p.getMethod();
+                    // Auth permissions
+                    if (path.startsWith("/api/v1/auth")) return true;
+                    // View products & categories & units
+                    if ("GET".equals(method) && (path.startsWith("/api/v1/products")
+                            || path.startsWith("/api/v1/categories")
+                            || path.startsWith("/api/v1/units"))) return true;
+                    // View + create orders
+                    if (path.startsWith("/api/v1/orders") && ("GET".equals(method) || "POST".equals(method))) return true;
+                    // View customers
+                    if ("GET".equals(method) && path.startsWith("/api/v1/customers")) return true;
+                    // Attendance check-in/out
+                    if (path.contains("/attendance/check-")) return true;
+                    return false;
+                })
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        ensureRole("ORDER_STAFF", "Nhân viên ghi đơn - tạo đơn, xem sản phẩm", orderStaffPermissions);
 
-        Role userRole = roleRepository.findByName("USER").orElse(null);
-        if (userRole == null) {
-            userRole = Role.builder()
-                    .name("USER")
-                    .description("Người dùng thông thường - chỉ xem")
-                    .active(true)
-                    .permissions(desiredUserPermissions)
-                    .createdAt(LocalDateTime.now())
-                    .version(0)
-                    .build();
-            roleRepository.save(userRole);
-        } else {
-            List<Permission> mergedUser = mergePermissions(userRole.getPermissions(), desiredUserPermissions);
-            if (mergedUser.size() != userRole.getPermissions().size()) {
-                userRole.getPermissions().clear();
-                userRole.getPermissions().addAll(mergedUser);
-                roleRepository.save(userRole);
-            }
-        }
+        // --- CASHIER: Nhân viên thu ngân - thanh toán, quản lý quỹ ---
+        List<Permission> cashierPermissions = allPermissions.stream()
+                .filter(p -> {
+                    String path = p.getApiPath();
+                    String method = p.getMethod();
+                    if (path.startsWith("/api/v1/auth")) return true;
+                    // View products, categories, units
+                    if ("GET".equals(method) && (path.startsWith("/api/v1/products")
+                            || path.startsWith("/api/v1/categories")
+                            || path.startsWith("/api/v1/units"))) return true;
+                    // Orders: full access
+                    if (path.startsWith("/api/v1/orders")) return true;
+                    // Payment
+                    if (path.startsWith("/api/v1/payment")) return true;
+                    // Transactions
+                    if (path.startsWith("/api/v1/transactions")) return true;
+                    // Customers: view + create
+                    if (path.startsWith("/api/v1/customers") && ("GET".equals(method) || "POST".equals(method))) return true;
+                    // Attendance
+                    if (path.contains("/attendance/check-")) return true;
+                    return false;
+                })
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        ensureRole("CASHIER", "Nhân viên thu ngân - thanh toán, quản lý quỹ", cashierPermissions);
 
-        log.info("Đã đảm bảo roles: ADMIN, USER");
+        // --- WAREHOUSE: Nhân viên kho - kiểm kho, nhập xuất hàng ---
+        List<Permission> warehousePermissions = allPermissions.stream()
+                .filter(p -> {
+                    String path = p.getApiPath();
+                    String method = p.getMethod();
+                    if (path.startsWith("/api/v1/auth")) return true;
+                    // Products: full CRUD
+                    if (path.startsWith("/api/v1/products")) return true;
+                    // Categories & Units: view
+                    if ("GET".equals(method) && (path.startsWith("/api/v1/categories")
+                            || path.startsWith("/api/v1/units"))) return true;
+                    // Import orders: full
+                    if (path.startsWith("/api/v1/import-orders")) return true;
+                    // Inventory: full
+                    if (path.startsWith("/api/v1/inventory")) return true;
+                    // Suppliers: full
+                    if (path.startsWith("/api/v1/suppliers")) return true;
+                    // Attendance
+                    if (path.contains("/attendance/check-")) return true;
+                    return false;
+                })
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        ensureRole("WAREHOUSE", "Nhân viên kho - kiểm kho, nhập xuất hàng", warehousePermissions);
+
+        // --- STORE_MANAGER: Quản lý cửa hàng - toàn quyền truy cập ---
+        ensureRole("STORE_MANAGER", "Quản lý cửa hàng - toàn quyền truy cập", new ArrayList<>(allPermissions));
     }
 
     private void seedAdminUser() {
@@ -245,17 +276,17 @@ public class DatabaseInitializer implements CommandLineRunner {
             return;
         }
 
-        Role adminRole = roleRepository.findByName("ADMIN").orElse(null);
+        Role managerRole = roleRepository.findByName("STORE_MANAGER").orElse(null);
         User admin = User.builder()
                 .username("1")
                 .phone("1")
                 .password(passwordEncoder.encode("1"))
-                .role(adminRole)
+                .role(managerRole)
                 .isActive(true)
                 .createdAt(LocalDateTime.now())
                 .build();
         userRepository.save(admin);
-        log.info("Tạo tài khoản mặc định: username=1 / password=1");
+        log.info("Tạo tài khoản mặc định: username=1 / password=1 (role=STORE_MANAGER)");
     }
 
     private Permission buildPermission(String name, String apiPath, String method, String module) {
@@ -281,5 +312,93 @@ public class DatabaseInitializer implements CommandLineRunner {
             }
         }
         return new ArrayList<>(merged.values());
+    }
+
+    private void ensureRole(String name, String description, List<Permission> desiredPermissions) {
+        Role role = roleRepository.findByName(name).orElse(null);
+        if (role == null) {
+            role = Role.builder()
+                    .name(name)
+                    .description(description)
+                    .active(true)
+                    .permissions(desiredPermissions)
+                    .createdAt(LocalDateTime.now())
+                    .version(0)
+                    .build();
+            roleRepository.save(role);
+            log.info("Đã tạo role: {}", name);
+        } else {
+            List<Permission> merged = mergePermissions(role.getPermissions(), desiredPermissions);
+            if (merged.size() != role.getPermissions().size()) {
+                role.getPermissions().clear();
+                role.getPermissions().addAll(merged);
+                roleRepository.save(role);
+                log.info("Đã cập nhật permissions cho role: {}", name);
+            }
+        }
+    }
+
+    private void seedEmployees() {
+        // Skip if employees already exist
+        if (employeeRepository.count() > 0) {
+            return;
+        }
+
+        // 1. Ensure a default Office exists
+        Office office = officeRepository.findAll().stream().findFirst().orElse(null);
+        if (office == null) {
+            office = Office.builder()
+                    .name("Chi nhánh chính")
+                    .officeLat(new BigDecimal("10.77620900"))
+                    .officeLng(new BigDecimal("106.70076200"))
+                    .radius(200)
+                    .build();
+            office = officeRepository.save(office);
+            log.info("Đã tạo office mặc định: {}", office.getName());
+        }
+
+        // 2. Define sample employees: {username, phone, roleName}
+        String[][] samples = {
+                {"Nguyễn Văn A", "0901234567", "STORE_MANAGER"},
+                {"Trần Thị B",   "0919876543", "ORDER_STAFF"},
+                {"Lê Văn C",     "0987654321", "WAREHOUSE"},
+                {"Phạm Thị D",   "0933334444", "CASHIER"},
+                {"Hoàng Văn E",  "0971112222", "ORDER_STAFF"},
+        };
+
+        int created = 0;
+        for (String[] s : samples) {
+            String username = s[0];
+            String phone = s[1];
+            String roleName = s[2];
+
+            if (userRepository.existsByUsername(username)) {
+                continue;
+            }
+
+            Role role = roleRepository.findByName(roleName).orElse(null);
+
+            User user = User.builder()
+                    .username(username)
+                    .phone(phone)
+                    .password(passwordEncoder.encode("123456"))
+                    .role(role)
+                    .isActive(true)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            user = userRepository.save(user);
+
+            Employee employee = Employee.builder()
+                    .user(user)
+                    .office(office)
+                    .salaryRate(0.0)
+                    .build();
+            employeeRepository.save(employee);
+            created++;
+        }
+
+        if (created > 0) {
+            log.info("Đã tạo {} nhân viên mẫu (password mặc định: 123456)", created);
+        }
     }
 }

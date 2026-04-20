@@ -12,9 +12,14 @@ import ProductsPage from './pages/ProductsPage';
 import ProductAddPage from './pages/ProductAddPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import ProductEditPage from './pages/ProductEditPage';
+import EmployeesPage from './pages/EmployeesPage';
+import RoleDetailPage from './pages/RoleDetailPage/RoleDetailPage';
+import ImportOrdersPage from './pages/ImportOrdersPage';
+import ImportOrderCreatePage from './pages/ImportOrderCreatePage';
+import ImportOrderDetailPage from './pages/ImportOrderDetailPage';
 import { AuthProvider } from './auth/AuthContext';
 import { useAuth } from './auth/useAuth';
-import PrivateRoute from './auth/PrivateRoute';
+import RequireAuth from './auth/RequireAuth';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -65,26 +70,29 @@ const App: React.FC = () => (
     <AuthProvider>
       <IonReactRouter>
         <IonRouterOutlet>
-          <Route exact path="/login">
-            <LoginRoute />
-          </Route>
+          <Route exact path="/login" render={() => <LoginRoute />} />
 
-          <Route exact path="/register">
-            <RegisterRoute />
-          </Route>
+          <Route exact path="/register" render={() => <RegisterRoute />} />
 
-          <PrivateRoute exact path="/home" component={Home} />
+          <Route exact path="/home" render={() => <RequireAuth component={Home} />} />
 
-          <PrivateRoute exact path="/products" component={ProductsPage} />
-          <PrivateRoute exact path="/product/new" component={ProductAddPage} />
-          <PrivateRoute exact path="/products/:id" component={ProductDetailPage} />
-          <PrivateRoute exact path="/products/:id/edit" component={ProductEditPage} />
+          <Route exact path="/products" render={() => <RequireAuth component={ProductsPage} />} />
+          <Route exact path="/product/new" render={() => <RequireAuth component={ProductAddPage} />} />
+          <Route exact path="/products/:id" render={() => <RequireAuth component={ProductDetailPage} />} />
+          <Route exact path="/products/:id/edit" render={() => <RequireAuth component={ProductEditPage} />} />
           
-          <PrivateRoute exact path="/orders" component={Orders} />
-          <PrivateRoute exact path="/orders/draft" component={DraftOrdersPage} />
-          <PrivateRoute exact path="/orders/new" component={OrderCreate} />
+          <Route exact path="/orders" render={() => <RequireAuth component={Orders} />} />
+          <Route exact path="/orders/draft" render={() => <RequireAuth component={DraftOrdersPage} />} />
+          <Route exact path="/orders/new" render={() => <RequireAuth component={OrderCreate} />} />
 
-          <PrivateRoute exact path="/sales" component={SalesPage} />
+          <Route exact path="/sales" render={() => <RequireAuth component={SalesPage} />} />
+          <Route exact path="/employees" render={() => <RequireAuth component={EmployeesPage} />} />
+          <Route exact path="/roles/:id" render={() => <RequireAuth component={RoleDetailPage} />} />
+
+          <Route exact path="/import-orders" render={() => <RequireAuth component={ImportOrdersPage} />} />
+          <Route exact path="/import-order/new" render={() => <RequireAuth component={ImportOrderCreatePage} />} />
+          <Route exact path="/import-order/edit/:id" render={() => <RequireAuth component={ImportOrderCreatePage} />} />
+          <Route exact path="/import-orders/:id" render={() => <RequireAuth component={ImportOrderDetailPage} />} />
 
           <Route exact path="/">
             <Redirect to="/login" />

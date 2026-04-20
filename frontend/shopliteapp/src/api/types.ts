@@ -174,3 +174,77 @@ export type InventoryAdjustment = {
     createdAt?: string;
     logs?: InventoryLog[];
 };
+
+export type Employee = {
+    id: number;
+    userId: number;
+    username: string;
+    phone?: string | null;
+    roleName?: string | null;
+    salaryRate: number;
+    qr?: string | null;
+    note?: string | null;
+    deleted: boolean;
+    officeId?: number | null;
+    officeName?: string | null;
+};
+
+export type Permission = {
+    id: number;
+    name: string;
+    apiPath: string;
+    method: string;
+    module: string;
+};
+
+export type Role = {
+    id: number;
+    name: string;
+    description: string;
+    active: boolean;
+    permissions: Permission[];
+};
+
+export type Supplier = {
+    id: number;
+    name: string;
+    phone?: string | null;
+    address?: string | null;
+    email?: string | null;
+    createdAt?: string;
+};
+
+export type ImportItem = {
+    id?: number;
+    productId: number;
+    productName?: string;
+    productSku?: string;
+    quantity: number;
+    importPrice: number;
+    subTotal?: number;
+};
+
+export type ImportOrder = {
+    id: number;
+    supplierId: number;
+    supplierName?: string;
+    tax?: number;
+    discount?: number;
+    totalAmount?: number;
+    amountPaid?: number;
+    status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+    note?: string;
+    createdAt?: string;
+    items?: ImportItem[];
+};
+
+export type ImportOrderUpsert = {
+    supplierId: number;
+    items: { productId: number; quantity: number; importPrice: number }[];
+    tax?: number;
+    discount?: number;
+    note?: string;
+    paidAmount?: number;
+    paymentMethod?: string;
+    status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+};

@@ -4,6 +4,8 @@ import {
     IonFabButton,
     IonHeader,
     IonIcon,
+    IonButtons,
+    IonButton,
     IonPage,
     IonRefresher,
     IonRefresherContent,
@@ -14,8 +16,8 @@ import {
 } from '@ionic/react';
 import {
     addOutline,
-    arrowBackOutline,
     barcodeOutline,
+    chevronBackOutline,
     imageOutline,
     searchOutline,
 } from 'ionicons/icons';
@@ -78,8 +80,8 @@ const ProductsPage: React.FC = () => {
         // Apply search filter
         if (debouncedSearchQuery.trim().length > 0) {
             const q = debouncedSearchQuery.toLowerCase().trim();
-            result = result.filter(p => 
-                p.name?.toLowerCase().includes(q) || 
+            result = result.filter(p =>
+                p.name?.toLowerCase().includes(q) ||
                 p.sku?.toLowerCase().includes(q) ||
                 p.barcode?.toLowerCase().includes(q)
             );
@@ -102,12 +104,12 @@ const ProductsPage: React.FC = () => {
         <IonPage>
             <IonHeader className="ion-no-border products-page-header">
                 <IonToolbar className="products-toolbar">
-                    <div className="products-toolbar-left" slot="start">
-                        <button className="products-toolbar-icon" type="button" aria-label="Back" onClick={() => ionRouter.goBack()}>
-                            <IonIcon icon={arrowBackOutline} />
-                        </button>
-                        <div className="products-toolbar-title">Hàng hóa</div>
-                    </div>
+                    <IonButtons slot="start">
+                        <IonButton color="dark" onClick={() => ionRouter.goBack()}>
+                            <IonIcon icon={chevronBackOutline} style={{ fontSize: '26px' }} />
+                        </IonButton>
+                    </IonButtons>
+                    <div className="products-toolbar-title">Hàng hóa</div>
                 </IonToolbar>
             </IonHeader>
 
@@ -119,9 +121,9 @@ const ProductsPage: React.FC = () => {
                 <div className="products-search-container">
                     <div className="products-search-box">
                         <IonIcon icon={searchOutline} />
-                        <input 
-                            type="text" 
-                            placeholder="Tìm kiếm tên, mã sản phẩm..." 
+                        <input
+                            type="text"
+                            placeholder="Tìm kiếm tên, mã sản phẩm..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -130,14 +132,14 @@ const ProductsPage: React.FC = () => {
                 </div>
 
                 <div className="products-categories-scroll">
-                    <button 
+                    <button
                         className={`products-category-pill ${activeCategoryId === 'ALL' ? 'active' : ''}`}
                         onClick={() => setActiveCategoryId('ALL')}
                     >
                         Tất cả
                     </button>
                     {categories.map(cat => (
-                        <button 
+                        <button
                             key={cat.id}
                             className={`products-category-pill ${activeCategoryId === cat.id ? 'active' : ''}`}
                             onClick={() => setActiveCategoryId(cat.id)}
@@ -165,7 +167,7 @@ const ProductsPage: React.FC = () => {
                                         <IonIcon icon={imageOutline} />
                                     </div>
                                 )}
-                                
+
                                 <div className="products-page-info">
                                     <div className="products-page-name">{p.name}</div>
                                     <div className="products-page-code">Mã: {p.sku}</div>

@@ -78,11 +78,11 @@ const Home: React.FC = () => {
               <div className="icon-box indigo"><IonIcon icon={cubeOutline} /></div>
               <span>Sản phẩm</span>
             </div>
-            <div className="shortcut-item">
+            <div className="shortcut-item" onClick={() => history.push('/employees')}>
               <div className="icon-box orange"><IonIcon icon={peopleOutline} /></div>
               <span>Nhân viên</span>
             </div>
-            <div className="shortcut-item">
+            <div className="shortcut-item" onClick={() => history.push('/import-orders')}>
               <div className="icon-box red"><IonIcon icon={logInOutline} /></div>
               <span>Nhập hàng</span>
             </div>

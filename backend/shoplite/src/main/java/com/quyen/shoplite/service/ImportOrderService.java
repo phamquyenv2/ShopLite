@@ -68,14 +68,17 @@ public class ImportOrderService {
             throw new IdInvalidException("Tổng tiền đơn nhập không được âm");
         }
 
+        Double paidAmount = req.getPaidAmount() != null ? req.getPaidAmount() : 0.0;
+        ImportOrderStatusEnum status = req.getStatus() != null ? req.getStatus() : ImportOrderStatusEnum.PENDING;
+
         // 4. Save ImportOrder
         ImportOrder importOrder = ImportOrder.builder()
                 .supplier(supplier)
                 .tax(tax)
                 .discount(discount)
                 .totalAmount(totalAmount)
-                .amountPaid(0.0)
-                .status(ImportOrderStatusEnum.PENDING)
+                .amountPaid(paidAmount)
+                .status(status)
                 .note(req.getNote())
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -86,6 +89,143 @@ public class ImportOrderService {
             item.setImportOrder(savedOrder);
         }
         List<ImportItem> savedItems = importItemRepository.saveAll(itemsToSave);
+
+        // 6. Handle COMPLETED status on creation
+        if (status == ImportOrderStatusEnum.COMPLETED) {
+            for (ImportItem item : savedItems) {
+                Product product = productRepository.findByIdWithLock(item.getProduct().getId())
+                        .orElseThrow(() -> new IdInvalidException(
+                                "Không tìm thấy Product id=" + item.getProduct().getId()));
+                int addedQty = item.getQuantity();
+                int newStock = product.getStock() + addedQty;
+                product.setStock(newStock);
+                productRepository.save(product);
+
+                inventoryLogsRepository.save(InventoryLogs.builder()
+                        .product(product)
+                        .importItem(item)
+                        .quantityIn(addedQty)
+                        .balanceAfter(newStock)
+                        .currentStock(newStock)
+                        .type(TypeInventoryEnum.IMPORT)
+                        .createdAt(LocalDateTime.now())
+                        .build());
+            }
+
+            // Create EXPENSE transaction with actual paidAmount if > 0
+            if (paidAmount > 0) {
+                transactionRepository.save(Transaction.builder()
+                        .importOrder(savedOrder)
+                        .amount(paidAmount) // Create expense transaction with what was actually paid
+                        .type(TypeTransactionEnum.EXPENSE)
+                        .content("Chi tiền nhập hàng - ImportOrder #" + savedOrder.getId() + (req.getPaymentMethod() != null ? " (" + req.getPaymentMethod() + ")" : ""))
+                        .transactionTime(LocalDateTime.now())
+                        .createdAt(LocalDateTime.now())
+                        .build());
+            }
+            log.info("[ImportOrder] Completed import order upon creation id={}, total={}, paid={}",
+                    savedOrder.getId(), savedOrder.getTotalAmount(), paidAmount);
+        }
+
+        return DTOMapper.toResImportOrderDTO(savedOrder, savedItems);
+    }
+
+    // ==================== UPDATE ====================
+
+    @Transactional
+    public ResImportOrderDTO update(Integer id, ReqImportOrderDTO req) {
+        ImportOrder order = importOrderRepository.findById(id)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy ImportOrder id=" + id));
+
+        if (order.getStatus() != ImportOrderStatusEnum.PENDING) {
+            throw new IdInvalidException("Chỉ có thể sửa đơn nhập khi đang ở trạng thái phiếu tạm (PENDING)");
+        }
+
+        Supplier supplier = supplierRepository.findById(req.getSupplierId())
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy Supplier id=" + req.getSupplierId()));
+
+        // Delete old items
+        List<ImportItem> oldItems = importItemRepository.findByImportOrder_Id(id);
+        importItemRepository.deleteAll(oldItems);
+
+        // Process new items
+        List<ImportItem> itemsToSave = new ArrayList<>();
+        double subtotalSum = 0.0;
+
+        for (ReqImportItemDTO itemReq : req.getItems()) {
+            Product product = productRepository.findById(itemReq.getProductId())
+                    .orElseThrow(() -> new IdInvalidException(
+                            "Không tìm thấy Product id=" + itemReq.getProductId()));
+
+            double subTotal = itemReq.getImportPrice() * itemReq.getQuantity();
+            subtotalSum += subTotal;
+
+            itemsToSave.add(ImportItem.builder()
+                    .product(product)
+                    .quantity(itemReq.getQuantity())
+                    .importPrice(itemReq.getImportPrice())
+                    .subTotal(subTotal)
+                    .importOrder(order)
+                    .build());
+        }
+
+        double tax = req.getTax() != null ? req.getTax() : 0.0;
+        double discount = req.getDiscount() != null ? req.getDiscount() : 0.0;
+        double totalAmount = subtotalSum + tax - discount;
+
+        if (totalAmount < 0) {
+            throw new IdInvalidException("Tổng tiền đơn nhập không được âm");
+        }
+
+        Double paidAmount = req.getPaidAmount() != null ? req.getPaidAmount() : 0.0;
+        ImportOrderStatusEnum status = req.getStatus() != null ? req.getStatus() : ImportOrderStatusEnum.PENDING;
+
+        order.setSupplier(supplier);
+        order.setTax(tax);
+        order.setDiscount(discount);
+        order.setTotalAmount(totalAmount);
+        order.setAmountPaid(paidAmount);
+        order.setStatus(status);
+        order.setNote(req.getNote());
+        
+        ImportOrder savedOrder = importOrderRepository.save(order);
+        List<ImportItem> savedItems = importItemRepository.saveAll(itemsToSave);
+
+        // Handle COMPLETED status on update
+        if (status == ImportOrderStatusEnum.COMPLETED) {
+            for (ImportItem item : savedItems) {
+                Product product = productRepository.findByIdWithLock(item.getProduct().getId())
+                        .orElseThrow(() -> new IdInvalidException(
+                                "Không tìm thấy Product id=" + item.getProduct().getId()));
+                int addedQty = item.getQuantity();
+                int newStock = product.getStock() + addedQty;
+                product.setStock(newStock);
+                productRepository.save(product);
+
+                inventoryLogsRepository.save(InventoryLogs.builder()
+                        .product(product)
+                        .importItem(item)
+                        .quantityIn(addedQty)
+                        .balanceAfter(newStock)
+                        .currentStock(newStock)
+                        .type(TypeInventoryEnum.IMPORT)
+                        .createdAt(LocalDateTime.now())
+                        .build());
+            }
+
+            if (paidAmount > 0) {
+                transactionRepository.save(Transaction.builder()
+                        .importOrder(savedOrder)
+                        .amount(paidAmount)
+                        .type(TypeTransactionEnum.EXPENSE)
+                        .content("Chi tiền nhập hàng - ImportOrder #" + savedOrder.getId() + (req.getPaymentMethod() != null ? " (" + req.getPaymentMethod() + ")" : ""))
+                        .transactionTime(LocalDateTime.now())
+                        .createdAt(LocalDateTime.now())
+                        .build());
+            }
+            log.info("[ImportOrder] Completed import order upon update id={}, total={}, paid={}",
+                    savedOrder.getId(), savedOrder.getTotalAmount(), paidAmount);
+        }
 
         return DTOMapper.toResImportOrderDTO(savedOrder, savedItems);
     }

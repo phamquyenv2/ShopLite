@@ -29,7 +29,14 @@ private Double tax;
 
     @PositiveOrZero(message = "discount phải >= 0")
     @PositiveOrZero(message = "discount must be greater than or equal to 0")
-private Double discount;
+    private Double discount;
 
     private String note;
+
+    @PositiveOrZero(message = "paidAmount phải >= 0")
+    private Double paidAmount;
+
+    private String paymentMethod;
+
+    private com.quyen.shoplite.util.constant.ImportOrderStatusEnum status;
 }

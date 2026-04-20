@@ -34,13 +34,19 @@ public class PermissionController {
         return ResponseEntity.ok(permissionService.findById(id));
     }
 
+    @GetMapping("/all")
+    @ApiMessage("Tất cả permissions")
+    public ResponseEntity<java.util.List<ResPermissionDTO>> getAllNoPaging() {
+        return ResponseEntity.ok(permissionService.findAll());
+    }
+
     @GetMapping
     @ApiMessage("Danh sách permissions")
     public ResponseEntity<Map<String, Object>> getAll(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir) {
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "sortBy", defaultValue = "createdAt") String sortBy,
+            @RequestParam(name = "sortDir", defaultValue = "desc") String sortDir) {
 
         Sort sort = sortDir.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();

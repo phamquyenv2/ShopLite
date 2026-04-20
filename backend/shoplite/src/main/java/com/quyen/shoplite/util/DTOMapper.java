@@ -190,6 +190,10 @@ public class DTOMapper {
         if (employee.getUser() != null) {
             dto.setUserId(employee.getUser().getId());
             dto.setUsername(employee.getUser().getUsername());
+            dto.setPhone(employee.getUser().getPhone());
+            if (employee.getUser().getRole() != null) {
+                dto.setRoleName(employee.getUser().getRole().getName());
+            }
         }
         if (employee.getOffice() != null) {
             dto.setOfficeId(employee.getOffice().getId());

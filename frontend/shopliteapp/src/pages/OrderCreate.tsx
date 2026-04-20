@@ -8,6 +8,7 @@ import {
     IonPage,
     IonToast,
     IonToolbar,
+    useIonViewWillEnter,
 } from '@ionic/react';
 import {
     addOutline,
@@ -19,7 +20,7 @@ import {
     personOutline,
     refreshOutline,
 } from 'ionicons/icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
 import type { Customer, OrderUpsert, Product } from '../api/types';
@@ -167,7 +168,7 @@ const OrderCreatePage: React.FC = () => {
         }
     };
 
-    useEffect(() => {
+    useIonViewWillEnter(() => {
         const stateDraft = parseDraft(location.state?.salesDraft);
         const savedDraft = readDraft();
         const draft = stateDraft.items.length > 0 ? stateDraft : savedDraft;
@@ -182,9 +183,15 @@ const OrderCreatePage: React.FC = () => {
             setToast('Chưa thấy dữ liệu đơn tạm, hãy chọn món ở màn Bán hàng');
         }
         void loadLookups(draft.customerId ?? undefined);
-    }, [location.state]);
+    });
+
+    const isFirstRender = useRef(true);
 
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         persistDraft(items, customerId);
     }, [items, customerId]);
 

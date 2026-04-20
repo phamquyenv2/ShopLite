@@ -54,7 +54,7 @@ public class OrderService {
         Customer customer = null;
         if (req.getCustomerId() != null) {
             customer = customerRepository.findById(req.getCustomerId())
-                    .orElseThrow(() -> new IdInvalidException("KhÃ´ng tÃ¬m tháº¥y Customer id=" + req.getCustomerId()));
+                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy Customer id=" + req.getCustomerId()));
         }
 
         // 3. Validate items + compute totalAmount

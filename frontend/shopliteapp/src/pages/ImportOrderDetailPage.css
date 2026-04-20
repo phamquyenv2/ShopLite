@@ -1,0 +1,128 @@
+.iod-page {
+    --background: #f4f6f9;
+}
+
+.iod-header {
+    background: #fff;
+    box-shadow: none !important;
+}
+
+.iod-header.header-md {
+    box-shadow: none !important;
+}
+
+.iod-header::after {
+    display: none !important;
+}
+
+.iod-toolbar {
+    --background: #fff;
+    --border-width: 0;
+}
+
+.iod-content {
+    --background: #f4f6f9;
+}
+
+.iod-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: #94a3b8;
+    font-size: 15px;
+}
+
+/* Info Section */
+.iod-info-section { padding: 16px; margin-bottom: 8px; }
+.iod-info-top { display: flex; justify-content: space-between; align-items: center; }
+.iod-code { font-size: 20px; font-weight: 600; color: #111; }
+.iod-date { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+
+.iod-status { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.status-pending { background: #FFEDD5; color: #C2410C; }
+.status-completed { background: #dcfce7; color: #16a34a; }
+.status-cancelled { background: #fce4ec; color: #e53935; }
+
+/* Cards */
+.iod-card {
+    background: #fff; margin: 0 16px 12px; border-radius: 12px;
+    padding: 16px;
+    /* Remove shadow if it makes it look cleaner, or keep light shadow */
+}
+
+/* Supplier */
+.iod-supplier-row { display: flex; align-items: center; gap: 12px; }
+.iod-supplier-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #f8fafc; border: 1px solid #f1f5f9;
+    display: flex; align-items: center; justify-content: center;
+}
+.iod-supplier-name { font-size: 15px; font-weight: 500; color: #111; }
+.iod-supplier-code { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+
+/* Items */
+.iod-items-card { padding: 0; }
+.iod-item-row {
+    display: flex; gap: 12px; padding: 16px; border-bottom: 1px solid #f1f5f9;
+}
+.iod-item-row.last-item { border-bottom: none; }
+
+.iod-item-thumb {
+    width: 48px; height: 48px; border-radius: 8px; overflow: hidden;
+    background: #f8fafc; display: flex; align-items: center; justify-content: center;
+}
+.iod-thumb-ph { width: 100%; height: 100%; background: #e2e8f0; } /* Fallback */
+
+.iod-item-content { flex: 1; }
+.iod-item-name { font-size: 15px; font-weight: 500; color: #111; line-height: 1.3; }
+.iod-item-sku { font-size: 13px; color: #64748b; margin-top: 4px; }
+.iod-item-calc {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 8px; font-size: 14px; color: #64748b;
+}
+.iod-item-total { font-size: 15px; font-weight: 600; color: #111; }
+
+/* Totals */
+.iod-total-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 15px; color: #111;
+}
+.iod-total-row:last-child { border-bottom: none; }
+.iod-total-row.bold { font-weight: 600; }
+
+.iod-t-block { display: flex; flex-direction: column; }
+.iod-t-label-main { font-size: 15px; font-weight: 500; color: #111; }
+.iod-t-sub { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+.iod-t-val-main { font-size: 15px; font-weight: 600; color: #111; }
+
+.iod-paid { color: #0066FF; font-weight: 600; }
+
+/* People */
+.iod-people { margin-bottom: 24px; }
+.iod-people-row { display: flex; gap: 40px; }
+.iod-people-label { font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
+.iod-people-name { font-size: 15px; font-weight: 600; color: #111; }
+.mt-12 { margin-top: 20px; }
+
+/* Action */
+.iod-action-footer {
+    background: #f4f6f9;
+}
+.iod-action-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 16px;
+    gap: 4px;
+    background: #f4f6f9;
+}
+.iod-action-icon {
+    font-size: 24px;
+    color: #0066FF;
+}
+.iod-action-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #0066FF;
+}

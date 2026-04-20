@@ -1,0 +1,286 @@
+.role-detail-page {
+    --rd-bg: #f8fafc;
+    background-color: var(--rd-bg);
+}
+
+.rd-header {
+    background: #fff;
+    box-shadow: none !important;
+}
+
+.rd-header.header-md {
+    box-shadow: none !important;
+}
+
+.rd-header::after {
+    display: none !important;
+}
+
+.rd-toolbar {
+    --background: #fff;
+    --border-width: 0;
+}
+
+.rd-title {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111;
+}
+
+.rd-content {
+    --background: #f8fafc;
+}
+
+.rd-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.rd-container {
+    padding: 16px;
+    padding-bottom: 100px;
+}
+
+.rd-info-banner {
+    background: #eff6ff;
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.rd-info-icon {
+    color: #2563eb;
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.rd-info-banner span {
+    color: #334155;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* Form Styles */
+.rd-form-group {
+    margin-bottom: 20px;
+}
+
+.rd-form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #334155;
+    margin-bottom: 8px;
+}
+
+.text-red {
+    color: #ef4444;
+}
+
+.rd-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.rd-input-wrap input,
+.rd-form-group textarea {
+    width: 100%;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 15px;
+    color: #111;
+    outline: none;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.rd-input-wrap input:focus,
+.rd-form-group textarea:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.rd-clear-icon {
+    position: absolute;
+    right: 12px;
+    color: #94a3b8;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+/* Permissions Section */
+.rd-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+    margin: 24px 0 16px 0;
+}
+
+.rd-permissions-list {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+/* ── Module Group ────────────────────────────────────────── */
+.rd-module-group {
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.rd-module-group:last-child {
+    border-bottom: none;
+}
+
+/* Module Header Row */
+.rd-module-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+
+.rd-module-header:active {
+    background: #f8fafc;
+}
+
+.rd-module-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.rd-module-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+}
+
+.rd-chevron {
+    color: #94a3b8;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+/* ── Custom Checkbox ─────────────────────────────────────── */
+.rd-checkbox-custom {
+    width: 22px;
+    height: 22px;
+    border: 2px solid #cbd5e1;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: #fff;
+}
+
+.rd-checkbox-custom.small {
+    width: 20px;
+    height: 20px;
+}
+
+.rd-checkbox-custom.checked {
+    background: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.rd-checkbox-custom.partial {
+    background: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.rd-check-icon {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.rd-partial-icon {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* ── Expanded Children ───────────────────────────────────── */
+.rd-module-children {
+    background: #fafbfc;
+    border-top: 1px solid #f1f5f9;
+}
+
+.rd-perm-child {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px 12px 50px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+
+.rd-perm-child:active {
+    background: #f1f5f9;
+}
+
+.rd-perm-child + .rd-perm-child {
+    border-top: 1px solid #f1f5f9;
+}
+
+.rd-perm-name {
+    font-size: 14px;
+    color: #334155;
+}
+
+/* Footer Actions */
+.rd-footer {
+    background: #fff;
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.rd-btn-delete {
+    flex: 1;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 12px;
+    padding: 14px 0;
+    cursor: pointer;
+}
+
+.rd-btn-save {
+    flex: 2;
+    background: #0d6efd;
+    border: none;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 12px;
+    padding: 14px 0;
+    cursor: pointer;
+}
+
+.rd-btn-save:disabled {
+    opacity: 0.7;
+}

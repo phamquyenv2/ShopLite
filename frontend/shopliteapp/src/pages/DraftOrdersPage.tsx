@@ -63,8 +63,9 @@ const DraftOrdersPage: React.FC = () => {
         setError(null);
         try {
             const res = await authApis().get(endpoints.orders + '?statuses=DRAFT');
-            const list = res.data;
-            setOrders(Array.isArray(list) ? list : []);
+            const payload = res.data as any;
+            const list = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []);
+            setOrders(list);
         } catch (err) {
             setError(err instanceof ApiError ? err.message : 'Không thể tải danh sách đơn tạm');
         } finally {

@@ -42,6 +42,14 @@ public class ImportOrderController {
         return ResponseEntity.ok(importOrderService.findById(id));
     }
 
+    @PutMapping("/{id}")
+    @ApiMessage("Update import order success")
+    public ResponseEntity<ResImportOrderDTO> update(
+            @PathVariable("id") @Positive(message = " must be greater than 0") Integer id,
+            @Valid @RequestBody ReqImportOrderDTO req) {
+        return ResponseEntity.ok(importOrderService.update(id, req));
+    }
+
     @PutMapping("/{id}/status")
     @ApiMessage("Update import order status success")
     public ResponseEntity<ResImportOrderDTO> updateStatus(

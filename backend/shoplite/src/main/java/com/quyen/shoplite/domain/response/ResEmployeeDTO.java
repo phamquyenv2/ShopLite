@@ -15,6 +15,8 @@ public class ResEmployeeDTO {
     // --- User info ---
     private Integer userId;
     private String username;
+    private String phone;
+    private String roleName;
 
     // --- Office info ---
     private Integer officeId;

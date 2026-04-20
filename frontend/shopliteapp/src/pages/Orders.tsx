@@ -23,7 +23,8 @@ const Orders: React.FC = () => {
         setBusy(true);
         try {
             const res = await authApis().get<Order[]>(endpoints.orders);
-            setItems(Array.isArray(res.data) ? res.data : []);
+            const payload = res.data as any;
+            setItems(Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []));
         } catch (err) {
             setItems([]);
             setToast(err instanceof ApiError ? err.message : 'Failed to load orders');

@@ -1,6 +1,14 @@
 .products-page-header {
-    --background: #fff;
-    --border-color: #eee;
+    background: #fff;
+    box-shadow: none !important;
+}
+
+.products-page-header.header-md {
+    box-shadow: none !important;
+}
+
+.products-page-header::after {
+    display: none !important;
 }
 
 .products-toolbar {
@@ -8,6 +16,8 @@
     --padding-bottom: 8px;
     --padding-start: 8px;
     --padding-end: 8px;
+    --background: transparent;
+    --border-width: 0;
 }
 
 .products-toolbar-left {
@@ -35,9 +45,10 @@
 }
 
 .products-toolbar-title {
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: #111;
+    margin-left: -8px;
 }
 
 .products-toolbar-right {
@@ -92,17 +103,20 @@
     overflow-x: auto;
     padding: 12px 16px;
     gap: 12px;
-    scrollbar-width: none; /* Firefox */
+    scrollbar-width: none;
+    /* Firefox */
     width: 100%;
 }
 
 .products-categories-scroll::after {
     content: '';
-    min-width: 4px; /* To make right padding visible (after 12px gap) */
+    min-width: 4px;
+    /* To make right padding visible (after 12px gap) */
 }
 
 .products-categories-scroll::-webkit-scrollbar {
-    display: none; /* Safari and Chrome */
+    display: none;
+    /* Safari and Chrome */
 }
 
 .products-category-pill {
@@ -137,7 +151,7 @@
     padding: 12px;
     gap: 16px;
     align-items: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
     cursor: pointer;
 }
 
@@ -223,7 +237,9 @@
     --box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4);
 }
 
-.products-loader, .products-error, .products-empty {
+.products-loader,
+.products-error,
+.products-empty {
     text-align: center;
     padding: 32px 16px;
     color: #888;
