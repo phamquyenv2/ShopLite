@@ -98,6 +98,7 @@ export type Order = {
     customerName?: string | null;
     totalAmount?: number | null;
     discount?: number | null;
+    paymentMethod?: 'CASH' | 'BANK' | 'SEPAY_QR' | 'COD' | 'VNPAY' | 'MOMO' | null;
     status?: 'DRAFT' | 'PENDING' | 'PENDING_PAYMENT' | 'COMPLETED' | 'FAIL' | 'CANCELLED';
     createdAt?: string;
     paidAt?: string | null;
@@ -106,7 +107,18 @@ export type Order = {
     items?: OrderItem[];
 };
 
-export type TransactionType = 'REVENUE' | 'EXPENSE' | 'REFUND' | 'SALARY';
+export type TransactionType = 'REVENUE' | 'EXPENSE' | 'REFUND' | 'SALARY' | 'ADJUSTMENT';
+
+export type FundType = 'CASH' | 'BANK' | 'EWALLET';
+
+export type FundAccount = {
+    id: number;
+    name: string;
+    type: FundType;
+    openingBalance: number;
+    balance: number;
+    isActive: boolean;
+};
 
 export type TransactionUpsert = {
     externalId?: string | null;
@@ -118,18 +130,22 @@ export type TransactionUpsert = {
     orderId?: number | null;
 };
 
+export type DirectionEnum = 'IN' | 'OUT';
+
 export type Transaction = {
     id: number;
-    amount: number;
     type: TransactionType;
+    direction: DirectionEnum;
+    amount: number;
     content?: string | null;
+    transactionCode?: string | null;
     transactionTime?: string | null;
     createdAt?: string;
-    orderId?: number | null;
-    orderCode?: string | null;
-    importOrderId?: number | null;
     paymentId?: number | null;
-    payrollId?: number | null;
+    fundAccountId?: number | null;
+    fundAccountName?: string | null;
+    balanceBefore?: number | null;
+    balanceAfter?: number | null;
 };
 
 export type InventoryType = 'IMPORT' | 'SALE' | 'ADJUST' | 'RETURN';
@@ -220,6 +236,7 @@ export type ImportItem = {
     productName?: string;
     productSku?: string;
     quantity: number;
+    returnedQuantity?: number;
     importPrice: number;
     subTotal?: number;
 };
@@ -232,7 +249,8 @@ export type ImportOrder = {
     discount?: number;
     totalAmount?: number;
     amountPaid?: number;
-    status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+    status: 'PENDING' | 'PENDING_PAYMENT' | 'COMPLETED' | 'CANCELLED';
+    returnStatus?: 'UNRETURNED' | 'PARTIAL_RETURNED' | 'FULL_RETURNED';
     note?: string;
     createdAt?: string;
     items?: ImportItem[];
@@ -247,4 +265,42 @@ export type ImportOrderUpsert = {
     paidAmount?: number;
     paymentMethod?: string;
     status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+};
+
+export type ImportReturnItem = {
+    id?: number;
+    productId: number;
+    productName?: string;
+    productSku?: string;
+    productImage?: string;
+    quantity: number;
+    returnPrice: number;
+    subTotal?: number;
+};
+
+export type ImportReturnOrder = {
+    id: number;
+    supplierId: number;
+    supplierName?: string;
+    supplierPhone?: string;
+    importOrderId?: number;
+    totalAmount?: number;
+    discount?: number;
+    amountPaid?: number;
+    note?: string;
+    createdByUsername?: string;
+    receivedByUsername?: string;
+    createdAt?: string;
+    items?: ImportReturnItem[];
+};
+
+export type ImportReturnOrderUpsert = {
+    supplierId: number;
+    importOrderId?: number;
+    items: { productId: number; quantity: number; returnPrice: number }[];
+    discount?: number;
+    amountPaid?: number;
+    note?: string;
+    createdByUsername?: string;
+    receivedByUsername?: string;
 };

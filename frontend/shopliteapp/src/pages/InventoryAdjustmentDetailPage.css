@@ -1,0 +1,218 @@
+/* ====================================================
+   InventoryAdjustmentDetailPage.css
+   ==================================================== */
+
+/* ── Page ─────────────────────────────────────────── */
+.iad-page { --background: #f4f6f9; }
+.iad-header { background: transparent; box-shadow: none !important; }
+.iad-header.header-md { box-shadow: none !important; }
+.iad-header::after { display: none !important; }
+.iad-toolbar { --background: transparent; --border-width: 0; }
+.iad-content { --background: #f4f6f9; }
+
+/* ── Loading ──────────────────────────────────────── */
+.iad-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 80px 20px;
+    color: #94a3b8;
+    font-size: 15px;
+}
+
+/* ── Hero card (code + date + badge) ─────────────── */
+.iad-hero-card {
+    background: #fff;
+    padding: 16px 20px 18px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.iad-code {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111;
+    margin-bottom: 4px;
+}
+.iad-date {
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* Status badges */
+.iad-status-badge {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 2px;
+}
+.iad-status-badge.balanced {
+    background: #dcfce7;
+    color: #16a34a;
+}
+.iad-status-badge.adjusted {
+    background: #fff7ed;
+    color: #ea580c;
+}
+
+/* ── Info card (branch + actors) ──────────────────── */
+.iad-info-card {
+    background: #fff;
+    padding: 14px 20px 16px;
+    margin-top: 8px;
+    border-top: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+}
+.iad-branch-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+    margin-bottom: 8px;
+}
+.iad-actor-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+.iad-loc-icon {
+    font-size: 16px;
+    color: #94a3b8;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.iad-actor-lines { display: flex; flex-direction: column; gap: 4px; }
+.iad-actor-line { font-size: 13px; color: #64748b; }
+.iad-actor-name { color: #374151; font-weight: 500; }
+
+/* ── Product table card ───────────────────────────── */
+.iad-table-card {
+    background: #fff;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.iad-table-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    background: #fafafa;
+    border-bottom: 1px solid #f1f5f9;
+}
+.iad-th-product {
+    flex: 1;
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+}
+.iad-th-actual, .iad-th-delta {
+    width: 68px;
+    text-align: right;
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+}
+
+.iad-table-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    gap: 8px;
+}
+.iad-table-row.last { border-bottom: none; }
+
+.iad-tr-product { flex: 1; min-width: 0; }
+.iad-tr-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+    line-height: 1.4;
+    margin-bottom: 3px;
+}
+.iad-tr-sku { font-size: 13px; color: #94a3b8; margin-bottom: 2px; }
+.iad-tr-stock { font-size: 13px; color: #94a3b8; }
+
+.iad-tr-actual {
+    width: 68px;
+    text-align: right;
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+}
+.iad-tr-delta {
+    width: 68px;
+    text-align: right;
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+}
+.iad-tr-delta.neg { color: #dc2626; }
+.iad-tr-delta.pos { color: #16a34a; }
+
+.iad-table-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+/* ── Summary card ─────────────────────────────────── */
+.iad-summary-card {
+    background: #fff;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.iad-sum-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.iad-sum-row.last { border-bottom: none; }
+
+.iad-sum-label {
+    font-size: 15px;
+    font-weight: 500;
+    color: #111;
+    margin-bottom: 4px;
+}
+.iad-sum-sub { font-size: 13px; color: #94a3b8; }
+.iad-sum-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111;
+    min-width: 80px;
+    text-align: right;
+}
+.iad-sum-value.neg { color: #dc2626; }
+.iad-sum-value.pos { color: #16a34a; }
+
+/* ── Note card ────────────────────────────────────── */
+.iad-note-card {
+    background: #fff;
+    margin-top: 8px;
+    margin-bottom: 24px;
+    padding: 16px 20px;
+}
+.iad-note-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 6px;
+}
+.iad-note-text {
+    font-size: 15px;
+    color: #374151;
+    line-height: 1.5;
+}

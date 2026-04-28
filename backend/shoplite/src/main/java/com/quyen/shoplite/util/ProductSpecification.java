@@ -12,12 +12,13 @@ public class ProductSpecification {
     private ProductSpecification() {
     }
 
-    public static Specification<Product> filter(String keyword, Integer categoryId,
+    public static Specification<Product> filter(Long storeId, String keyword, Integer categoryId,
             Double minPrice, Double maxPrice, Integer unitId) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             // Luôn loại bỏ sản phẩm bị xóa mềm
+            predicates.add(cb.equal(root.get("store").get("id"), storeId));
             predicates.add(cb.equal(root.get("isDeleted"), false));
 
             // Lọc theo keyword (tên hoặc SKU)

@@ -32,7 +32,11 @@ public class UserDetailsCustom implements UserDetailsService {
         }
 
         // Dùng role.name từ Role entity; fallback là "USER" nếu chưa gán role
-        String roleName = (user.getRole() != null) ? user.getRole().getName() : "USER";
+        String roleName = user.getStoreMemberships().stream()
+                .filter(m -> m.getStatus() == com.quyen.shoplite.util.constant.StoreMemberStatus.ACTIVE)
+                .findFirst()
+                .map(m -> m.getRole() != null ? m.getRole().getName() : "USER")
+                .orElse("USER");
 
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getUsername())

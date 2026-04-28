@@ -1,72 +1,152 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.Order;
+import com.quyen.shoplite.domain.FundAccount;
+import com.quyen.shoplite.domain.Payment;
 import com.quyen.shoplite.domain.Transaction;
 import com.quyen.shoplite.domain.request.ReqTransactionDTO;
 import com.quyen.shoplite.domain.response.ResTransactionDTO;
-import com.quyen.shoplite.repository.OrderRepository;
+import com.quyen.shoplite.repository.FundAccountRepository;
+import com.quyen.shoplite.repository.PaymentRepository;
 import com.quyen.shoplite.repository.TransactionRepository;
 import com.quyen.shoplite.util.DTOMapper;
-import com.quyen.shoplite.util.constant.TypeTransactionEnum;
+import com.quyen.shoplite.util.constant.DirectionEnum;
 import com.quyen.shoplite.util.error.IdInvalidException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
-    private final OrderRepository orderRepository;
+    private final FundAccountRepository fundAccountRepository;
+    private final PaymentRepository paymentRepository;
+    private final CurrentStoreService currentStoreService;
 
+    private static final DateTimeFormatter CODE_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final AtomicLong SEQ = new AtomicLong(1);
+
+    /**
+     * Tạo Transaction — cập nhật balance FundAccount trong cùng 1 DB transaction.
+     * FundAccount sẽ bị pessimistic lock để đảm bảo consistency.
+     */
+    @Transactional
     public ResTransactionDTO create(ReqTransactionDTO req) {
-        // BUG-05: Validate positive amount
-        if (req.getAmount() == null || req.getAmount() <= 0) {
+        Long storeId = currentStoreService.getCurrentStoreId();
+        // Validate amount
+        if (req.getAmount() == null || req.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IdInvalidException("Số tiền giao dịch phải lớn hơn 0");
         }
 
-        Order order = null;
-        if (req.getOrderId() != null) {
-            order = orderRepository.findById(req.getOrderId())
-                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy Order id=" + req.getOrderId()));
+        // Lock fund account
+        FundAccount fundAccount = fundAccountRepository.findByIdAndStoreIdWithLock(req.getFundAccountId(), storeId)
+                .orElseThrow(() -> new IdInvalidException(
+                        "Không tìm thấy FundAccount id=" + req.getFundAccountId()));
 
-            // BUG-06: Idempotency guard — prevent duplicate REVENUE/EXPENSE per order
-            if (req.getType() == TypeTransactionEnum.REVENUE || req.getType() == TypeTransactionEnum.EXPENSE) {
-                if (transactionRepository.existsByOrder_IdAndType(req.getOrderId(), req.getType())) {
-                    throw new IdInvalidException(
-                            "Đã tồn tại giao dịch " + req.getType() + " cho đơn hàng id=" + req.getOrderId());
-                }
+        if (!Boolean.TRUE.equals(fundAccount.getIsActive())) {
+            throw new IdInvalidException("FundAccount id=" + req.getFundAccountId() + " không hoạt động");
+        }
+
+        // Resolve optional payment
+        Payment payment = null;
+        if (req.getPaymentId() != null) {
+            payment = paymentRepository.findById(req.getPaymentId())
+                    .orElseThrow(() -> new IdInvalidException(
+                            "Không tìm thấy Payment id=" + req.getPaymentId()));
+            if (!payment.getStore().getId().equals(storeId)) {
+                throw new IdInvalidException("Payment is not in the current store");
             }
         }
+
+        // Calculate balance
+        BigDecimal balanceBefore = fundAccount.getBalance();
+        BigDecimal balanceAfter;
+
+        if (req.getDirection() == DirectionEnum.IN) {
+            balanceAfter = balanceBefore.add(req.getAmount());
+        } else {
+            balanceAfter = balanceBefore.subtract(req.getAmount());
+            if (balanceAfter.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IdInvalidException("Số dư quỹ không đủ để thực hiện giao dịch (hiện tại: "
+                        + balanceBefore + ", cần chi: " + req.getAmount() + ")");
+            }
+        }
+
+        // Generate transaction code
+        String transactionCode = generateTransactionCode();
+
+        // Build & save Transaction
         Transaction transaction = Transaction.builder()
-                .amount(req.getAmount())
+                .store(fundAccount.getStore())
                 .type(req.getType())
+                .direction(req.getDirection())
+                .amount(req.getAmount())
                 .content(req.getContent())
+                .payment(payment)
+                .fundAccount(fundAccount)
+                .balanceBefore(balanceBefore)
+                .balanceAfter(balanceAfter)
+                .transactionCode(transactionCode)
                 .transactionTime(req.getTransactionTime() != null ? req.getTransactionTime() : LocalDateTime.now())
-                .createdAt(LocalDateTime.now())
-                .order(order)
                 .build();
-        return DTOMapper.toResTransactionDTO(transactionRepository.save(transaction));
+
+        Transaction saved = transactionRepository.save(transaction);
+
+        // Update fund account balance
+        fundAccount.setBalance(balanceAfter);
+        fundAccountRepository.save(fundAccount);
+
+        log.info("[Transaction] Created {} {} amount={} fund={} balance: {} -> {}",
+                req.getDirection(), req.getType(), req.getAmount(),
+                fundAccount.getName(), balanceBefore, balanceAfter);
+
+        return DTOMapper.toResTransactionDTO(saved);
     }
 
     public ResTransactionDTO findById(Integer id) {
-        Transaction transaction = transactionRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Transaction transaction = transactionRepository.findByIdAndStoreId(id, storeId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy Transaction id=" + id));
         return DTOMapper.toResTransactionDTO(transaction);
     }
 
     public List<ResTransactionDTO> findAll() {
-        return transactionRepository.findAll().stream()
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return transactionRepository.findAllByStoreIdOrderByTransactionTimeDesc(storeId).stream()
                 .map(DTOMapper::toResTransactionDTO)
                 .toList();
     }
 
-    public List<ResTransactionDTO> findByOrderId(Integer orderId) {
-        return transactionRepository.findAllByOrder_Id(orderId).stream()
+    public List<ResTransactionDTO> findByFundAccountId(Integer fundAccountId) {
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return transactionRepository.findAllByStoreIdAndFundAccount_Id(storeId, fundAccountId).stream()
                 .map(DTOMapper::toResTransactionDTO)
                 .toList();
+    }
+
+    public List<ResTransactionDTO> findByPaymentId(Integer paymentId) {
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return transactionRepository.findAllByStoreIdAndPayment_Id(storeId, paymentId).stream()
+                .map(DTOMapper::toResTransactionDTO)
+                .toList();
+    }
+
+    /**
+     * Generate unique transaction code: TXN-yyyyMMdd-SEQ
+     */
+    private String generateTransactionCode() {
+        String dateStr = LocalDate.now().format(CODE_DATE_FMT);
+        long seq = SEQ.getAndIncrement();
+        return "TXN-" + dateStr + "-" + String.format("%04d", seq);
     }
 }

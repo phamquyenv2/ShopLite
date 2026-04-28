@@ -44,17 +44,22 @@ public class SecurityConfiguration {
     private static final String[] PUBLIC_ENDPOINTS = {
         "/api/v1/auth/login",
         "/api/v1/auth/register",
+        "/api/v1/auth/register/otp/send",
+        "/api/v1/auth/register/otp/verify",
+        "/api/v1/auth/register/store",
+        "/api/v1/auth/register/complete",
         "/api/v1/auth/refresh",
         "/swagger-ui/**",
         "/v3/api-docs/**",
         "/swagger-ui.html",
-        "/api/v1/products/**",
-        "/api/v1/categories/**",
-        "/api/webhook/sepay",
+        "/api/v1/payment/webhook/sepay",
+        "/api/v1/payment/webhook/momo",
         "/api/v1/payment/create",
         "/api/v1/device-tokens/register",
-        "/actuator/**"
+        "/actuator/**",
+        "/error"
     };
+
 
     // ─── Security Filter Chain ─────────────────────────────────────────────────
     @Bean
@@ -135,8 +140,8 @@ public class SecurityConfiguration {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
         configuration.setAllowedOrigins(java.util.List.of("*")); // Cho phép tất cả các nguồn (Emulator, Phone, Web)
         configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type", "x-auth-token"));
-        configuration.setExposedHeaders(java.util.List.of("x-auth-token"));
+        configuration.setAllowedHeaders(java.util.List.of("*"));
+        configuration.setExposedHeaders(java.util.List.of("Authorization", "x-auth-token"));
         org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

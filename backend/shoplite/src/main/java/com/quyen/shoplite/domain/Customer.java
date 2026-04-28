@@ -4,7 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "customers")
+@Table(name = "customers",
+        uniqueConstraints = @UniqueConstraint(name = "uk_customers_store_phone", columnNames = {"store_id", "phone"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,10 +20,14 @@ public class Customer {
     @Version
     private Integer version;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
+
     @Column(nullable = false, length = 200)
     private String name;
 
-    @Column(nullable = false, unique = true, length = 20)
+    @Column(nullable = false, length = 20)
     private String phone;
 
     /** Loyalty / reward points */

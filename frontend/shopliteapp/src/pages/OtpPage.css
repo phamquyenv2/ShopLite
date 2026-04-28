@@ -1,0 +1,151 @@
+/* ══════════════════════════════
+   OtpPage.css
+   Layout mirrors the reference image
+   Header: blue gradient (ShopLite)
+   ══════════════════════════════ */
+
+.otp-page {
+  --ion-background-color: #ffffff;
+}
+
+.otp-content {
+  --background: transparent;
+  --ion-font-family: var(--app-font-family);
+  font-family: var(--app-font-family);
+  height: 100%;
+  position: relative;
+}
+
+/* ── Tall gradient header ── */
+.otp-header {
+  background: linear-gradient(150deg, #0055e5 0%, #1a8fff 55%, #56cffa 100%);
+  height: 14vh;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Back button — dark circle top-left */
+.otp-back-btn {
+  position: absolute;
+  top: 52px;
+  left: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #000000;
+  border: none;
+  color: #ffffff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+}
+
+/* ── White sheet that slides up over header ── */
+.otp-sheet {
+  background: #ffffff;
+  border-radius: 24px 24px 0 0;
+  margin-top: -32px;
+  min-height: calc(86vh + 32px);
+  padding: 36px 20px 20px;
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+/* Title */
+.otp-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: #0062ff;             /* blue */
+  margin: 0 0 16px;
+}
+
+/* Description & Phone */
+.otp-desc {
+  font-size: 15px;
+  color: #6b7280;
+  margin: 0 0 6px;
+}
+
+.otp-phone-text {
+  color: #0062ff;             /* blue */
+  font-weight: 600;
+}
+
+/* Change phone link */
+.otp-change-phone {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #2563eb;             /* blue link */
+  font-size: 16px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  margin-bottom: 36px;
+}
+
+/* OTP Inputs */
+.otp-input-group {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 36px;
+}
+
+.otp-digit-input {
+  width: 46px;
+  height: 58px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 24px;
+  font-weight: 500;
+  text-align: center;
+  color: #1f2937;
+  background: transparent;
+  outline: none;
+  transition: border-color 0.2s, background 0.15s;
+  box-shadow: none;
+}
+
+.otp-digit-input:focus {
+  border-color: #0062ff;      /* blue border when active */
+}
+
+/* Resend text */
+.otp-resend-text {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.otp-timer {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.otp-resend-btn {
+  background: none;
+  border: none;
+  color: #0062ff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.otp-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.otp-digit-input.filled {
+  border-color: #0062ff;
+  background: #f0f6ff;
+}

@@ -246,6 +246,12 @@
     font-size: 14px;
 }
 
+.ioc-search-hint {
+    padding-top: 60px;
+    font-size: 15px;
+    color: #cbd5e1;
+}
+
 /* =====================================
    Checkout Layout Styles
 ======================================== */

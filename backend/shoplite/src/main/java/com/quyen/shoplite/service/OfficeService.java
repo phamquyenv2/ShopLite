@@ -1,6 +1,7 @@
 package com.quyen.shoplite.service;
 
 import com.quyen.shoplite.domain.Office;
+import com.quyen.shoplite.domain.Store;
 import com.quyen.shoplite.domain.request.ReqOfficeDTO;
 import com.quyen.shoplite.domain.response.ResOfficeDTO;
 import com.quyen.shoplite.repository.OfficeRepository;
@@ -19,12 +20,15 @@ import java.util.List;
 public class OfficeService {
 
     private final OfficeRepository officeRepository;
+    private final CurrentStoreService currentStoreService;
 
     @Transactional
     public ResOfficeDTO create(ReqOfficeDTO req) {
-        validateDuplicateName(req.getName(), null);
+        Store store = currentStoreService.getCurrentStore();
+        validateDuplicateName(store.getId(), req.getName(), null);
 
         Office office = Office.builder()
+                .store(store)
                 .name(req.getName().trim())
                 .officeLat(req.getOfficeLat())
                 .officeLng(req.getOfficeLng())
@@ -43,7 +47,8 @@ public class OfficeService {
     }
 
     public List<ResOfficeDTO> findAll() {
-        return officeRepository.findAll().stream()
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return officeRepository.findAllByStoreIdOrderByIdAsc(storeId).stream()
                 .map(DTOMapper::toResOfficeDTO)
                 .toList();
     }
@@ -51,7 +56,8 @@ public class OfficeService {
     @Transactional
     public ResOfficeDTO update(Integer id, ReqOfficeDTO req) {
         Office office = findEntityById(id);
-        validateDuplicateName(req.getName(), id);
+        Long storeId = currentStoreService.getCurrentStoreId();
+        validateDuplicateName(storeId, req.getName(), id);
 
         office.setName(req.getName().trim());
         office.setOfficeLat(req.getOfficeLat());
@@ -72,15 +78,16 @@ public class OfficeService {
     }
 
     private Office findEntityById(Integer id) {
-        return officeRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return officeRepository.findByIdAndStoreId(id, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Office not found with id=" + id));
     }
 
-    private void validateDuplicateName(String name, Integer officeId) {
+    private void validateDuplicateName(Long storeId, String name, Integer officeId) {
         String normalizedName = name.trim();
         boolean duplicate = officeId == null
-                ? officeRepository.existsByName(normalizedName)
-                : officeRepository.existsByNameAndIdNot(normalizedName, officeId);
+                ? officeRepository.existsByStoreIdAndName(storeId, normalizedName)
+                : officeRepository.existsByStoreIdAndNameAndIdNot(storeId, normalizedName, officeId);
         if (duplicate) {
             throw new BadRequestException("Office name already exists: " + normalizedName);
         }

@@ -1,4 +1,4 @@
-package com.quyen.shoplite.domain;
+package com.quyen.shoplite.util.constant;
 
 public enum ProductStatus {
     ACTIVE,

@@ -40,6 +40,7 @@ public class AttendanceService {
     private final RosterRepository rosterRepository;
     private final UserRepository userRepository;
     private final Clock applicationClock;
+    private final CurrentStoreService currentStoreService;
 
     // ------------------------------------------------------------------ check-in
 
@@ -50,10 +51,10 @@ public class AttendanceService {
         LocalDateTime now   = LocalDateTime.now(applicationClock);
         LocalDate     today = now.toLocalDate();
 
-        // Block if there is already an open attendance
-        if (attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId()).isPresent()) {
+        Long storeId = employee.getStoreMember().getStore().getId();
+        if (attendanceRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndCheckOutIsNull(storeId, employee.getId()).isPresent()) {
             throw new BadRequestException(
-                    "Employee id=" + employee.getId() + " has an open shift — please check-out first");
+                    "Employee id=" + employee.getId() + " has an open shift -- please check-out first");
         }
 
         double distanceMetres = calculateDistanceToOffice(req.getLatitude(), req.getLongitude(), office);
@@ -61,7 +62,6 @@ public class AttendanceService {
                 ? AttendanceStatusEnum.VALID
                 : AttendanceStatusEnum.OUT_OF_ZONE;
 
-        // Find matching roster by check-in window
         LocalTime nowTime     = now.toLocalTime();
         LocalTime windowStart = nowTime.minusMinutes(CHECK_IN_EARLY_WINDOW_MINUTES);
         List<Roster> matching = rosterRepository.findMatchingRoster(
@@ -90,12 +90,13 @@ public class AttendanceService {
     @Transactional
     public ResAttendanceDTO checkOut(ReqAttendanceCheckOutDTO req) {
         Employee employee = findCurrentEmployee();
+        Long storeId = employee.getStoreMember().getStore().getId();
 
         Attendance attendance = attendanceRepository
-                .findByEmployee_IdAndCheckOutIsNull(employee.getId())
+                .findByEmployee_StoreMember_Store_IdAndEmployee_IdAndCheckOutIsNull(storeId, employee.getId())
                 .orElseThrow(() -> new BadRequestException(
                         "No open shift found for employee id=" + employee.getId()
-                        + " — please check-in first"));
+                        + " -- please check-in first"));
 
         LocalDateTime checkOutTime = LocalDateTime.now(applicationClock);
 
@@ -125,10 +126,10 @@ public class AttendanceService {
 
     public ResAttendanceDTO getTodayForCurrentUser() {
         Employee employee = findCurrentEmployee();
-        // Return the most recent (possibly open) attendance for today
+        Long storeId = employee.getStoreMember().getStore().getId();
         List<Attendance> todayList = attendanceRepository
-                .findByEmployee_IdAndWorkingDayOrderByCheckInDesc(
-                        employee.getId(), LocalDate.now(applicationClock));
+                .findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDayOrderByCheckInDesc(
+                        storeId, employee.getId(), LocalDate.now(applicationClock));
         return todayList.isEmpty() ? null : DTOMapper.toResAttendanceDTO(todayList.get(0));
     }
 
@@ -137,7 +138,8 @@ public class AttendanceService {
     }
 
     public List<ResAttendanceDTO> findAll() {
-        return attendanceRepository.findAllByOrderByWorkingDayDescCheckInDesc()
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return attendanceRepository.findAllByEmployee_StoreMember_Store_IdOrderByWorkingDayDescCheckInDesc(storeId)
                 .stream()
                 .map(DTOMapper::toResAttendanceDTO)
                 .toList();
@@ -184,10 +186,6 @@ public class AttendanceService {
 
     // ------------------------------------------------------------------ helpers
 
-    /**
-     * Computes workedMinutes, payableMinutes, lateMinutes, earlyLeaveMinutes
-     * based on whether the attendance is linked to a Roster or is a walk-in.
-     */
     private void finalizeAttendance(Attendance attendance, LocalDateTime checkOutTime) {
         long workedMinutes = Duration.between(attendance.getCheckIn(), checkOutTime).toMinutes();
         if (workedMinutes < 0) workedMinutes = 0L;
@@ -208,21 +206,17 @@ public class AttendanceService {
                 shiftEndDT = shiftEndDT.plusDays(1);
             }
 
-            // Late minutes (after grace period)
             int grace = office.getLateGraceMinutes() != null ? office.getLateGraceMinutes() : 0;
             LocalDateTime graceDeadline = shiftStartDT.plusMinutes(grace);
             if (attendance.getCheckIn().isAfter(graceDeadline)) {
                 lateMinutes = Duration.between(graceDeadline, attendance.getCheckIn()).toMinutes();
             }
 
-            // Early leave minutes
             if (checkOutTime.isBefore(shiftEndDT)) {
                 earlyLeaveMinutes = Duration.between(checkOutTime, shiftEndDT).toMinutes();
             }
 
-            // Payable: starts from max(checkIn, shiftStart)
             LocalDateTime effectiveStart = attendance.getCheckIn().isBefore(shiftStartDT) ? shiftStartDT : attendance.getCheckIn();
-            // Cap at shiftEndDT
             LocalDateTime effectiveEnd = checkOutTime.isAfter(shiftEndDT) ? shiftEndDT : checkOutTime;
             payableMinutes = Duration.between(effectiveStart, effectiveEnd).toMinutes();
 
@@ -232,7 +226,6 @@ public class AttendanceService {
             if (payableMinutes < 0) payableMinutes = 0L;
 
         } else {
-            // Walk-in: all worked time is payable
             payableMinutes = workedMinutes;
         }
 
@@ -243,7 +236,9 @@ public class AttendanceService {
     }
 
     private Attendance findEntity(Integer id) {
+        Long storeId = currentStoreService.getCurrentStoreId();
         return attendanceRepository.findById(id)
+                .filter(attendance -> attendance.getEmployee().getStoreMember().getStore().getId().equals(storeId))
                 .orElseThrow(() -> new ResourceNotFoundException("Attendance not found with id=" + id));
     }
 
@@ -252,7 +247,8 @@ public class AttendanceService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User not found with username=" + username));
-        return employeeRepository.findByUser_Id(user.getId())
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(storeId, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Employee not found for user id=" + user.getId()));
     }

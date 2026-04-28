@@ -1,0 +1,168 @@
+/* ══════════════════════════════
+   SetStorePage.css
+   ══════════════════════════════ */
+
+.ss-page {
+  --ion-background-color: #ffffff;
+}
+
+.ss-content {
+  --background: transparent;
+  height: 100%;
+  position: relative;
+}
+
+/* ── Gradient header ── */
+.ss-header {
+  background: linear-gradient(150deg, #0055e5 0%, #1a8fff 55%, #56cffa 100%);
+  height: 14vh;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.ss-back-btn {
+  position: absolute;
+  top: 52px;
+  left: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #000000;
+  border: none;
+  color: #ffffff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+}
+
+/* ── White sheet ── */
+.ss-sheet {
+  background: #ffffff;
+  border-radius: 24px 24px 0 0;
+  margin-top: -32px;
+  min-height: calc(86vh + 32px);
+  padding: 36px 24px 100px;
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.ss-icon-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0055e5, #56cffa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.ss-store-icon {
+  font-size: 36px;
+  color: #ffffff;
+}
+
+.ss-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0062ff;
+  margin: 0 0 8px;
+}
+
+.ss-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 28px;
+}
+
+/* ── Input ── */
+.ss-input-box {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0 16px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  background: #f8faff;
+  transition: border-color 0.2s;
+}
+
+.ss-input-box:focus-within {
+  border-color: #0062ff;
+  background: #ffffff;
+}
+
+.ss-input-box.error {
+  border-color: #ef4444;
+}
+
+.ss-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  color: #1f2937;
+  outline: none;
+  font-family: inherit;
+}
+
+.ss-input::placeholder {
+  color: #9ca3af;
+}
+
+.ss-error-text {
+  font-size: 12px;
+  color: #ef4444;
+  text-align: left;
+  margin: 6px 0 0;
+  min-height: 18px;
+}
+
+.ss-char-count {
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: right;
+  margin: 4px 0 0;
+}
+
+/* ── Footer ── */
+.ss-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 24px;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+  z-index: 10;
+}
+
+.ss-continue-btn {
+  width: 100%;
+  height: 54px;
+  border-radius: 14px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+  transition: background 0.2s, color 0.2s, transform 0.1s;
+}
+
+.ss-continue-btn.active {
+  background: linear-gradient(135deg, #0055e5, #1a8fff);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 98, 255, 0.35);
+}
+
+.ss-continue-btn.active:active {
+  transform: scale(0.98);
+}

@@ -10,5 +10,8 @@ public interface InventoryLogsRepository extends JpaRepository<InventoryLogs, In
     List<InventoryLogs> findAllByProduct_Id(Integer productId);
     List<InventoryLogs> findAllByType(TypeInventoryEnum type);
     List<InventoryLogs> findByAdjustment_Id(Integer adjustmentId);
+    List<InventoryLogs> findAllByStoreIdOrderByCreatedAtDesc(Long storeId);
+    List<InventoryLogs> findAllByStoreIdAndProduct_Id(Long storeId, Integer productId);
+    List<InventoryLogs> findByStoreIdAndAdjustment_Id(Long storeId, Integer adjustmentId);
 }
 

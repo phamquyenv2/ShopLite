@@ -3,6 +3,7 @@ package com.quyen.shoplite.service;
 import com.quyen.shoplite.domain.Attendance;
 import com.quyen.shoplite.domain.Employee;
 import com.quyen.shoplite.domain.Payroll;
+import com.quyen.shoplite.domain.Store;
 import com.quyen.shoplite.domain.User;
 import com.quyen.shoplite.domain.request.ReqPayrollSyncDTO;
 import com.quyen.shoplite.domain.response.ResPayrollDTO;
@@ -10,8 +11,8 @@ import com.quyen.shoplite.repository.AttendanceRepository;
 import com.quyen.shoplite.repository.EmployeeRepository;
 import com.quyen.shoplite.repository.PayrollRepository;
 import com.quyen.shoplite.repository.RosterRepository;
-import com.quyen.shoplite.repository.TransactionRepository;
-import com.quyen.shoplite.util.constant.TypeTransactionEnum;
+import com.quyen.shoplite.repository.PaymentRepository;
+
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,18 +37,23 @@ class PayrollServiceTest {
     @Mock private EmployeeRepository   employeeRepository;
     @Mock private AttendanceRepository attendanceRepository;
     @Mock private RosterRepository     rosterRepository;
-    @Mock private TransactionRepository transactionRepository;
+    @Mock private PaymentRepository paymentRepository;
+    @Mock private CurrentStoreService currentStoreService;
 
     private PayrollService payrollService;
     private Employee       employee;
 
     @BeforeEach
     void setUp() {
-        payrollService = new PayrollService(payrollRepository, employeeRepository, attendanceRepository, rosterRepository, transactionRepository);
+        payrollService = new PayrollService(payrollRepository, employeeRepository, attendanceRepository, rosterRepository, paymentRepository, currentStoreService);
+        User user = User.builder().id(1).username("emp1").build();
+        Store store = Store.builder().id(1L).name("Test Store").owner(user).build();
         employee = Employee.builder()
                 .id(1).salaryRate(100.0)
-                .user(User.builder().id(1).username("emp1").build())
+                .store(store)
+                .user(user)
                 .build();
+        lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(store.getId());
     }
 
     @Test
@@ -88,8 +95,8 @@ class PayrollServiceTest {
             p.setId(10);
             return p;
         });
-        when(transactionRepository.findByPayroll_IdAndType(10, TypeTransactionEnum.SALARY))
-                .thenReturn(Optional.empty());
+        // Note: PayrollService no longer creates transactions directly.
+        // Payment/Transaction is created separately via POST /api/v1/payment.
 
         // Act
         List<ResPayrollDTO> result = payrollService.syncMonthlyPayroll(req);

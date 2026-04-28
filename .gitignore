@@ -24,3 +24,17 @@ hs_err_pid*
 replay_pid*
 
 node_modules/
+
+# Gradle
+.gradle/
+build/
+**/build/
+**/.gradle-user-home/
+
+# Cache
+*.bin
+*.lock
+# Environment Variables
+.env
+.env.*
+!.env.example

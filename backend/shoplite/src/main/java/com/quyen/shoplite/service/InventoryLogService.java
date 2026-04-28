@@ -20,9 +20,11 @@ public class InventoryLogService {
 
     private final InventoryLogsRepository inventoryLogsRepository;
     private final ProductRepository productRepository;
+    private final CurrentStoreService currentStoreService;
 
     public ResInventoryLogDTO create(ReqInventoryLogDTO req) {
-        Product product = productRepository.findById(req.getProductId())
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Product product = productRepository.findByIdAndStoreIdAndIsDeletedFalse(req.getProductId(), storeId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy Product id=" + req.getProductId()));
 
         int changeQty = req.getChangeQuantity();
@@ -34,6 +36,7 @@ public class InventoryLogService {
         }
 
         InventoryLogs log = InventoryLogs.builder()
+                .store(product.getStore())
                 .product(product)
                 .quantityIn(changeQty > 0 ? changeQty : null)
                 .quantityOut(changeQty < 0 ? -changeQty : null)
@@ -50,13 +53,15 @@ public class InventoryLogService {
     }
 
     public List<ResInventoryLogDTO> findAll() {
-        return inventoryLogsRepository.findAll().stream()
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return inventoryLogsRepository.findAllByStoreIdOrderByCreatedAtDesc(storeId).stream()
                 .map(DTOMapper::toResInventoryLogDTO)
                 .toList();
     }
 
     public List<ResInventoryLogDTO> findByProductId(Integer productId) {
-        return inventoryLogsRepository.findAllByProduct_Id(productId).stream()
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return inventoryLogsRepository.findAllByStoreIdAndProduct_Id(storeId, productId).stream()
                 .map(DTOMapper::toResInventoryLogDTO)
                 .toList();
     }

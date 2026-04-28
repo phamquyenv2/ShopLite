@@ -4,7 +4,7 @@
             "type": "java",
             "name": "Spring Boot-ShopliteApplication<shoplite>",
             "request": "launch",
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/backend/shoplite",
             "mainClass": "com.quyen.shoplite.ShopliteApplication",
             "projectName": "shoplite",
             "args": "",

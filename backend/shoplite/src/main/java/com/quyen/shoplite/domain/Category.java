@@ -4,7 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "categories")
+@Table(name = "categories",
+        uniqueConstraints = @UniqueConstraint(name = "uk_categories_store_name", columnNames = {"store_id", "name"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,6 +17,10 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false, unique = true, length = 150)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
+
+    @Column(nullable = false, length = 150)
     private String name;
 }

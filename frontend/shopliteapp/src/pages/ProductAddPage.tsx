@@ -21,6 +21,7 @@ import {
 import type { Category, ProductUpsert, Unit } from '../api/types';
 import { productService } from '../services/product.service';
 import { ApiError, authApis, endpoints } from '../utils/Apis';
+import { uploadToCloudinary } from '../utils/cloudinary';
 import './ProductAddPage.css';
 
 const ProductAddPage: React.FC = () => {
@@ -40,6 +41,9 @@ const ProductAddPage: React.FC = () => {
     const [minStock, setMinStock] = useState<number | ''>('');
     const [maxStock, setMaxStock] = useState<number | ''>('');
     const [barcode, setBarcode] = useState('');
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     const [toast, setToast] = useState<string | null>(null);
 
@@ -89,15 +93,16 @@ const ProductAddPage: React.FC = () => {
                 maxStock: maxStock === '' ? null : maxStock,
                 barcode: barcode.trim() || undefined,
                 stock: 0,
+                image: imageUrl,
             };
 
             await authApis().post(endpoints.products, payload);
-            setToast('Them thanh cong');
+            setToast('Thêm thành công');
             setTimeout(() => {
                 ionRouter.goBack();
             }, 1000);
         } catch (err: unknown) {
-            setToast(err instanceof ApiError ? err.message : 'Them that bai');
+            setToast(err instanceof ApiError ? err.message : 'Thêm thất bại');
         } finally {
             setSaving(false);
         }
@@ -111,11 +116,11 @@ const ProductAddPage: React.FC = () => {
                         <button className="pa-icon-btn" type="button" onClick={() => ionRouter.goBack()}>
                             <IonIcon icon={arrowBackOutline} />
                         </button>
-                        <div className="pa-title">Them hang hoa</div>
+                        <div className="pa-title">Thêm hàng hóa</div>
                     </div>
                     <div slot="end">
                         <button className="pa-save-btn" onClick={handleSave} disabled={saving || loading}>
-                            {saving ? <IonSpinner name="dots" /> : 'Luu'}
+                            {saving ? <IonSpinner name="dots" /> : 'Lưu'}
                         </button>
                     </div>
                 </IonToolbar>
@@ -124,9 +129,42 @@ const ProductAddPage: React.FC = () => {
             <IonContent className="pa-content">
                 <div className="pa-container">
                     <div className="pa-image-section">
-                        <div className="pa-image-box" onClick={() => setToast('Tính năng tải ảnh đang phát triển')}>
-                            <IonIcon icon={cameraOutline} />
-                            <span className="pa-image-text">THÊM ẢNH</span>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            ref={fileInputRef}
+                            hidden
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setUploading(true);
+                                try {
+                                    const url = await uploadToCloudinary(file);
+                                    if (url) {
+                                        setImageUrl(url);
+                                        setToast('Tải ảnh thành công');
+                                    } else {
+                                        setToast('Tải ảnh thất bại');
+                                    }
+                                } catch {
+                                    setToast('Tải ảnh thất bại');
+                                } finally {
+                                    setUploading(false);
+                                    e.target.value = '';
+                                }
+                            }}
+                        />
+                        <div className="pa-image-box" onClick={() => fileInputRef.current?.click()}>
+                            {uploading ? (
+                                <IonSpinner name="crescent" color="primary" />
+                            ) : imageUrl ? (
+                                <img src={imageUrl} alt="Product" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} />
+                            ) : (
+                                <>
+                                    <IonIcon icon={cameraOutline} />
+                                    <span className="pa-image-text">THÊM ẢNH</span>
+                                </>
+                            )}
                         </div>
                     </div>
 

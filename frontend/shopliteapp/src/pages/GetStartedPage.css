@@ -1,0 +1,206 @@
+/* ══════════════════════════════
+   GetStartedPage.css
+   Layout mirrors the reference image
+   Header: blue gradient (ShopLite)
+   ══════════════════════════════ */
+
+.gs-page {
+  --ion-background-color: #ffffff;
+}
+
+.gs-content {
+  --background: transparent;
+  --ion-font-family: var(--app-font-family);
+  font-family: var(--app-font-family);
+  height: 100%;
+  position: relative;
+}
+
+/* ── Tall gradient header ── */
+.gs-header {
+  background: linear-gradient(150deg, #0055e5 0%, #1a8fff 55%, #56cffa 100%);
+  height: 14vh;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Back button — dark circle top-left */
+.gs-back-btn {
+  position: absolute;
+  top: 52px;
+  left: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #000000;
+  border: none;
+  color: #ffffff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+}
+
+/* ── White sheet that slides up over header ── */
+.gs-sheet {
+  background: #ffffff;
+  border-radius: 24px 24px 0 0;
+  margin-top: -32px;         /* overlap the header */
+  min-height: calc(62vh + 32px);
+  padding: 32px 20px 100px;  /* bottom pad clears the fixed footer */
+  position: relative;
+  z-index: 2;
+}
+
+/* Title */
+.gs-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: #0062ff;             /* blue */
+  margin: 0 0 24px;
+  text-align: center;
+}
+
+/* Phone input box */
+.gs-input-box {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 16px;
+  background: #ffffff;
+  margin-bottom: 4px;
+}
+.gs-input-box.error {
+  border-color: #ef4444;
+}
+
+.gs-phone-input {
+  width: 100%;
+  height: 56px;
+  border: none;
+  outline: none;
+  font-size: 24px;
+  font-weight: 400;
+  font-family: inherit;
+  color: #1f2937;
+  background: transparent;
+  letter-spacing: 0.02em;
+}
+.gs-phone-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/* Error hint */
+.gs-error-text {
+  font-size: 13px;
+  color: #dc2626;
+  margin: 0 0 16px 2px;
+}
+
+/* ── Terms row ── */
+.gs-terms-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.gs-native-check {
+  display: none;
+}
+
+.gs-custom-checkbox {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 4px;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+.gs-native-check:checked + .gs-custom-checkbox {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.gs-native-check:checked + .gs-custom-checkbox::after {
+  content: '';
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
+}
+
+.gs-terms-text {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.gs-link {
+  color: #2563eb;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* ── "Thêm phương thức khác" ── */
+.gs-other-method {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 24px;
+  color: #2563eb;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.gs-other-method ion-icon {
+  font-size: 16px;
+}
+
+/* ── Fixed footer ── */
+.gs-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  padding: 16px 24px 28px;
+  z-index: 10;
+}
+
+.gs-continue-btn {
+  width: 100%;
+  height: 52px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: inherit;
+
+  /* disabled */
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.gs-continue-btn.active {
+  background: #0062ff;
+  color: #ffffff;
+  cursor: pointer;
+}
+

@@ -11,6 +11,9 @@ import java.util.Optional;
 @Repository
 public interface PayrollRepository extends JpaRepository<Payroll, Integer> {
     List<Payroll> findByEmployee_Id(Integer employeeId);
+    List<Payroll> findByEmployee_StoreMember_Store_IdAndEmployee_Id(Long storeId, Integer employeeId);
     Optional<Payroll> findByEmployee_IdAndPeriod(Integer employeeId, LocalDate period);
+    Optional<Payroll> findByEmployee_StoreMember_Store_IdAndEmployee_IdAndPeriod(Long storeId, Integer employeeId, LocalDate period);
     List<Payroll> findAllByOrderByPeriodDescEmployee_IdAsc();
+    List<Payroll> findAllByEmployee_StoreMember_Store_IdOrderByPeriodDescEmployee_IdAsc(Long storeId);
 }

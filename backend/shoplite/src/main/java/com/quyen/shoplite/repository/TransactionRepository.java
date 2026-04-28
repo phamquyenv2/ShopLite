@@ -3,15 +3,33 @@ package com.quyen.shoplite.repository;
 import com.quyen.shoplite.domain.Transaction;
 import com.quyen.shoplite.util.constant.TypeTransactionEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
-    List<Transaction> findAllByOrder_Id(Integer orderId);
-    List<Transaction> findAllByType(TypeTransactionEnum type);
-    boolean existsByImportOrder_Id(Integer importOrderId);
-    boolean existsByOrder_IdAndType(Integer orderId, TypeTransactionEnum type);
-    Optional<Transaction> findByPayroll_IdAndType(Integer payrollId, TypeTransactionEnum type);
-}
 
+    List<Transaction> findAllByFundAccount_Id(Integer fundAccountId);
+
+    List<Transaction> findAllByPayment_Id(Integer paymentId);
+
+    List<Transaction> findAllByType(TypeTransactionEnum type);
+
+    boolean existsByPayment_Id(Integer paymentId);
+
+    Optional<Transaction> findByTransactionCode(String transactionCode);
+
+    boolean existsByPayment_IdAndType(Integer paymentId, TypeTransactionEnum type);
+
+    Optional<Transaction> findByIdAndStoreId(Integer id, Long storeId);
+
+    List<Transaction> findAllByStoreIdOrderByTransactionTimeDesc(Long storeId);
+
+    List<Transaction> findAllByStoreIdAndFundAccount_Id(Long storeId, Integer fundAccountId);
+
+    List<Transaction> findAllByStoreIdAndPayment_Id(Long storeId, Integer paymentId);
+
+    List<Transaction> findAllByStoreIdAndType(Long storeId, TypeTransactionEnum type);
+}

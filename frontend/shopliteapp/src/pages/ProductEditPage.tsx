@@ -24,6 +24,7 @@ import { useParams } from 'react-router-dom';
 import { productService } from '../services/product.service';
 import type { Product, Category, ProductUpsert } from '../api/types';
 import { authApis, endpoints } from '../utils/Apis';
+import { uploadToCloudinary } from '../utils/cloudinary';
 import './ProductEditPage.css';
 
 const ProductEditPage: React.FC = () => {
@@ -45,6 +46,9 @@ const ProductEditPage: React.FC = () => {
     const [maxStock, setMaxStock] = useState<number | ''>('');
     const [barcode, setBarcode] = useState('');
     const [unitName, setUnitName] = useState('');
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     const [toast, setToast] = useState<string | null>(null);
     const [deleteAlert, setDeleteAlert] = useState(false);
@@ -69,6 +73,7 @@ const ProductEditPage: React.FC = () => {
                     setMaxStock(p.maxStock ?? '');
                     setBarcode(p.barcode || '');
                     setUnitName(p.unitName || '');
+                    setImageUrl(p.image ?? null);
                 }
             } catch (err) {
                 console.error(err);
@@ -99,7 +104,7 @@ const ProductEditPage: React.FC = () => {
                 minStock: minStock === '' ? null : minStock,
                 maxStock: maxStock === '' ? null : maxStock,
                 barcode,
-                image: product.image ?? null,
+                image: imageUrl,
                 status: product.status,
                 version: product.version ?? null,
             };
@@ -197,11 +202,39 @@ const ProductEditPage: React.FC = () => {
 
                     {/* Image */}
                     <div className="pe-image-section">
-                        <div className="pe-image-box" onClick={() => setToast('Tính năng thay đổi ảnh đang phát triển')}>
-                            {product.image ? (
-                                <img src={product.image} alt={product.name} />
-                            ) : null}
-                            <div className="pe-camera-badge"><IonIcon icon={cameraOutline} /></div>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            ref={fileInputRef}
+                            hidden
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setUploading(true);
+                                try {
+                                    const url = await uploadToCloudinary(file);
+                                    if (url) {
+                                        setImageUrl(url);
+                                        setToast('Tải ảnh thành công');
+                                    } else {
+                                        setToast('Tải ảnh thất bại');
+                                    }
+                                } catch {
+                                    setToast('Tải ảnh thất bại');
+                                } finally {
+                                    setUploading(false);
+                                    e.target.value = '';
+                                }
+                            }}
+                        />
+                        <div className="pe-image-box" onClick={() => fileInputRef.current?.click()}>
+                            {uploading ? (
+                                <IonSpinner name="crescent" color="primary" />
+                            ) : imageUrl ? (
+                                <img src={imageUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} />
+                            ) : (
+                                <div className="pe-camera-badge"><IonIcon icon={cameraOutline} /></div>
+                            )}
                         </div>
                         <div className="pe-image-text">Chạm để thay đổi hình ảnh</div>
                     </div>

@@ -15,33 +15,23 @@ import java.util.Optional;
 @Repository
 public interface RosterRepository extends JpaRepository<Roster, Integer> {
 
-    /** Lấy toàn bộ lịch của một nhân viên trong khoảng ngày */
     List<Roster> findByEmployee_IdAndWorkingDayBetweenOrderByWorkingDayAsc(
             Integer employeeId, LocalDate from, LocalDate to);
+    List<Roster> findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDayBetweenOrderByWorkingDayAsc(
+            Long storeId, Integer employeeId, LocalDate from, LocalDate to);
 
-    /** Lấy lịch của một nhân viên trong một ngày cụ thể */
     Optional<Roster> findByEmployee_IdAndWorkingDay(Integer employeeId, LocalDate workingDay);
+    Optional<Roster> findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDay(Long storeId, Integer employeeId, LocalDate workingDay);
 
-    /** Kiểm tra lịch đã tồn tại chưa (tránh trùng) */
     boolean existsByEmployee_IdAndWorkingDay(Integer employeeId, LocalDate workingDay);
+    boolean existsByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDay(Long storeId, Integer employeeId, LocalDate workingDay);
 
-    /** Lấy lịch theo type trong khoảng thời gian (dùng khi tổng hợp) */
     List<Roster> findByEmployee_IdAndWorkingDayBetweenAndType(
             Integer employeeId, LocalDate from, LocalDate to, RosterTypeEnum type);
 
-    /** Tất cả lịch trong một ngày (cho admin xem tổng quan) */
     List<Roster> findByWorkingDayOrderByEmployee_IdAsc(LocalDate workingDay);
+    List<Roster> findByEmployee_StoreMember_Store_IdAndWorkingDayOrderByEmployee_IdAsc(Long storeId, LocalDate workingDay);
 
-    /**
-     * Tìm Roster phù hợp với giờ check-in của nhân viên.
-     * Check-in window: [roster.startTime - 30 phút, roster.endTime]
-     * Chỉ áp dụng cho ngày có type = WORKING.
-     *
-     * @param employeeId Employee ID
-     * @param day        Ngày làm việc
-     * @param checkInTime Thời điểm check-in thực tế
-     * @param windowStart startTime - 30 phút (truyền vào ngoài)
-     */
     @Query("SELECT r FROM Roster r WHERE r.employee.id = :eid " +
            "AND r.workingDay = :day " +
            "AND r.type = 'WORKING' " +

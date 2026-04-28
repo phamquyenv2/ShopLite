@@ -28,6 +28,7 @@ public class InventoryAdjustmentService {
     private final InventoryAdjustmentRepository adjustmentRepository;
     private final InventoryLogsRepository       inventoryLogsRepository;
     private final ProductRepository             productRepository;
+    private final CurrentStoreService           currentStoreService;
 
     // ==================== CREATE ====================
 
@@ -40,10 +41,13 @@ public class InventoryAdjustmentService {
      */
     @Transactional
     public ResInventoryAdjustmentDTO create(ReqInventoryAdjustmentDTO req) {
+        Store store = currentStoreService.getCurrentStore();
+        Long storeId = store.getId();
 
         // ── 1. Persist the adjustment header ──────────────────────────────
         InventoryAdjustment adjustment = adjustmentRepository.save(
                 InventoryAdjustment.builder()
+                        .store(store)
                         .reason(req.getReason())
                         .note(req.getNote())
                         .createdBy(req.getCreatedBy())
@@ -56,7 +60,7 @@ public class InventoryAdjustmentService {
 
         for (ReqAdjustmentItemDTO itemReq : req.getItems()) {
             // 2a. Product must exist — lock row to prevent concurrent stock corruption (BUG-08)
-            Product product = productRepository.findByIdWithLock(itemReq.getProductId())
+            Product product = productRepository.findByIdAndStoreIdWithLock(itemReq.getProductId(), storeId)
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Không tìm thấy Product id=" + itemReq.getProductId()));
 
@@ -94,6 +98,7 @@ public class InventoryAdjustmentService {
 
             // Write ADJUST inventory log
             InventoryLogs log = InventoryLogs.builder()
+                    .store(store)
                     .product(product)
                     .adjustment(adjustment)
                     .quantityIn(delta  > 0 ? delta  : null)
@@ -116,20 +121,22 @@ public class InventoryAdjustmentService {
     // ==================== FIND ALL ====================
 
     public List<ResInventoryAdjustmentDTO> findAll() {
-        return adjustmentRepository.findAll().stream()
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return adjustmentRepository.findAllByStoreIdOrderByCreatedAtDesc(storeId).stream()
                 .map(adj -> DTOMapper.toResInventoryAdjustmentDTO(
                         adj,
-                        inventoryLogsRepository.findByAdjustment_Id(adj.getId())))
+                        inventoryLogsRepository.findByStoreIdAndAdjustment_Id(storeId, adj.getId())))
                 .toList();
     }
 
     // ==================== FIND BY ID ====================
 
     public ResInventoryAdjustmentDTO findById(Integer id) {
-        InventoryAdjustment adjustment = adjustmentRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        InventoryAdjustment adjustment = adjustmentRepository.findByIdAndStoreId(id, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy điều chỉnh kho id=" + id));
-        List<InventoryLogs> logs = inventoryLogsRepository.findByAdjustment_Id(id);
+        List<InventoryLogs> logs = inventoryLogsRepository.findByStoreIdAndAdjustment_Id(storeId, id);
         return DTOMapper.toResInventoryAdjustmentDTO(adjustment, logs);
     }
 }

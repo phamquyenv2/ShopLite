@@ -23,6 +23,10 @@ public interface ProductRepository extends JpaRepository<Product, Integer>,
     @Query("SELECT p FROM Product p WHERE p.id = :id")
     Optional<Product> findByIdWithLock(@Param("id") Integer id);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Product p WHERE p.id = :id AND p.store.id = :storeId")
+    Optional<Product> findByIdAndStoreIdWithLock(@Param("id") Integer id, @Param("storeId") Long storeId);
+
     Optional<Product> findBySku(String sku);
 
     boolean existsBySku(String sku);
@@ -38,4 +42,13 @@ public interface ProductRepository extends JpaRepository<Product, Integer>,
     List<Product> findAllByCategoryId(Integer categoryId);
 
     Optional<Product> findByBarcodeAndIsDeletedFalse(String barcode);
+
+    Optional<Product> findByIdAndStoreIdAndIsDeletedFalse(Integer id, Long storeId);
+    boolean existsByStoreIdAndSku(Long storeId, String sku);
+    boolean existsByStoreIdAndSkuAndIdNot(Long storeId, String sku, Integer id);
+    boolean existsByStoreIdAndBarcode(Long storeId, String barcode);
+    boolean existsByStoreIdAndBarcodeAndIdNot(Long storeId, String barcode, Integer id);
+    List<Product> findAllByStoreIdAndIsDeletedFalse(Long storeId);
+    List<Product> findAllByStoreIdAndCategoryId(Long storeId, Integer categoryId);
+    Optional<Product> findByStoreIdAndBarcodeAndIsDeletedFalse(Long storeId, String barcode);
 }

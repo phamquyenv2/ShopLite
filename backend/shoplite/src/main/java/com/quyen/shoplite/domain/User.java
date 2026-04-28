@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -18,29 +20,19 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Version
-    private Integer version;
-
     @Column(nullable = false, unique = true, length = 100)
     private String username;
-
-    @Column(nullable = false)
-    private String password;
 
     @Column(length = 20)
     private String phone;
 
-    /**
-     * Thay từ RoleEnum → Role entity để hỗ trợ permission động.
-     * Một User chỉ có MỘT role.
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "role_id")
-    private Role role;
+    @Column(nullable = false)
+    private String password;
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<StoreMember> storeMemberships = new ArrayList<>();
 }

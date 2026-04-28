@@ -10,9 +10,8 @@ import com.quyen.shoplite.repository.AttendanceRepository;
 import com.quyen.shoplite.repository.EmployeeRepository;
 import com.quyen.shoplite.repository.PayrollRepository;
 import com.quyen.shoplite.repository.RosterRepository;
-import com.quyen.shoplite.domain.Transaction;
-import com.quyen.shoplite.repository.TransactionRepository;
-import com.quyen.shoplite.util.constant.TypeTransactionEnum;
+import com.quyen.shoplite.repository.PaymentRepository;
+import com.quyen.shoplite.util.constant.RefTypeEnum;
 import com.quyen.shoplite.util.DTOMapper;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
@@ -35,7 +34,8 @@ public class PayrollService {
     private final EmployeeRepository employeeRepository;
     private final AttendanceRepository attendanceRepository;
     private final RosterRepository rosterRepository;
-    private final TransactionRepository transactionRepository;
+    private final PaymentRepository paymentRepository;
+    private final CurrentStoreService currentStoreService;
 
     // ------------------------------------------------------------------ sync
 
@@ -48,15 +48,19 @@ public class PayrollService {
      *  3. Với các ngày WORKING trong Roster mà không có Attendance: tính là absent → cộng penaltyPerAbsent.
      *  4. Với ngày LEAVE_APPROVED: cộng expectedMinutes (= expectedHours * 60) vào totalPayableMinutes.
      *  5. totalSalary = (totalPayableMinutes / 60.0) * salaryRate + bonus - penalty
+     *
+     * NOTE: Việc tạo Payment + Transaction cho lương sẽ do frontend gọi POST /api/v1/payment
+     * với referenceType=PAYROLL khi xác nhận chi lương.
      */
     @Transactional
     public List<ResPayrollDTO> syncMonthlyPayroll(ReqPayrollSyncDTO req) {
         LocalDate period    = req.getPeriod().withDayOfMonth(1);
         LocalDate periodEnd = period.withDayOfMonth(period.lengthOfMonth());
+        Long storeId = currentStoreService.getCurrentStoreId();
 
         List<Employee> employees = req.getEmployeeId() != null
                 ? List.of(findEmployee(req.getEmployeeId()))
-                : employeeRepository.findAllByDeletedFalseOrderByIdAsc();
+                : employeeRepository.findAllByStoreMember_Store_IdAndDeletedFalseOrderByIdAsc(storeId);
 
         double bonusGlobal      = req.getBonus()           != null ? req.getBonus()           : 0.0;
         double penaltyGlobal    = req.getPenalty()         != null ? req.getPenalty()         : 0.0;
@@ -87,8 +91,8 @@ public class PayrollService {
 
             // --- 2. Roster-derived adjustments ---
             List<Roster> rosters = rosterRepository
-                    .findByEmployee_IdAndWorkingDayBetweenOrderByWorkingDayAsc(
-                            employee.getId(), period, periodEnd);
+                    .findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDayBetweenOrderByWorkingDayAsc(
+                            storeId, employee.getId(), period, periodEnd);
 
             // Build set of days that have at least one completed attendance
             java.util.Set<LocalDate> daysWithPresence = completed.stream()
@@ -139,7 +143,7 @@ public class PayrollService {
             }
 
             // Upsert Payroll record
-            Payroll payroll = payrollRepository.findByEmployee_IdAndPeriod(employee.getId(), period)
+            Payroll payroll = payrollRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndPeriod(storeId, employee.getId(), period)
                     .orElseGet(() -> Payroll.builder()
                             .employee(employee)
                             .period(period)
@@ -153,21 +157,9 @@ public class PayrollService {
 
             Payroll saved = payrollRepository.save(payroll);
 
-            // SALARY Transaction side effect
-            Transaction existingTx = transactionRepository.findByPayroll_IdAndType(saved.getId(), TypeTransactionEnum.SALARY).orElse(null);
-            if (existingTx == null) {
-                Transaction transaction = Transaction.builder()
-                        .amount(totalSalary)
-                        .type(TypeTransactionEnum.SALARY)
-                        .payroll(saved)
-                        .transactionTime(LocalDateTime.now())
-                        .createdAt(LocalDateTime.now())
-                        .build();
-                transactionRepository.save(transaction);
-            } else {
-                existingTx.setAmount(totalSalary);
-                transactionRepository.save(existingTx);
-            }
+            // NOTE: Không tạo Transaction trực tiếp ở đây nữa.
+            // Khi cần chi lương, frontend sẽ gọi POST /api/v1/payment với:
+            //   referenceType=PAYROLL, referenceId=payroll.id, fundAccountId=..., amount=totalSalary
 
             ResPayrollDTO dto = DTOMapper.toResPayrollDTO(saved);
             dto.setScheduledWorkingDays(scheduledWorkingDays);
@@ -183,13 +175,16 @@ public class PayrollService {
     // ------------------------------------------------------------------ read
 
     public ResPayrollDTO findById(Integer id) {
+        Long storeId = currentStoreService.getCurrentStoreId();
         Payroll payroll = payrollRepository.findById(id)
+                .filter(p -> p.getEmployee().getStoreMember().getStore().getId().equals(storeId))
                 .orElseThrow(() -> new ResourceNotFoundException("Payroll not found with id=" + id));
         return DTOMapper.toResPayrollDTO(payroll);
     }
 
     public List<ResPayrollDTO> findAll() {
-        return payrollRepository.findAllByOrderByPeriodDescEmployee_IdAsc()
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return payrollRepository.findAllByEmployee_StoreMember_Store_IdOrderByPeriodDescEmployee_IdAsc(storeId)
                 .stream()
                 .map(DTOMapper::toResPayrollDTO)
                 .toList();
@@ -197,7 +192,8 @@ public class PayrollService {
 
     public List<ResPayrollDTO> findByEmployee(Integer employeeId) {
         findEmployee(employeeId);
-        return payrollRepository.findByEmployee_Id(employeeId)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return payrollRepository.findByEmployee_StoreMember_Store_IdAndEmployee_Id(storeId, employeeId)
                 .stream()
                 .map(DTOMapper::toResPayrollDTO)
                 .toList();
@@ -206,9 +202,9 @@ public class PayrollService {
     // ------------------------------------------------------------------ helpers
 
     private Employee findEmployee(Integer employeeId) {
-        return employeeRepository.findById(employeeId)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return employeeRepository.findByIdAndStoreMember_Store_IdAndDeletedFalse(employeeId, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Employee not found with id=" + employeeId));
     }
 }
-

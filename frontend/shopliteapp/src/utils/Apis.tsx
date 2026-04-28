@@ -23,6 +23,7 @@ export const STORAGE_KEYS = {
     accessToken: 'token',
     refreshToken: 'refreshToken',
     user: 'userdata',
+    currentStore: 'currentStore',
 } as const;
 
 export const AUTH_INVALID_EVENT = 'shoplite:auth-invalid';
@@ -44,6 +45,12 @@ export const endpoints = {
     refresh: '/api/v1/auth/refresh',
     me: '/api/v1/auth/me',
     logout: '/api/v1/auth/logout',
+
+    // OTP registration flow
+    'register-otp-send':    '/api/v1/auth/register/otp/send',
+    'register-otp-verify':  '/api/v1/auth/register/otp/verify',
+    'register-store':       '/api/v1/auth/register/store',
+    'register-complete':    '/api/v1/auth/register/complete',
 
     // categories
     categories: '/api/v1/categories',
@@ -96,6 +103,11 @@ export const endpoints = {
     transactions: '/api/v1/transactions',
     'transaction-detail': (id: number | string) => `/api/v1/transactions/${id}`,
     'transactions-by-order': (orderId: number | string) => `/api/v1/transactions/order/${orderId}`,
+    'transactions-by-fund-account': (id: number | string) => `/api/v1/transactions/fund-account/${id}`,
+
+    // fund accounts
+    'fund-accounts': '/api/v1/fund-accounts',
+    'fund-accounts-active': '/api/v1/fund-accounts/active',
 
     // attendance
     attendance: '/api/v1/attendance',
@@ -121,6 +133,10 @@ export const endpoints = {
     'import-order-detail': (id: number | string) => `/api/v1/import-orders/${id}`,
     'import-order-status': (id: number | string) => `/api/v1/import-orders/${id}/status`,
 
+    // import return orders
+    'import-return-orders': '/api/v1/import-return-orders',
+    'import-return-order-detail': (id: number | string) => `/api/v1/import-return-orders/${id}`,
+
     // inventory logs
     'inventory-logs': '/api/v1/inventory-logs',
     'inventory-logs-by-product': (productId: number | string) => `/api/v1/inventory-logs/product/${productId}`,
@@ -136,7 +152,8 @@ export const endpoints = {
 
     // payment + webhook
     'payment-create': '/api/v1/payment/create',
-    'webhook-sepay': '/api/webhook/sepay',
+    'webhook-sepay': '/api/v1/payment/webhook/sepay',
+    'payment-status': (id: number | string) => `/api/v1/payment/orders/${id}/status`,
 } as const;
 
 const DEFAULT_BASE_URL = 'http://localhost:8080';
@@ -226,6 +243,10 @@ async function request<T>(
     }
     if (token && !headers.has('Authorization')) {
         headers.set('Authorization', `Bearer ${token}`);
+    }
+    const storeId = getStoredStoreId();
+    if (storeId && !headers.has('X-Store-Id')) {
+        headers.set('X-Store-Id', storeId);
     }
 
     const url = buildUrl(baseUrl, path);
@@ -319,11 +340,28 @@ export const getStoredUser = <T = unknown>(): T | null => {
     }
 };
 
+export const getStoredCurrentStore = <T = unknown>(): T | null => {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEYS.currentStore);
+        if (!raw) return null;
+        return JSON.parse(raw) as T;
+    } catch {
+        return null;
+    }
+};
+
+export const getStoredStoreId = (): string | null => {
+    const store = getStoredCurrentStore<{ id?: number | string }>();
+    if (store?.id === undefined || store.id === null) return null;
+    return String(store.id);
+};
+
 export const clearStoredAuth = (): void => {
     try {
         localStorage.removeItem(STORAGE_KEYS.accessToken);
         localStorage.removeItem(STORAGE_KEYS.refreshToken);
         localStorage.removeItem(STORAGE_KEYS.user);
+        localStorage.removeItem(STORAGE_KEYS.currentStore);
     } catch {
         // ignore
     }
@@ -333,22 +371,29 @@ export const storeAuthFromPayload = (payload: unknown): {
     accessToken: string | null;
     refreshToken: string | null;
     user: unknown | null;
+    currentStore: unknown | null;
 } => {
     const accessToken = extractToken(payload, 'accessToken');
     const refreshToken = extractToken(payload, 'refreshToken');
     const user = isRecord(payload)
         ? payload.user ?? (isRecord(payload.data) ? payload.data.user : null)
         : null;
+    const currentStore = isRecord(payload)
+        ? payload.currentStore ?? (isRecord(payload.data) ? payload.data.currentStore : null)
+        : null;
 
     try {
         if (accessToken) localStorage.setItem(STORAGE_KEYS.accessToken, accessToken);
         if (refreshToken) localStorage.setItem(STORAGE_KEYS.refreshToken, refreshToken);
         if (user !== undefined) localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(user ?? null));
+        if (currentStore !== undefined) {
+            localStorage.setItem(STORAGE_KEYS.currentStore, JSON.stringify(currentStore ?? null));
+        }
     } catch {
         // ignore
     }
 
-    return { accessToken, refreshToken, user: (user as unknown) ?? null };
+    return { accessToken, refreshToken, user: (user as unknown) ?? null, currentStore: (currentStore as unknown) ?? null };
 };
 
 const extractToken = (payload: unknown, key: 'accessToken' | 'refreshToken'): string | null => {

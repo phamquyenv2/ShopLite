@@ -7,7 +7,11 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "orders")
+@Table(name = "orders",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_orders_store_code", columnNames = {"store_id", "code"}),
+                @UniqueConstraint(name = "uk_orders_store_request_id", columnNames = {"store_id", "request_id"})
+        })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,8 +23,11 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    /** External / integration request ID */
-    @Column(name = "request_id", length = 100, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
+
+    @Column(name = "request_id", length = 100)
     private String requestId;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -31,7 +38,7 @@ public class Order {
     @JoinColumn(name = "customer_id")
     private Customer customer;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(nullable = false, length = 50)
     private String code;
 
     @Column(name = "total_amount", nullable = false)

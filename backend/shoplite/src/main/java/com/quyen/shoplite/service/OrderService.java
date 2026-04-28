@@ -7,9 +7,9 @@ import com.quyen.shoplite.domain.response.ResOrderDTO;
 import com.quyen.shoplite.domain.response.ResOrderItemDTO;
 import com.quyen.shoplite.repository.*;
 import com.quyen.shoplite.util.DTOMapper;
+import com.quyen.shoplite.util.constant.RefTypeEnum;
 import com.quyen.shoplite.util.constant.StatusEnum;
 import com.quyen.shoplite.util.constant.TypeInventoryEnum;
-import com.quyen.shoplite.util.constant.TypeTransactionEnum;
 import com.quyen.shoplite.util.error.IdInvalidException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,17 +35,40 @@ public class OrderService {
     private final InventoryLogsRepository inventoryLogsRepository;
     private final CustomerRepository customerRepository;
     private final PaymentRepository paymentRepository;
-    private final TransactionRepository transactionRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final CurrentStoreService currentStoreService;
 
-    // ==================== CREATE DRAFT ====================
+    public record CreateOrderResult(ResOrderDTO order, boolean created) {
+    }
 
-    /**
-     * Tạo đơn hàng DRAFT — chỉ lưu thông tin, KHÔNG trừ kho.
-     * Stock chỉ bị trừ khi gọi confirm().
-     */
+    private ResOrderDTO toOrderDTOWithPayment(Order order) {
+        ResOrderDTO dto = DTOMapper.toResOrderDTO(order);
+        paymentRepository.findByStoreIdAndReferenceTypeAndReferenceId(order.getStore().getId(), RefTypeEnum.ORDER, order.getId())
+                .map(Payment::getPaymentMethod)
+                .ifPresent(dto::setPaymentMethod);
+        return dto;
+    }
+
     @Transactional
-    public ResOrderDTO create(ReqOrderDTO req) {
+    public CreateOrderResult create(ReqOrderDTO req) {
+        Store store = currentStoreService.getCurrentStore();
+        Long storeId = store.getId();
+        String requestId = req.getRequestId();
+        if (requestId == null || requestId.isBlank()) {
+            requestId = UUID.randomUUID().toString();
+        } else {
+            requestId = requestId.trim();
+            Optional<Order> existingOrder = orderRepository.findByStoreIdAndRequestId(storeId, requestId);
+            if (existingOrder.isPresent()) {
+                Order order = existingOrder.get();
+                ResOrderDTO dto = toOrderDTOWithPayment(order);
+                dto.setItems(orderItemsRepository.findAllByOrderId(order.getId()).stream()
+                        .map(DTOMapper::toResOrderItemDTO)
+                        .toList());
+                return new CreateOrderResult(dto, false);
+            }
+        }
+
         // 1. Validate user
         User user = userRepository.findById(req.getUserId())
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy User id=" + req.getUserId()));
@@ -53,7 +76,7 @@ public class OrderService {
 
         Customer customer = null;
         if (req.getCustomerId() != null) {
-            customer = customerRepository.findById(req.getCustomerId())
+            customer = customerRepository.findByIdAndStoreId(req.getCustomerId(), storeId)
                     .orElseThrow(() -> new IdInvalidException("Không tìm thấy Customer id=" + req.getCustomerId()));
         }
 
@@ -62,7 +85,7 @@ public class OrderService {
         List<OrderItems> itemsToSave = new ArrayList<>();
 
         for (ReqOrderItemDTO itemReq : req.getItems()) {
-            Product product = productRepository.findById(itemReq.getProductId())
+            Product product = productRepository.findByIdAndStoreIdAndIsDeletedFalse(itemReq.getProductId(), storeId)
                     .orElseThrow(() -> new IdInvalidException("Không tìm thấy Product id=" + itemReq.getProductId()));
 
             double itemTotal = itemReq.getPrice() * itemReq.getQuantity();
@@ -85,9 +108,10 @@ public class OrderService {
 
         // 4. Save Order as DRAFT
         Order order = Order.builder()
+                .store(store)
                 .user(user)
                 .customer(customer)
-                .requestId(req.getRequestId())
+                .requestId(requestId)
                 .code("ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .totalAmount(finalAmount)
                 .discount(discount)
@@ -103,9 +127,9 @@ public class OrderService {
         orderItemsRepository.saveAll(itemsToSave);
 
         // 6. Build response
-        ResOrderDTO dto = DTOMapper.toResOrderDTO(savedOrder);
+        ResOrderDTO dto = toOrderDTOWithPayment(savedOrder);
         dto.setItems(itemsToSave.stream().map(DTOMapper::toResOrderItemDTO).toList());
-        return dto;
+        return new CreateOrderResult(dto, true);
     }
 
     // ==================== UPDATE DRAFT ====================
@@ -116,7 +140,8 @@ public class OrderService {
      */
     @Transactional
     public ResOrderDTO update(Integer id, ReqOrderDTO req) {
-        Order order = orderRepository.findByIdWithLock(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Order order = orderRepository.findByIdAndStoreIdWithLock(id, storeId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy Order id=" + id));
 
         if (order.getStatus() != StatusEnum.DRAFT) {
@@ -125,7 +150,7 @@ public class OrderService {
 
         // Update customer
         if (req.getCustomerId() != null) {
-            Customer customer = customerRepository.findById(req.getCustomerId())
+            Customer customer = customerRepository.findByIdAndStoreId(req.getCustomerId(), storeId)
                     .orElseThrow(() -> new IdInvalidException("Không tìm thấy Customer id=" + req.getCustomerId()));
             order.setCustomer(customer);
         } else {
@@ -139,7 +164,7 @@ public class OrderService {
         List<OrderItems> newItems = new ArrayList<>();
 
         for (ReqOrderItemDTO itemReq : req.getItems()) {
-            Product product = productRepository.findById(itemReq.getProductId())
+            Product product = productRepository.findByIdAndStoreIdAndIsDeletedFalse(itemReq.getProductId(), storeId)
                     .orElseThrow(() -> new IdInvalidException("Không tìm thấy Product id=" + itemReq.getProductId()));
 
             double itemTotal = itemReq.getPrice() * itemReq.getQuantity();
@@ -167,7 +192,7 @@ public class OrderService {
 
         List<OrderItems> savedItems = orderItemsRepository.saveAll(newItems);
 
-        ResOrderDTO dto = DTOMapper.toResOrderDTO(savedOrder);
+        ResOrderDTO dto = toOrderDTOWithPayment(savedOrder);
         dto.setItems(savedItems.stream().map(DTOMapper::toResOrderItemDTO).toList());
         return dto;
     }
@@ -180,7 +205,8 @@ public class OrderService {
      */
     @Transactional
     public ResOrderDTO confirm(Integer id) {
-        Order order = orderRepository.findByIdWithLock(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Order order = orderRepository.findByIdAndStoreIdWithLock(id, storeId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy Order id=" + id));
 
         if (order.getStatus() != StatusEnum.DRAFT) {
@@ -194,7 +220,7 @@ public class OrderService {
 
         // Deduct stock with pessimistic lock
         for (OrderItems item : items) {
-            Product product = productRepository.findByIdWithLock(item.getProduct().getId())
+            Product product = productRepository.findByIdAndStoreIdWithLock(item.getProduct().getId(), storeId)
                     .orElseThrow(() -> new IdInvalidException(
                             "Không tìm thấy Product id=" + item.getProduct().getId()));
 
@@ -209,6 +235,7 @@ public class OrderService {
             productRepository.save(product);
 
             inventoryLogsRepository.save(InventoryLogs.builder()
+                    .store(order.getStore())
                     .product(product)
                     .orderItem(item)
                     .quantityOut(item.getQuantity().intValue())
@@ -226,7 +253,7 @@ public class OrderService {
 
         log.info("[Order] Confirmed order id={}, code={}, items={}", id, order.getCode(), items.size());
 
-        ResOrderDTO dto = DTOMapper.toResOrderDTO(savedOrder);
+        ResOrderDTO dto = toOrderDTOWithPayment(savedOrder);
         dto.setItems(items.stream().map(DTOMapper::toResOrderItemDTO).toList());
         return dto;
     }
@@ -236,11 +263,13 @@ public class OrderService {
     /**
      * Huỷ đơn hàng:
      * - DRAFT: chỉ đổi status, không cần hoàn kho
-     * - PENDING_PAYMENT / COMPLETED: hoàn kho + tạo REFUND transaction nếu đã paid
+     * - PENDING_PAYMENT / COMPLETED: hoàn kho
+     * - Nếu đã thanh toán: việc hoàn tiền sẽ do frontend tạo Payment REFUND riêng
      */
     @Transactional
     public void cancel(Integer id) {
-        Order order = orderRepository.findByIdWithLock(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Order order = orderRepository.findByIdAndStoreIdWithLock(id, storeId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy Order id=" + id));
 
         if (order.getStatus() == StatusEnum.CANCELLED) {
@@ -248,7 +277,6 @@ public class OrderService {
         }
 
         boolean wasConfirmed = order.getConfirmedAt() != null;
-        boolean wasPaid = order.getPaidAt() != null || order.getStatus() == StatusEnum.COMPLETED;
 
         order.setStatus(StatusEnum.CANCELLED);
         orderRepository.save(order);
@@ -257,7 +285,7 @@ public class OrderService {
         if (wasConfirmed) {
             List<OrderItems> items = orderItemsRepository.findAllByOrderId(id);
             for (OrderItems item : items) {
-                Product product = productRepository.findByIdWithLock(item.getProduct().getId())
+                Product product = productRepository.findByIdAndStoreIdWithLock(item.getProduct().getId(), storeId)
                         .orElseThrow(() -> new IdInvalidException(
                                 "Không tìm thấy Product id=" + item.getProduct().getId()));
                 int restoreQuantity = item.getQuantity().intValue();
@@ -266,6 +294,7 @@ public class OrderService {
                 productRepository.save(product);
 
                 inventoryLogsRepository.save(InventoryLogs.builder()
+                        .store(order.getStore())
                         .product(product)
                         .orderItem(item)
                         .quantityIn(restoreQuantity)
@@ -277,44 +306,30 @@ public class OrderService {
             }
         }
 
-        // If order was paid, create REFUND transaction in cashbook
-        if (wasPaid) {
-            Optional<Payment> payment = paymentRepository.findByOrder_Id(id);
-            double refundAmount = payment.map(Payment::getAmount).orElse(order.getTotalAmount());
-
-            transactionRepository.save(Transaction.builder()
-                    .order(order)
-                    .payment(payment.orElse(null))
-                    .amount(refundAmount)
-                    .type(TypeTransactionEnum.REFUND)
-                    .content("Hoàn tiền huỷ đơn hàng " + order.getCode())
-                    .transactionTime(LocalDateTime.now())
-                    .createdAt(LocalDateTime.now())
-                    .build());
-
-            log.info("[Order] Cancelled paid order id={}, refund amount={}", id, refundAmount);
-        }
+        log.info("[Order] Cancelled order id={}, code={}", id, order.getCode());
     }
 
     // ==================== ADMIN STATUS UPDATE ====================
 
     @Transactional
     public ResOrderDTO updateStatus(Integer id, StatusEnum status) {
-        Order order = orderRepository.findByIdWithLock(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Order order = orderRepository.findByIdAndStoreIdWithLock(id, storeId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy Order id=" + id));
         order.setStatus(status);
         if (status == StatusEnum.COMPLETED) {
             order.setPaidAt(LocalDateTime.now());
         }
-        return DTOMapper.toResOrderDTO(orderRepository.save(order));
+        return toOrderDTOWithPayment(orderRepository.save(order));
     }
 
     // ==================== READ ====================
 
     public ResOrderDTO findById(Integer id) {
-        Order order = orderRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Order order = orderRepository.findByIdAndStoreId(id, storeId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy Order id=" + id));
-        ResOrderDTO dto = DTOMapper.toResOrderDTO(order);
+        ResOrderDTO dto = toOrderDTOWithPayment(order);
         List<ResOrderItemDTO> items = orderItemsRepository.findAllByOrderId(id).stream()
                 .map(DTOMapper::toResOrderItemDTO)
                 .toList();
@@ -325,14 +340,15 @@ public class OrderService {
     public List<ResOrderDTO> findAll(List<StatusEnum> statuses) {
         org.springframework.data.domain.Sort sort = org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt");
         List<Order> orders;
+        Long storeId = currentStoreService.getCurrentStoreId();
         if (statuses == null || statuses.isEmpty()) {
-            orders = orderRepository.findAll(sort);
+            orders = orderRepository.findAllByStoreId(storeId, sort);
         } else {
-            orders = orderRepository.findByStatusIn(statuses, sort);
+            orders = orderRepository.findByStoreIdAndStatusIn(storeId, statuses, sort);
         }
         return orders.stream()
                 .map(order -> {
-                    ResOrderDTO dto = DTOMapper.toResOrderDTO(order);
+                    ResOrderDTO dto = toOrderDTOWithPayment(order);
                     dto.setItems(orderItemsRepository.findAllByOrderId(order.getId()).stream()
                             .map(DTOMapper::toResOrderItemDTO).toList());
                     return dto;

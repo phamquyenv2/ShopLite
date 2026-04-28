@@ -4,6 +4,7 @@ import com.quyen.shoplite.domain.Attendance;
 import com.quyen.shoplite.domain.Employee;
 import com.quyen.shoplite.domain.Office;
 import com.quyen.shoplite.domain.Roster;
+import com.quyen.shoplite.domain.Store;
 import com.quyen.shoplite.domain.User;
 import com.quyen.shoplite.domain.request.ReqAttendanceCheckInDTO;
 import com.quyen.shoplite.domain.request.ReqAttendanceCheckOutDTO;
@@ -49,6 +50,7 @@ class AttendanceServiceTest {
     @Mock private RosterRepository rosterRepository;
     @Mock private UserRepository userRepository;
     @Mock private Clock applicationClock;
+    @Mock private CurrentStoreService currentStoreService;
 
     private AttendanceService service;
 
@@ -65,11 +67,13 @@ class AttendanceServiceTest {
     @BeforeEach
     void setUp() {
         service = new AttendanceService(
-                attendanceRepository, employeeRepository, rosterRepository, userRepository, applicationClock);
+                attendanceRepository, employeeRepository, rosterRepository, userRepository, applicationClock, currentStoreService);
 
         user = User.builder().id(1).username(currentUsername).build();
+        Store store = Store.builder().id(1L).name("Test Store").owner(user).build();
         office = Office.builder()
                 .id(10)
+                .store(store)
                 .name("Main Office")
                 .officeLat(BigDecimal.valueOf(10.0))
                 .officeLng(BigDecimal.valueOf(20.0))
@@ -79,9 +83,11 @@ class AttendanceServiceTest {
 
         employee = Employee.builder()
                 .id(100)
+                .store(store)
                 .user(user)
                 .office(office)
                 .build();
+        lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(store.getId());
     }
 
     private void setClockTime(LocalDateTime time) {

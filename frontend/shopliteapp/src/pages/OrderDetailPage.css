@@ -1,0 +1,341 @@
+.ord-detail-page {
+    --background: #f2f2f6;
+}
+
+.ord-detail-header {
+    background: #f2f2f6;
+}
+
+.ord-detail-toolbar {
+    --background: #f2f2f6;
+    --border-color: transparent;
+}
+
+.ord-detail-content {
+    --background: #f2f2f6;
+}
+
+.ord-detail-container {
+    padding: 12px;
+    padding-bottom: 80px; /* space for footer */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Base Card Style */
+.ord-detail-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+/* Info Card */
+.ord-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.ord-info-code {
+    font-size: 16px;
+    font-weight: 600;
+    color: #000;
+}
+
+.ord-status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.ord-status-completed {
+    background: #e6f4ea;
+    color: #1e8e3e;
+}
+
+.ord-status-pending {
+    background: #fef7e0;
+    color: #f29900;
+}
+
+.ord-status-cancelled {
+    background: #fce8e6;
+    color: #d93025;
+}
+
+.ord-info-time {
+    font-size: 14px;
+    color: #666;
+}
+
+/* Customer Card */
+.ord-customer-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ord-customer-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e8f0fe;
+    color: #1a73e8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.ord-customer-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: #000;
+}
+
+/* Products Card */
+.ord-products-card {
+    padding: 0;
+}
+
+.ord-product-item {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #f0f0f0;
+    gap: 12px;
+}
+
+.ord-product-item:last-child {
+    border-bottom: none;
+}
+
+.ord-product-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: #f5f5f5;
+}
+
+.ord-product-img-placeholder {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+}
+
+.ord-product-info {
+    flex: 1;
+}
+
+.ord-product-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: #000;
+    margin-bottom: 4px;
+}
+
+.ord-product-sku {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 4px;
+}
+
+.ord-product-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ord-product-qty {
+    font-size: 14px;
+    color: #666;
+}
+
+.ord-product-total {
+    font-size: 15px;
+    font-weight: 600;
+    color: #000;
+}
+
+/* Summary Card */
+.ord-summary-card {
+    padding: 0;
+}
+
+.ord-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.ord-summary-row:last-child {
+    border-bottom: none;
+}
+
+.ord-summary-label {
+    font-size: 15px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ord-summary-qty-badge {
+    background: #f0f0f0;
+    color: #666;
+    font-size: 12px;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.ord-summary-value {
+    font-size: 15px;
+    color: #000;
+}
+
+.ord-summary-row.total-pay .ord-summary-label {
+    font-weight: 600;
+}
+
+.ord-summary-row.total-pay .ord-summary-value {
+    font-weight: 600;
+}
+
+.ord-summary-row.paid .ord-summary-label {
+    font-weight: 600;
+}
+
+.ord-summary-row.paid .ord-summary-value {
+    font-weight: 600;
+    color: #0066FF;
+}
+
+.ord-summary-row.payment-method {
+    padding-top: 0;
+    justify-content: flex-end;
+    border-bottom: none;
+}
+
+.ord-payment-method-text {
+    font-size: 14px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Note Card */
+.ord-note-card {
+    padding: 16px;
+}
+
+.ord-note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.ord-note-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+}
+
+.ord-note-edit {
+    font-size: 14px;
+    color: #0066FF;
+    font-weight: 500;
+}
+
+.ord-note-content {
+    font-size: 15px;
+    color: #666;
+}
+
+/* Footer Action */
+.ord-detail-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #f2f2f6;
+    z-index: 10;
+}
+
+.ord-btn-update {
+    width: 100%;
+    margin: 0;
+    min-height: 70px;
+    --background: #ffffff;
+    --color: #0066FF;
+    --box-shadow: none;
+    --border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-transform: none;
+}
+
+.ord-btn-update ion-icon {
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
+.ord-loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+/* Action Sheet Modal */
+.ord-action-modal {
+    --border-radius: 20px 20px 0 0;
+}
+
+.ord-action-sheet-content {
+    padding: 16px 0;
+    background: #ffffff;
+    height: 100%;
+}
+
+.ord-action-item {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    font-size: 16px;
+    color: #000;
+    gap: 16px;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
+
+.ord-action-item:active {
+    background: #f5f5f5;
+}
+
+.ord-action-item ion-icon {
+    font-size: 24px;
+    color: #666;
+}

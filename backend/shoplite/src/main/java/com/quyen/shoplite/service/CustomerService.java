@@ -1,6 +1,7 @@
 package com.quyen.shoplite.service;
 
 import com.quyen.shoplite.domain.Customer;
+import com.quyen.shoplite.domain.Store;
 import com.quyen.shoplite.domain.request.ReqCustomerUpsertDTO;
 import com.quyen.shoplite.domain.response.ResCustomerDTO;
 import com.quyen.shoplite.repository.CustomerRepository;
@@ -16,19 +17,23 @@ import java.util.List;
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final CurrentStoreService currentStoreService;
 
-    public CustomerService(CustomerRepository customerRepository) {
+    public CustomerService(CustomerRepository customerRepository, CurrentStoreService currentStoreService) {
         this.customerRepository = customerRepository;
+        this.currentStoreService = currentStoreService;
     }
 
     @Transactional
     public ResCustomerDTO create(ReqCustomerUpsertDTO req) {
+        Store store = currentStoreService.getCurrentStore();
         String phone = normalize(req.getPhone());
-        if (customerRepository.existsByPhone(phone)) {
+        if (customerRepository.existsByStoreIdAndPhone(store.getId(), phone)) {
             throw new BadRequestException("Phone already exists: " + phone);
         }
 
         Customer customer = Customer.builder()
+                .store(store)
                 .name(req.getName().trim())
                 .phone(phone)
                 .build();
@@ -43,7 +48,8 @@ public class CustomerService {
     }
 
     public List<ResCustomerDTO> findAll() {
-        return customerRepository.findAll().stream()
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return customerRepository.findAllByStoreIdOrderByIdAsc(storeId).stream()
                 .map(DTOMapper::toResCustomerDTO)
                 .toList();
     }
@@ -55,7 +61,8 @@ public class CustomerService {
             throw new BadRequestException("Customer has been modified by another user. Please refresh and try again.");
         }
         String phone = normalize(req.getPhone());
-        if (customerRepository.existsByPhoneAndIdNot(phone, id)) {
+        Long storeId = currentStoreService.getCurrentStoreId();
+        if (customerRepository.existsByStoreIdAndPhoneAndIdNot(storeId, phone, id)) {
             throw new BadRequestException("Phone already exists: " + phone);
         }
 
@@ -71,7 +78,8 @@ public class CustomerService {
     }
 
     private Customer findEntityById(Integer id) {
-        return customerRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return customerRepository.findByIdAndStoreId(id, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id=" + id));
     }
 
@@ -89,7 +97,8 @@ public class CustomerService {
         if (phone == null || phone.isBlank()) {
             return List.of();
         }
-        return customerRepository.findByPhoneContaining(phone.trim()).stream()
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return customerRepository.findByStoreIdAndPhoneContaining(storeId, phone.trim()).stream()
                 .map(DTOMapper::toResCustomerDTO)
                 .toList();
     }

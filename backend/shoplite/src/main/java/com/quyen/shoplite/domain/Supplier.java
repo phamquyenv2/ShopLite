@@ -6,7 +6,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "suppliers")
+@Table(name = "suppliers",
+        uniqueConstraints = @UniqueConstraint(name = "uk_suppliers_store_name", columnNames = {"store_id", "name"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,6 +21,10 @@ public class Supplier {
 
     @Version
     private Integer version;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
 
     @Column(nullable = false, length = 200)
     private String name;

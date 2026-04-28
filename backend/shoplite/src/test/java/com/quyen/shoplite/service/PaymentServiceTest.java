@@ -1,33 +1,34 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.Order;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quyen.shoplite.domain.Payment;
 import com.quyen.shoplite.domain.request.ReqPaymentDTO;
-import com.quyen.shoplite.domain.request.ReqTransactionDTO;
 import com.quyen.shoplite.domain.response.ResPaymentDTO;
 import com.quyen.shoplite.repository.OrderRepository;
 import com.quyen.shoplite.repository.PaymentRepository;
+import com.quyen.shoplite.service.payment.PaymentProviderFactory;
 import com.quyen.shoplite.util.constant.PaymentMethodEnum;
-import com.quyen.shoplite.util.constant.StatusEnum;
-import com.quyen.shoplite.util.constant.TypeTransactionEnum;
+import com.quyen.shoplite.util.constant.PaymentStatusEnum;
+import com.quyen.shoplite.util.constant.RefTypeEnum;
 import com.quyen.shoplite.util.error.IdInvalidException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
@@ -38,6 +39,12 @@ class PaymentServiceTest {
     private OrderRepository orderRepository;
     @Mock
     private TransactionService transactionService;
+    @Mock
+    private PaymentProviderFactory paymentProviderFactory;
+    @Mock
+    private ObjectMapper objectMapper;
+    @Mock
+    private com.quyen.shoplite.repository.FundAccountRepository fundAccountRepository;
 
     @InjectMocks
     private PaymentService paymentService;
@@ -50,91 +57,64 @@ class PaymentServiceTest {
     }
 
     @Test
-    void createPayment_Success() {
-        // Arrange
+    void createPaymentSession_DuplicatePaidPayment_ThrowsException() {
         Integer orderId = 1;
         ReqPaymentDTO req = new ReqPaymentDTO();
-        req.setOrderId(orderId);
-        req.setMethod(PaymentMethodEnum.BANK);
-        req.setAmount(100.0);
-        // Status is PENDING by default in DTO, but service explicitly saves as req.getStatus() or COMPLETED
-        req.setStatus(StatusEnum.COMPLETED);
+        req.setReferenceType(RefTypeEnum.ORDER);
+        req.setReferenceId(orderId);
+        req.setPaymentMethod(PaymentMethodEnum.CASH);
+        req.setAmount(BigDecimal.valueOf(100.0));
 
-        Order order = new Order();
-        order.setId(orderId);
-        order.setCode("ORD-123");
-        order.setStatus(StatusEnum.PENDING);
-        order.setTotalAmount(100.0);
+        Payment existing = new Payment();
+        existing.setStatus(PaymentStatusEnum.COMPLETED);
+        when(paymentRepository.existsByReferenceTypeAndReferenceIdAndStatusIn(
+                RefTypeEnum.ORDER, orderId, List.of(PaymentStatusEnum.COMPLETED)))
+                .thenReturn(true);
 
-        when(orderRepository.findByIdWithLock(orderId)).thenReturn(Optional.of(order));
-        when(paymentRepository.findByOrder_Id(orderId)).thenReturn(Optional.empty());
+        assertThrows(Exception.class, () -> paymentService.createPaymentSession(req));
+    }
 
-        Payment savedPayment = new Payment();
-        savedPayment.setId(10);
-        savedPayment.setAmount(100.0);
-        savedPayment.setMethod(PaymentMethodEnum.BANK);
-        savedPayment.setStatus(StatusEnum.COMPLETED);
-        savedPayment.setOrder(order);
+    @Test
+    void createPaymentSession_OrderNotFound_ThrowsException() {
+        ReqPaymentDTO req = new ReqPaymentDTO();
+        req.setReferenceType(RefTypeEnum.ORDER);
+        req.setReferenceId(999);
+        req.setPaymentMethod(PaymentMethodEnum.EWALLET);
+        req.setAmount(BigDecimal.valueOf(100.0));
+
+        when(paymentRepository.existsByReferenceTypeAndReferenceIdAndStatusIn(any(), any(), any()))
+                .thenReturn(false);
         
-        when(paymentRepository.save(any(Payment.class))).thenReturn(savedPayment);
+        com.quyen.shoplite.service.payment.PaymentProvider mockProvider = org.mockito.Mockito.mock(com.quyen.shoplite.service.payment.PaymentProvider.class);
+        when(paymentProviderFactory.getProvider(PaymentMethodEnum.EWALLET)).thenReturn(mockProvider);
+        when(orderRepository.findById(999)).thenReturn(Optional.empty());
 
-        // Act
-        ResPaymentDTO result = paymentService.createPayment(orderId, req);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(10, result.getId());
-        assertEquals(PaymentMethodEnum.BANK, result.getMethod());
-        assertEquals(StatusEnum.COMPLETED, result.getStatus());
-
-        // Verify Transaction
-        ArgumentCaptor<ReqTransactionDTO> transactionCaptor = ArgumentCaptor.forClass(ReqTransactionDTO.class);
-        verify(transactionService).create(transactionCaptor.capture());
-        ReqTransactionDTO capturedTx = transactionCaptor.getValue();
-        assertEquals(orderId, capturedTx.getOrderId());
-        assertEquals(100.0, capturedTx.getAmount());
-        assertEquals(TypeTransactionEnum.REVENUE, capturedTx.getType());
-        assertTrue(capturedTx.getContent().contains("ORD-123"));
-        assertNotNull(capturedTx.getTransactionTime());
-
-        // Verify Order updated
-        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-        verify(orderRepository).save(orderCaptor.capture());
-        Order updatedOrder = orderCaptor.getValue();
-        assertEquals(StatusEnum.COMPLETED, updatedOrder.getStatus());
-        assertNotNull(updatedOrder.getPaidAt());
+        assertThrows(IdInvalidException.class, () -> paymentService.createPaymentSession(req));
     }
 
     @Test
-    void createPayment_OrderNotFound_ThrowsException() {
-        Integer orderId = 999;
+    void validateReqPaymentDTO_MissingReferenceType() {
         ReqPaymentDTO req = new ReqPaymentDTO();
-        when(orderRepository.findByIdWithLock(orderId)).thenReturn(Optional.empty());
+        // referenceType is null → @NotNull violation
+        req.setReferenceId(1);
+        req.setPaymentMethod(PaymentMethodEnum.CASH);
+        req.setAmount(BigDecimal.valueOf(100.0));
 
-        IdInvalidException ex = assertThrows(IdInvalidException.class, () -> paymentService.createPayment(orderId, req));
-        assertTrue(ex.getMessage().contains("Không tìm thấy Order"));
-    }
-
-    @Test
-    void createPayment_DuplicatePayment_ThrowsException() {
-        Integer orderId = 1;
-        ReqPaymentDTO req = new ReqPaymentDTO();
-
-        when(orderRepository.findByIdWithLock(orderId)).thenReturn(Optional.of(new Order()));
-        when(paymentRepository.findByOrder_Id(orderId)).thenReturn(Optional.of(new Payment()));
-
-        IdInvalidException ex = assertThrows(IdInvalidException.class, () -> paymentService.createPayment(orderId, req));
-        assertTrue(ex.getMessage().contains("Đơn hàng đã có giao dịch"));
+        Set<ConstraintViolation<ReqPaymentDTO>> violations = validator.validate(req);
+        assertTrue(violations.stream().anyMatch(v ->
+                v.getPropertyPath().toString().equals("referenceType")));
     }
 
     @Test
     void validateReqPaymentDTO_InvalidAmount() {
         ReqPaymentDTO req = new ReqPaymentDTO();
-        req.setOrderId(1);
-        req.setMethod(PaymentMethodEnum.CASH);
-        req.setAmount(-50.0); // should be strictly positive
+        req.setReferenceType(RefTypeEnum.ORDER);
+        req.setReferenceId(1);
+        req.setPaymentMethod(PaymentMethodEnum.CASH);
+        req.setAmount(BigDecimal.valueOf(-50.0)); // negative → @Positive violation
 
         Set<ConstraintViolation<ReqPaymentDTO>> violations = validator.validate(req);
-        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("lớn hơn 0")));
+        assertTrue(violations.stream().anyMatch(v ->
+                v.getMessage().contains("lớn hơn 0")));
     }
 }

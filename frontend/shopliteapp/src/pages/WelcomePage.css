@@ -1,0 +1,425 @@
+/* ──────────────────────────────────────
+   WelcomePage.css
+   Primary colour: #0062ff (blue)
+   ────────────────────────────────────── */
+
+.welcome-page {
+  --ion-background-color: #ffffff;
+}
+
+.welcome-content {
+  --background: #f5f6f9;
+  --ion-font-family: var(--app-font-family);
+  font-family: var(--app-font-family);
+}
+
+/* ── Hero ── */
+.welcome-hero {
+  background: linear-gradient(150deg, #0055e5 0%, #1a8fff 55%, #56cffa 100%);
+  padding: 52px 24px 40px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  /* entrance animation */
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+
+.welcome-hero.animated {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Decorative blobs */
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.blob-1 {
+  width: 240px;
+  height: 240px;
+  top: -80px;
+  right: -60px;
+}
+
+.blob-2 {
+  width: 180px;
+  height: 180px;
+  bottom: -60px;
+  left: -50px;
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* Logo */
+.welcome-logo-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 20px;
+}
+
+.welcome-logo-box {
+  width: 88px;
+  height: 88px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  backdrop-filter: blur(8px);
+}
+
+.welcome-logo-box ion-icon {
+  font-size: 46px;
+  color: #ffffff;
+}
+
+.logo-glow {
+  position: absolute;
+  inset: -8px;
+  border-radius: 32px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+  animation: pulse-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+/* Brand name */
+.welcome-brand {
+  font-size: 38px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 10px;
+  letter-spacing: -0.03em;
+}
+
+.welcome-tagline {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.88);
+  margin: 0 0 24px;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+.welcome-tagline strong {
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Trust badges */
+.trust-badges {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  backdrop-filter: blur(6px);
+}
+
+.trust-badge ion-icon {
+  font-size: 14px;
+}
+
+/* ── Hero CTA Buttons ── */
+.hero-cta {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.hero-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 48px;
+  padding: 0 24px;
+  background: #ffffff;
+  color: #0062ff;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transition: transform 0.14s, box-shadow 0.14s;
+  flex: 1;
+  justify-content: center;
+  max-width: 180px;
+}
+.hero-btn-primary:active {
+  transform: scale(0.96);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.hero-btn-primary ion-icon {
+  font-size: 17px;
+}
+
+.hero-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  padding: 0 24px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.14s;
+  flex: 1;
+  max-width: 180px;
+}
+.hero-btn-ghost:active {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* ── Body ── */
+.welcome-body {
+  padding: 24px 16px 32px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.welcome-body-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  margin: 0 0 12px 2px;
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  margin-bottom: 14px;
+}
+
+/* ── Feature Grid ── */
+.feature-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.feature-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  animation: slide-up 0.4s ease both;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.feature-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+/* icon colour variants */
+.feature-icon-box.blue {
+  background: #eff6ff;
+  color: #0062ff;
+}
+
+.feature-icon-box.indigo {
+  background: #eef2ff;
+  color: #6366f1;
+}
+
+.feature-icon-box.teal {
+  background: #f0fdfa;
+  color: #0d9488;
+}
+
+.feature-icon-box.green {
+  background: #f0fdf4;
+  color: #22c55e;
+}
+
+.feature-icon-box.orange {
+  background: #fff7ed;
+  color: #f59e0b;
+}
+
+.feature-icon-box.purple {
+  background: #faf5ff;
+  color: #a855f7;
+}
+
+.feature-text h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+.feature-text p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* ── Stats highlight ── */
+.stats-highlight {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 18px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.stat-num {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0062ff;
+  letter-spacing: -0.02em;
+}
+
+.stat-desc {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+  text-align: center;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 36px;
+  background: #f1f3f5;
+}
+
+/* ── CTA ── */
+.welcome-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.btn-primary {
+  width: 100%;
+  height: 54px;
+  background: #0062ff;
+  color: #ffffff;
+  border: none;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 8px 20px rgba(0, 98, 255, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+  box-shadow: 0 4px 10px rgba(0, 98, 255, 0.2);
+}
+
+.btn-primary ion-icon {
+  font-size: 18px;
+}
+
+.btn-secondary {
+  width: 100%;
+  height: 54px;
+  background: #ffffff;
+  color: #0062ff;
+  border: 1.5px solid #0062ff;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-secondary:active {
+  background: #eff6ff;
+}
+
+/* ── Footer ── */
+.welcome-version {
+  text-align: center;
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0;
+}

@@ -18,5 +18,12 @@ public interface ImportOrderRepository extends JpaRepository<ImportOrder, Intege
     @Query("SELECT io FROM ImportOrder io WHERE io.id = :id")
     Optional<ImportOrder> findByIdWithLock(@Param("id") Integer id);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT io FROM ImportOrder io WHERE io.id = :id AND io.store.id = :storeId")
+    Optional<ImportOrder> findByIdAndStoreIdWithLock(@Param("id") Integer id, @Param("storeId") Long storeId);
+
     List<ImportOrder> findBySupplier_Id(Integer supplierId);
+    Optional<ImportOrder> findByIdAndStoreId(Integer id, Long storeId);
+    List<ImportOrder> findAllByStoreIdOrderByCreatedAtDesc(Long storeId);
+    List<ImportOrder> findByStoreIdAndSupplier_Id(Long storeId, Integer supplierId);
 }

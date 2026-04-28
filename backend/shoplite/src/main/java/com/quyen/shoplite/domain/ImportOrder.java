@@ -1,6 +1,7 @@
 package com.quyen.shoplite.domain;
 
 import com.quyen.shoplite.util.constant.ImportOrderStatusEnum;
+import com.quyen.shoplite.util.constant.ImportReturnStatusEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,6 +19,10 @@ public class ImportOrder {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id", nullable = false)
@@ -39,6 +44,11 @@ public class ImportOrder {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ImportOrderStatusEnum status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "return_status")
+    @Builder.Default
+    private ImportReturnStatusEnum returnStatus = ImportReturnStatusEnum.UNRETURNED;
 
     @Column(length = 1000)
     private String note;

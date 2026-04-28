@@ -7,7 +7,6 @@ import com.quyen.shoplite.domain.response.ResPaymentDTO;
 import com.quyen.shoplite.domain.response.ResTransactionDTO;
 import com.quyen.shoplite.service.OrderService;
 import com.quyen.shoplite.service.PaymentService;
-import com.quyen.shoplite.service.SePayService;
 import com.quyen.shoplite.service.TransactionService;
 import com.quyen.shoplite.util.annotation.ApiMessage;
 import com.quyen.shoplite.util.constant.StatusEnum;
@@ -30,7 +29,6 @@ public class OrderController {
 
     private final OrderService orderService;
     private final PaymentService paymentService;
-    private final SePayService sePayService;
     private final TransactionService transactionService;
 
     // ==================== ORDER CRUD ====================
@@ -41,7 +39,9 @@ public class OrderController {
     @PostMapping
     @ApiMessage("Create draft order success")
     public ResponseEntity<ResOrderDTO> create(@Valid @RequestBody ReqOrderDTO req) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.create(req));
+        OrderService.CreateOrderResult result = orderService.create(req);
+        HttpStatus status = result.created() ? HttpStatus.CREATED : HttpStatus.OK;
+        return ResponseEntity.status(status).body(result.order());
     }
 
     /**
@@ -110,24 +110,14 @@ public class OrderController {
     // ==================== PAYMENT ====================
 
     /**
-     * POST /api/v1/orders/{id}/payments — Thu tiền thủ công (cash/bank)
+     * POST /api/v1/orders/{id}/payments — Thu tiền thủ công hoặc tạo session thanh toán QR
      */
     @PostMapping("/{id}/payments")
-    @ApiMessage("Create payment for order success")
-    public ResponseEntity<ResPaymentDTO> createPayment(
+    @ApiMessage("Create payment session for order success")
+    public ResponseEntity<ResPaymentDTO> createPaymentSession(
             @PathVariable("id") @Positive(message = "id must be greater than 0") Integer id,
-            @Valid @RequestBody ReqPaymentDTO req) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createPayment(id, req));
-    }
-
-    /**
-     * POST /api/v1/orders/{id}/payments/qr — Tạo QR / link thanh toán SePay
-     */
-    @PostMapping("/{id}/payments/qr")
-    @ApiMessage("Create QR payment session success")
-    public ResponseEntity<Map<String, Object>> createQrPayment(
-            @PathVariable("id") @Positive(message = "id must be greater than 0") Integer id) {
-        return ResponseEntity.ok(sePayService.createPaymentSession(id));
+            @RequestBody ReqPaymentDTO req) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createPaymentSession(id, req));
     }
 
     /**
@@ -149,6 +139,12 @@ public class OrderController {
     @ApiMessage("Get transactions for order success")
     public ResponseEntity<List<ResTransactionDTO>> getTransactionsByOrderId(
             @PathVariable("id") @Positive(message = "id must be greater than 0") Integer id) {
-        return ResponseEntity.ok(transactionService.findByOrderId(id));
+        // Lấy payment của order → lấy transactions theo paymentId
+        ResPaymentDTO payment = paymentService.findByOrderId(id);
+        if (payment == null || payment.getId() == null) {
+            return ResponseEntity.ok(List.of());
+        }
+        return ResponseEntity.ok(transactionService.findByPaymentId(payment.getId()));
     }
 }
+

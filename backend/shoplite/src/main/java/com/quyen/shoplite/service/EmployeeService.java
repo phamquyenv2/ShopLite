@@ -2,19 +2,26 @@ package com.quyen.shoplite.service;
 
 import com.quyen.shoplite.domain.Employee;
 import com.quyen.shoplite.domain.Office;
+import com.quyen.shoplite.domain.Role;
+import com.quyen.shoplite.domain.StoreMember;
+import com.quyen.shoplite.domain.Store;
 import com.quyen.shoplite.domain.User;
 import com.quyen.shoplite.domain.request.ReqEmployeeDTO;
 import com.quyen.shoplite.domain.response.ResEmployeeDTO;
 import com.quyen.shoplite.repository.EmployeeRepository;
 import com.quyen.shoplite.repository.OfficeRepository;
+import com.quyen.shoplite.repository.RoleRepository;
+import com.quyen.shoplite.repository.StoreMemberRepository;
 import com.quyen.shoplite.repository.UserRepository;
 import com.quyen.shoplite.util.DTOMapper;
+import com.quyen.shoplite.util.constant.StoreMemberStatus;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -24,16 +31,22 @@ public class EmployeeService {
     private final EmployeeRepository employeeRepository;
     private final UserRepository userRepository;
     private final OfficeRepository officeRepository;
+    private final StoreMemberRepository storeMemberRepository;
+    private final RoleRepository roleRepository;
+    private final CurrentStoreService currentStoreService;
 
     // ------------------------------------------------------------------ create
 
     @Transactional
     public ResEmployeeDTO create(ReqEmployeeDTO req) {
+        Store store = currentStoreService.getCurrentStore();
+        Long storeId = store.getId();
+
         // 1. Validate user exists
         User user = findUser(req.getUserId());
 
         // 2. Prevent duplicate employee-user mapping (active employees only)
-        if (employeeRepository.existsByUser_IdAndDeletedFalse(req.getUserId())) {
+        if (employeeRepository.existsByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(storeId, req.getUserId())) {
             throw new BadRequestException(
                     "User id=" + req.getUserId() + " is already linked to an employee");
         }
@@ -48,13 +61,27 @@ public class EmployeeService {
 
         // 5. QR uniqueness (active only)
         if (req.getQr() != null && !req.getQr().isBlank()) {
-            if (employeeRepository.existsByQrAndDeletedFalse(req.getQr().trim())) {
+            if (employeeRepository.existsByStoreMember_Store_IdAndQrAndDeletedFalse(storeId, req.getQr().trim())) {
                 throw new BadRequestException("qr_code already exists: " + req.getQr().trim());
             }
         }
 
+        // 6. Ensure StoreMember exists or create one
+        StoreMember storeMember = storeMemberRepository
+                .findByStoreIdAndUserId(storeId, user.getId())
+                .orElseGet(() -> {
+                    Role defaultRole = roleRepository.findByName("ORDER_STAFF").orElse(null);
+                    return storeMemberRepository.save(StoreMember.builder()
+                            .store(store)
+                            .user(user)
+                            .role(defaultRole)
+                            .status(StoreMemberStatus.ACTIVE)
+                            .joinedAt(LocalDateTime.now())
+                            .build());
+                });
+
         Employee employee = Employee.builder()
-                .user(user)
+                .storeMember(storeMember)
                 .office(office)
                 .salaryRate(req.getSalaryRate())
                 .qr(req.getQr() != null ? req.getQr().trim() : null)
@@ -71,7 +98,8 @@ public class EmployeeService {
     }
 
     public List<ResEmployeeDTO> findAll() {
-        return employeeRepository.findAllByDeletedFalseOrderByIdAsc().stream()
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return employeeRepository.findAllByStoreMember_Store_IdAndDeletedFalseOrderByIdAsc(storeId).stream()
                 .map(DTOMapper::toResEmployeeDTO)
                 .toList();
     }
@@ -81,17 +109,31 @@ public class EmployeeService {
     @Transactional
     public ResEmployeeDTO update(Integer id, ReqEmployeeDTO req) {
         Employee employee = findEntityById(id);
+        Long storeId = currentStoreService.getCurrentStoreId();
 
         // 1. Validate & switch user if changed
-        if (!req.getUserId().equals(employee.getUser().getId())) {
-            // Ensure the new user exists
-            User newUser = findUser(req.getUserId());
-            // Ensure the new user is not already bound to another active employee
-            if (employeeRepository.existsByUser_IdAndIdNotAndDeletedFalse(req.getUserId(), id)) {
+        Integer currentUserId = employee.getStoreMember().getUser().getId();
+        if (!req.getUserId().equals(currentUserId)) {
+            if (employeeRepository.existsByStoreMember_Store_IdAndStoreMember_User_IdAndIdNotAndDeletedFalse(
+                    storeId, req.getUserId(), id)) {
                 throw new BadRequestException(
                         "User id=" + req.getUserId() + " is already linked to another employee");
             }
-            employee.setUser(newUser);
+            User newUser = findUser(req.getUserId());
+            StoreMember newStoreMember = storeMemberRepository
+                    .findByStoreIdAndUserId(storeId, newUser.getId())
+                    .orElseGet(() -> {
+                        Role defaultRole = roleRepository.findByName("ORDER_STAFF").orElse(null);
+                        Store store = employee.getStoreMember().getStore();
+                        return storeMemberRepository.save(StoreMember.builder()
+                                .store(store)
+                                .user(newUser)
+                                .role(defaultRole)
+                                .status(StoreMemberStatus.ACTIVE)
+                                .joinedAt(LocalDateTime.now())
+                                .build());
+                    });
+            employee.setStoreMember(newStoreMember);
         }
 
         // 2. Validate & switch office if changed
@@ -107,10 +149,10 @@ public class EmployeeService {
         }
         employee.setSalaryRate(req.getSalaryRate());
 
-        // 4. QR uniqueness (only when qr value actually changes)
+        // 4. QR uniqueness
         String newQr = req.getQr() != null ? req.getQr().trim() : null;
         if (newQr != null && !newQr.isBlank()) {
-            if (employeeRepository.existsByQrAndIdNotAndDeletedFalse(newQr, id)) {
+            if (employeeRepository.existsByStoreMember_Store_IdAndQrAndIdNotAndDeletedFalse(storeId, newQr, id)) {
                 throw new BadRequestException("qr_code already exists: " + newQr);
             }
         }
@@ -137,7 +179,8 @@ public class EmployeeService {
     // ------------------------------------------------------------------ helpers
 
     private Employee findEntityById(Integer id) {
-        return employeeRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return employeeRepository.findByIdAndStoreMember_Store_IdAndDeletedFalse(id, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id=" + id));
     }
 
@@ -147,7 +190,8 @@ public class EmployeeService {
     }
 
     private Office findOffice(Integer officeId) {
-        return officeRepository.findById(officeId)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return officeRepository.findByIdAndStoreId(officeId, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Office not found with id=" + officeId));
     }
 }

@@ -28,13 +28,10 @@ public class UserService {
         if (userRepository.existsByUsername(req.getUsername())) {
             throw new BadRequestException("Username '" + req.getUsername() + "' Ä‘Ã£ tá»“n táº¡i");
         }
-        Role role = resolveRole(req.getRoleId());
         User user = User.builder()
                 .username(req.getUsername())
                 .password(passwordEncoder.encode(req.getPassword()))
-                .role(role)
                 .isActive(req.isActive())
-                .createdAt(LocalDateTime.now())
                 .build();
         return DTOMapper.toResUserDTO(userRepository.save(user));
     }
@@ -55,13 +52,7 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y User vá»›i id=" + id));
 
-        if (req.getVersion() != null && !req.getVersion().equals(user.getVersion())) {
-            throw new BadRequestException("User has been modified by another user. Please refresh and try again.");
-        }
 
-        if (req.getRoleId() != null) {
-            user.setRole(resolveRole(req.getRoleId()));
-        }
         user.setActive(req.isActive());
         if (req.getPassword() != null && !req.getPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(req.getPassword()));

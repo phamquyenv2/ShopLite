@@ -45,5 +45,23 @@ export const importOrderService = {
         } catch (error: any) {
             throw new ApiError(error.response?.data?.message || 'Không thể cập nhật trạng thái');
         }
-    }
+    },
+
+    /**
+     * Retry payment cho đơn đang ở PENDING_PAYMENT.
+     * Chỉ gọi bước payment — KHÔNG update/confirm lại.
+     * Backend endpoint: POST /api/v1/import-orders/{id}/pay
+     */
+    async payOnly(id: number | string, data: {
+        paidAmount: number;
+        paymentMethod: string;
+        note?: string;
+    }): Promise<ImportOrder> {
+        try {
+            const res = await authApis().post(`${endpoints['import-orders']}/${id}/pay`, data);
+            return res.data?.data;
+        } catch (error: any) {
+            throw new ApiError(error.response?.data?.message || 'Không thể thanh toán phiếu nhập');
+        }
+    },
 };

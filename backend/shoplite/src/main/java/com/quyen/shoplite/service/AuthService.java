@@ -1,13 +1,17 @@
 package com.quyen.shoplite.service;
 
 import com.quyen.shoplite.domain.Role;
+import com.quyen.shoplite.domain.StoreMember;
 import com.quyen.shoplite.domain.User;
 import com.quyen.shoplite.domain.UserToken;
 import com.quyen.shoplite.domain.response.ResLoginDTO;
+import com.quyen.shoplite.domain.response.ResMeDTO;
 import com.quyen.shoplite.repository.RoleRepository;
+import com.quyen.shoplite.repository.StoreMemberRepository;
 import com.quyen.shoplite.repository.UserRepository;
 import com.quyen.shoplite.repository.UserTokenRepository;
 import com.quyen.shoplite.util.SecurityUtil;
+import com.quyen.shoplite.util.constant.StoreMemberStatus;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
@@ -19,11 +23,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AuthService {
 
     private final AuthenticationManager authenticationManager;
@@ -31,6 +38,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final UserTokenRepository userTokenRepository;
     private final RoleRepository roleRepository;
+    private final StoreMemberRepository storeMemberRepository;
     private final PasswordEncoder passwordEncoder;
 
     public ResLoginDTO login(String username, String password) {
@@ -39,13 +47,13 @@ public class AuthService {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(username, password));
         } catch (AuthenticationException ex) {
-            throw new UnauthorizedException("Tên đăng nhập hoặc mật khẩu không đúng");
+            throw new UnauthorizedException("Ten dang nhap hoac mat khau khong dung");
         }
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         String principalUsername = authentication.getName();
         User user = userRepository.findByUsername(principalUsername)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy user: " + principalUsername));
+                .orElseThrow(() -> new UnauthorizedException("Khong tim thay user: " + principalUsername));
 
         return issueTokens(user);
     }
@@ -62,30 +70,24 @@ public class AuthService {
         if (password == null || password.isBlank()) {
             throw new BadRequestException("password must not be blank");
         }
-        // Keep runtime validation consistent with ReqRegisterDTO
         if (!normalizedPhone.matches("^0\\d{9}$")) {
-            throw new BadRequestException("số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0");
+            throw new BadRequestException("so dien thoai phai gom 10 chu so va bat dau bang 0");
         }
         if (password.length() < 6) {
-            throw new BadRequestException("mật khẩu phải có ít nhất 6 ký tự");
+            throw new BadRequestException("mat khau phai co it nhat 6 ky tu");
         }
         if (userRepository.existsByUsername(normalizedUsername)) {
-            throw new BadRequestException("Username '" + normalizedUsername + "' đã tồn tại");
+            throw new BadRequestException("Username '" + normalizedUsername + "' da ton tai");
         }
         if (userRepository.existsByPhone(normalizedPhone)) {
-            throw new BadRequestException("Phone '" + normalizedPhone + "' đã tồn tại");
+            throw new BadRequestException("Phone '" + normalizedPhone + "' da ton tai");
         }
-
-        Role userRole = roleRepository.findByName("USER")
-                .orElseThrow(() -> new BadRequestException("Role USER chưa được khởi tạo"));
 
         User user = User.builder()
                 .username(normalizedUsername)
                 .password(passwordEncoder.encode(password))
                 .phone(normalizedPhone)
-                .role(userRole)
                 .isActive(true)
-                .createdAt(LocalDateTime.now())
                 .build();
 
         User saved = userRepository.save(user);
@@ -95,20 +97,20 @@ public class AuthService {
     public ResLoginDTO refresh(Jwt refreshJwt) {
         String tokenValue = refreshJwt.getTokenValue();
         UserToken token = userTokenRepository.findByRefreshTokenAndRevokedFalse(tokenValue)
-                .orElseThrow(() -> new UnauthorizedException("Refresh token không tồn tại hoặc đã bị thu hồi"));
+                .orElseThrow(() -> new UnauthorizedException("Refresh token khong ton tai hoac da bi thu hoi"));
 
         LocalDateTime now = LocalDateTime.now();
         if (token.getExpiresAt() == null || !token.getExpiresAt().isAfter(now)) {
             token.setRevoked(true);
             userTokenRepository.save(token);
-            throw new UnauthorizedException("Refresh token đã hết hạn");
+            throw new UnauthorizedException("Refresh token da het han");
         }
 
         String username = refreshJwt.getSubject();
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy user: " + username));
+                .orElseThrow(() -> new UnauthorizedException("Khong tim thay user: " + username));
 
-        String roleName = (user.getRole() != null) ? user.getRole().getName() : "USER";
+        String roleName = getRoleName(user);
 
         String newAccessToken = securityUtil.generateAccessToken(user.getUsername(), roleName);
         String newRefreshToken = securityUtil.generateRefreshToken(user.getUsername());
@@ -127,35 +129,105 @@ public class AuthService {
 
         ResLoginDTO.UserInfo userInfo = new ResLoginDTO.UserInfo(
                 user.getId(), user.getUsername(), roleName);
-
-        return new ResLoginDTO(newAccessToken, newRefreshToken, userInfo);
+        ResLoginDTO response = new ResLoginDTO(newAccessToken, newRefreshToken, userInfo);
+        response.setCurrentStore(buildCurrentStoreInfo(user));
+        return response;
     }
 
     public void logout(Jwt refreshJwt) {
         String tokenValue = refreshJwt.getTokenValue();
         UserToken token = userTokenRepository.findByRefreshTokenAndRevokedFalse(tokenValue)
-                .orElseThrow(() -> new UnauthorizedException("Refresh token không tồn tại hoặc đã bị thu hồi"));
+                .orElseThrow(() -> new UnauthorizedException("Refresh token khong ton tai hoac da bi thu hoi"));
         token.setRevoked(true);
         userTokenRepository.save(token);
     }
 
+    @Transactional(readOnly = true)
+    public ResMeDTO getCurrentUserProfile(String jwtSubject) {
+        User user = userRepository.findByUsername(jwtSubject)
+                .orElseThrow(() -> new UnauthorizedException("Khong tim thay user: " + jwtSubject));
+
+        List<StoreMember> memberships = storeMemberRepository
+                .findAllByUserIdAndStatusFetchStore(user.getId(), StoreMemberStatus.ACTIVE);
+
+        List<ResMeDTO.StoreInfo> stores = memberships.stream()
+                .map(sm -> ResMeDTO.StoreInfo.builder()
+                        .id(sm.getStore().getId())
+                        .name(sm.getStore().getName())
+                        .memberRole(sm.getRole() != null ? sm.getRole().getName() : "USER")
+                        .membershipStatus(sm.getStatus().name())
+                        .build())
+                .toList();
+
+        ResMeDTO.StoreInfo currentStore = stores.isEmpty() ? null : stores.get(0);
+        String globalRole = memberships.stream()
+                .filter(m -> m.getStatus() == StoreMemberStatus.ACTIVE)
+                .findFirst()
+                .map(m -> m.getRole() != null ? m.getRole().getName() : null)
+                .orElse(null);
+
+        return ResMeDTO.builder()
+                .user(ResMeDTO.UserInfo.builder()
+                        .id(user.getId())
+                        .username(user.getUsername())
+                        .phone(user.getPhone())
+                        .globalRole(globalRole)
+                        .build())
+                .currentStore(currentStore)
+                .stores(stores)
+                .build();
+    }
+
     private ResLoginDTO issueTokens(User user) {
-        String roleName = (user.getRole() != null) ? user.getRole().getName() : "USER";
+        String roleName = getRoleName(user);
+        LocalDateTime now = LocalDateTime.now();
+
+        List<UserToken> validTokens = userTokenRepository.findValidTokensByUserId(user.getId(), now);
+
+        String refreshToken;
+        if (!validTokens.isEmpty()) {
+            refreshToken = validTokens.get(0).getRefreshToken();
+        } else {
+            userTokenRepository.revokeAllByUserId(user.getId());
+
+            refreshToken = securityUtil.generateRefreshToken(user.getUsername());
+            UserToken newToken = UserToken.builder()
+                    .user(user)
+                    .refreshToken(refreshToken)
+                    .expiresAt(now.plusSeconds(securityUtil.getRefreshTokenExpiration()))
+                    .revoked(false)
+                    .createdAt(now)
+                    .build();
+            userTokenRepository.save(newToken);
+        }
 
         String accessToken = securityUtil.generateAccessToken(user.getUsername(), roleName);
-        String refreshToken = securityUtil.generateRefreshToken(user.getUsername());
-
-        UserToken userToken = UserToken.builder()
-                .user(user)
-                .refreshToken(refreshToken)
-                .expiresAt(LocalDateTime.now().plusSeconds(securityUtil.getRefreshTokenExpiration()))
-                .revoked(false)
-                .createdAt(LocalDateTime.now())
-                .build();
-        userTokenRepository.save(userToken);
 
         ResLoginDTO.UserInfo userInfo = new ResLoginDTO.UserInfo(
                 user.getId(), user.getUsername(), roleName);
-        return new ResLoginDTO(accessToken, refreshToken, userInfo);
+        ResLoginDTO response = new ResLoginDTO(accessToken, refreshToken, userInfo);
+        response.setCurrentStore(buildCurrentStoreInfo(user));
+        return response;
+    }
+
+    private String getRoleName(User user) {
+        return storeMemberRepository
+                .findAllByUserIdAndStatusFetchStore(user.getId(), StoreMemberStatus.ACTIVE)
+                .stream()
+                .findFirst()
+                .map(m -> m.getRole() != null ? m.getRole().getName() : "USER")
+                .orElse("USER");
+    }
+
+    private ResLoginDTO.StoreInfo buildCurrentStoreInfo(User user) {
+        return storeMemberRepository
+                .findAllByUserIdAndStatusFetchStore(user.getId(), StoreMemberStatus.ACTIVE)
+                .stream()
+                .findFirst()
+                .map(sm -> new ResLoginDTO.StoreInfo(
+                        sm.getStore().getId(),
+                        sm.getStore().getName(),
+                        sm.getRole() != null ? sm.getRole().getName() : "USER"))
+                .orElse(null);
     }
 }

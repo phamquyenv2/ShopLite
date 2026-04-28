@@ -57,4 +57,17 @@ public class ImportOrderController {
             @Valid @RequestBody ReqUpdateImportOrderStatusDTO req) {
         return ResponseEntity.ok(importOrderService.updateStatus(id, req.getStatus()));
     }
+
+    /**
+     * POST /api/v1/import-orders/{id}/pay
+     * Retry payment cho đơn đang ở PENDING_PAYMENT.
+     * Không thực hiện lại update/confirm, chỉ tạo Payment + Transaction.
+     */
+    @PostMapping("/{id}/pay")
+    @ApiMessage("Pay import order success")
+    public ResponseEntity<ResImportOrderDTO> payOnly(
+            @PathVariable("id") @Positive(message = " must be greater than 0") Integer id,
+            @Valid @RequestBody ReqImportOrderDTO req) {
+        return ResponseEntity.ok(importOrderService.payOnly(id, req));
+    }
 }

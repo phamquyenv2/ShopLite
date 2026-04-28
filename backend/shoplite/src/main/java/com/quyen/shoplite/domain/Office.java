@@ -23,16 +23,22 @@ public class Office {
     private String name;
 
     /** Latitude of office location (GPS) */
-    @Column(name = "office_lat", nullable = false, precision = 10, scale = 8)
+    @Column(name = "office_lat", precision = 10, scale = 8)
     private BigDecimal officeLat;
 
     /** Longitude of office location (GPS) */
-    @Column(name = "office_lng", nullable = false, precision = 11, scale = 8)
+    @Column(name = "office_lng", precision = 11, scale = 8)
     private BigDecimal officeLng;
 
     /** Allowed radius in meters for check-in validation */
     @Column(nullable = false)
-    private Integer radius;
+    @Builder.Default
+    private Integer radius = 200;
+
+    /** Store này thuộc về (FK — nullable để backward compat với data cũ) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
 
     /** Planned shift start used for late calculation */
     @Column(name = "shift_start")
@@ -53,4 +59,10 @@ public class Office {
     @Column(name = "auto_checkout_time")
     @Builder.Default
     private LocalTime autoCheckoutTime = LocalTime.of(23, 59);
+
+    @PrePersist
+    void applyDefaultsForNewRow() {
+        if (officeLat == null) officeLat = BigDecimal.ZERO;
+        if (officeLng == null) officeLng = BigDecimal.ZERO;
+    }
 }

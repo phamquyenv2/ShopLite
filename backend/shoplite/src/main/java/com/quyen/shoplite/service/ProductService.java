@@ -2,7 +2,7 @@ package com.quyen.shoplite.service;
 
 import com.quyen.shoplite.domain.Category;
 import com.quyen.shoplite.domain.Product;
-import com.quyen.shoplite.domain.ProductStatus;
+import com.quyen.shoplite.domain.Store;
 import com.quyen.shoplite.domain.Unit;
 import com.quyen.shoplite.domain.request.ReqProductUpsertDTO;
 import com.quyen.shoplite.domain.response.ResProductDTO;
@@ -12,6 +12,7 @@ import com.quyen.shoplite.repository.ProductRepository;
 import com.quyen.shoplite.repository.UnitRepository;
 import com.quyen.shoplite.util.DTOMapper;
 import com.quyen.shoplite.util.ProductSpecification;
+import com.quyen.shoplite.util.constant.ProductStatus;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -32,9 +33,11 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final UnitRepository unitRepository;
+    private final CurrentStoreService currentStoreService;
 
     @Transactional
     public ResProductDTO create(ReqProductUpsertDTO req) {
+        Store store = currentStoreService.getCurrentStore();
         if (req.getSellingPrice() < 0) {
             throw new BadRequestException("Selling price cannot be negative");
         }
@@ -47,23 +50,24 @@ public class ProductService {
 
         String normalizedSku = normalize(req.getSku());
         if (hasText(normalizedSku)) {
-            if (productRepository.existsBySku(normalizedSku)) {
+            if (productRepository.existsByStoreIdAndSku(store.getId(), normalizedSku)) {
                 throw new BadRequestException("SKU already exists: " + normalizedSku);
             }
         } else {
             normalizedSku = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         }
 
-        if (hasText(req.getBarcode()) && productRepository.existsByBarcode(req.getBarcode().trim())) {
+        if (hasText(req.getBarcode()) && productRepository.existsByStoreIdAndBarcode(store.getId(), req.getBarcode().trim())) {
             throw new BadRequestException("Barcode already exists: " + req.getBarcode());
         }
 
-        Category category = categoryRepository.findById(req.getCategoryId())
+        Category category = categoryRepository.findByIdAndStoreId(req.getCategoryId(), store.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id=" + req.getCategoryId()));
-        Unit unit = unitRepository.findById(req.getUnitId())
+        Unit unit = unitRepository.findByIdAndStoreId(req.getUnitId(), store.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Unit not found with id=" + req.getUnitId()));
 
         Product product = Product.builder()
+                .store(store)
                 .category(category)
                 .unit(unit)
                 .name(req.getName().trim())
@@ -83,11 +87,9 @@ public class ProductService {
     }
 
     public ResProductDTO findById(Integer id) {
-        Product product = productRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Product product = productRepository.findByIdAndStoreIdAndIsDeletedFalse(id, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id=" + id));
-        if (product.isDeleted()) {
-            throw new ResourceNotFoundException("Product not found with id=" + id);
-        }
         return DTOMapper.toResProductDTO(product);
     }
 
@@ -100,7 +102,8 @@ public class ProductService {
 
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Specification<Product> spec = ProductSpecification.filter(keyword, categoryId, minPrice, maxPrice, unitId);
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Specification<Product> spec = ProductSpecification.filter(storeId, keyword, categoryId, minPrice, maxPrice, unitId);
         Page<Product> productPage = productRepository.findAll(spec, pageable);
 
         ResProductPageDTO result = new ResProductPageDTO();
@@ -115,12 +118,9 @@ public class ProductService {
 
     @Transactional
     public ResProductDTO update(Integer id, ReqProductUpsertDTO req) {
-        Product product = productRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Product product = productRepository.findByIdAndStoreIdAndIsDeletedFalse(id, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id=" + id));
-
-        if (product.isDeleted()) {
-            throw new ResourceNotFoundException("Product not found with id=" + id);
-        }
 
         if (req.getSellingPrice() < 0) {
             throw new BadRequestException("Selling price cannot be negative");
@@ -135,20 +135,20 @@ public class ProductService {
 
         String normalizedSku = normalize(req.getSku());
         if (hasText(normalizedSku)) {
-            if (productRepository.existsBySkuAndIdNot(normalizedSku, id)) {
+            if (productRepository.existsByStoreIdAndSkuAndIdNot(storeId, normalizedSku, id)) {
                 throw new BadRequestException("SKU already exists: " + normalizedSku);
             }
             product.setSku(normalizedSku);
         }
 
         String normalizedBarcode = normalize(req.getBarcode());
-        if (hasText(normalizedBarcode) && productRepository.existsByBarcodeAndIdNot(normalizedBarcode, id)) {
+        if (hasText(normalizedBarcode) && productRepository.existsByStoreIdAndBarcodeAndIdNot(storeId, normalizedBarcode, id)) {
             throw new BadRequestException("Barcode already exists: " + req.getBarcode());
         }
 
-        Category category = categoryRepository.findById(req.getCategoryId())
+        Category category = categoryRepository.findByIdAndStoreId(req.getCategoryId(), storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id=" + req.getCategoryId()));
-        Unit unit = unitRepository.findById(req.getUnitId())
+        Unit unit = unitRepository.findByIdAndStoreId(req.getUnitId(), storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Unit not found with id=" + req.getUnitId()));
 
         product.setCategory(category);
@@ -168,21 +168,17 @@ public class ProductService {
 
     @Transactional
     public void softDelete(Integer id) {
-        Product product = productRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Product product = productRepository.findByIdAndStoreIdAndIsDeletedFalse(id, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id=" + id));
-        if (product.isDeleted()) {
-            throw new ResourceNotFoundException("Product not found with id=" + id);
-        }
         product.setDeleted(true);
         productRepository.save(product);
     }
 
     public Product findEntityById(Integer id) {
-        Product product = productRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Product product = productRepository.findByIdAndStoreIdAndIsDeletedFalse(id, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id=" + id));
-        if (product.isDeleted()) {
-            throw new ResourceNotFoundException("Product not found with id=" + id);
-        }
         return product;
     }
 
@@ -211,9 +207,10 @@ public class ProductService {
      * otherwise fuzzy search by name/SKU. Max 20 results.
      */
     public List<ResProductDTO> searchForPOS(String keyword, String barcode) {
+        Long storeId = currentStoreService.getCurrentStoreId();
         // Barcode scan — exact match, return single result
         if (hasText(barcode)) {
-            return productRepository.findByBarcodeAndIsDeletedFalse(barcode.trim())
+            return productRepository.findByStoreIdAndBarcodeAndIsDeletedFalse(storeId, barcode.trim())
                     .map(DTOMapper::toResProductDTO)
                     .map(List::of)
                     .orElse(List.of());
@@ -221,7 +218,7 @@ public class ProductService {
 
         // Keyword search — name/SKU LIKE
         if (hasText(keyword)) {
-            Specification<Product> spec = ProductSpecification.filter(keyword, null, null, null, null);
+            Specification<Product> spec = ProductSpecification.filter(storeId, keyword, null, null, null, null);
             Pageable pageable = PageRequest.of(0, 20, Sort.by("name").ascending());
             return productRepository.findAll(spec, pageable)
                     .getContent().stream()

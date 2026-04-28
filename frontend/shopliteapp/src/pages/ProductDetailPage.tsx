@@ -235,7 +235,7 @@ const ProductDetailPage: React.FC = () => {
                     <IonIcon icon={pencilOutline} />
                     Chỉnh sửa
                 </button>
-                <button className="pd-btn pd-btn-solid">
+                <button className="pd-btn pd-btn-solid" onClick={() => ionRouter.push(`/import-orders`)}>
                     <IonIcon icon={addCircleOutline} />
                     Nhập hàng
                 </button>

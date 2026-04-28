@@ -18,12 +18,23 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     Optional<Order> findByIdWithLock(@Param("id") Integer id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM Order o WHERE o.id = :id AND o.store.id = :storeId")
+    Optional<Order> findByIdAndStoreIdWithLock(@Param("id") Integer id, @Param("storeId") Long storeId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM Order o WHERE o.code = :code")
     Optional<Order> findByCodeWithLock(@Param("code") String code);
 
     Optional<Order> findByCode(String code);
+    Optional<Order> findByRequestId(String requestId);
     boolean existsByCode(String code);
     List<Order> findAllByStatus(StatusEnum status);
     List<Order> findByStatusIn(List<StatusEnum> statuses, org.springframework.data.domain.Sort sort);
     List<Order> findAllByUserId(Integer userId);
+    Optional<Order> findByIdAndStoreId(Integer id, Long storeId);
+    Optional<Order> findByStoreIdAndCode(Long storeId, String code);
+    Optional<Order> findByStoreIdAndRequestId(Long storeId, String requestId);
+    boolean existsByStoreIdAndCode(Long storeId, String code);
+    List<Order> findAllByStoreId(Long storeId, org.springframework.data.domain.Sort sort);
+    List<Order> findByStoreIdAndStatusIn(Long storeId, List<StatusEnum> statuses, org.springframework.data.domain.Sort sort);
 }

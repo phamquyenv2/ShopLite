@@ -1,5 +1,6 @@
 package com.quyen.shoplite.service;
 
+import com.quyen.shoplite.domain.Store;
 import com.quyen.shoplite.domain.Supplier;
 import com.quyen.shoplite.domain.request.ReqSupplierDTO;
 import com.quyen.shoplite.domain.response.ResSupplierDTO;
@@ -19,12 +20,15 @@ import java.util.List;
 public class SupplierService {
 
     private final SupplierRepository supplierRepository;
+    private final CurrentStoreService currentStoreService;
 
     @Transactional
     public ResSupplierDTO create(ReqSupplierDTO req) {
-        validateDuplicateName(req.getName(), null);
+        Store store = currentStoreService.getCurrentStore();
+        validateDuplicateName(store.getId(), req.getName(), null);
 
         Supplier supplier = Supplier.builder()
+                .store(store)
                 .name(req.getName().trim())
                 .phone(normalize(req.getPhone()))
                 .address(normalize(req.getAddress()))
@@ -39,7 +43,8 @@ public class SupplierService {
     }
 
     public List<ResSupplierDTO> findAll() {
-        return supplierRepository.findAll().stream()
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return supplierRepository.findAllByStoreIdOrderByIdAsc(storeId).stream()
                 .map(DTOMapper::toResSupplierDTO)
                 .toList();
     }
@@ -50,7 +55,8 @@ public class SupplierService {
         if (req.getVersion() != null && !req.getVersion().equals(supplier.getVersion())) {
             throw new BadRequestException("Supplier has been modified by another user. Please refresh and try again.");
         }
-        validateDuplicateName(req.getName(), id);
+        Long storeId = currentStoreService.getCurrentStoreId();
+        validateDuplicateName(storeId, req.getName(), id);
 
         supplier.setName(req.getName().trim());
         supplier.setPhone(normalize(req.getPhone()));
@@ -66,15 +72,16 @@ public class SupplierService {
     }
 
     private Supplier findEntityById(Integer id) {
-        return supplierRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return supplierRepository.findByIdAndStoreId(id, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id=" + id));
     }
 
-    private void validateDuplicateName(String name, Integer supplierId) {
+    private void validateDuplicateName(Long storeId, String name, Integer supplierId) {
         String normalizedName = name.trim();
         boolean duplicate = supplierId == null
-                ? supplierRepository.existsByName(normalizedName)
-                : supplierRepository.existsByNameAndIdNot(normalizedName, supplierId);
+                ? supplierRepository.existsByStoreIdAndName(storeId, normalizedName)
+                : supplierRepository.existsByStoreIdAndNameAndIdNot(storeId, normalizedName, supplierId);
         if (duplicate) {
             throw new BadRequestException("Supplier name already exists: " + normalizedName);
         }

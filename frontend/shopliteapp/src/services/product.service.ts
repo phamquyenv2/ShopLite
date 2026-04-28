@@ -1,4 +1,4 @@
-import { Apis, endpoints } from '../utils/Apis';
+import { authApis, endpoints } from '../utils/Apis';
 import type { Category, Product, ProductPage } from '../api/types';
 
 type GetProductsParams = {
@@ -103,7 +103,7 @@ const parseCategories = (payload: unknown): Category[] =>
 
 export const productService = {
     async getCategories(): Promise<Category[]> {
-        const res = await Apis.get<unknown>(endpoints.categories);
+        const res = await authApis().get<unknown>(endpoints.categories);
         return parseCategories(res.data);
     },
 
@@ -123,7 +123,7 @@ export const productService = {
             (typeof params.categoryId === 'number' && params.categoryId > 0);
 
         try {
-            const res = await Apis.get<unknown>(`${endpoints.products}?${query.toString()}`);
+            const res = await authApis().get<unknown>(`${endpoints.products}?${query.toString()}`);
             return parseProducts(res.data);
         } catch (err) {
             if (!wantsServerFilter) throw err;
@@ -134,14 +134,14 @@ export const productService = {
                 sortBy: params.sortBy ?? 'createdAt',
                 sortDir: params.sortDir ?? 'desc',
             });
-            const res = await Apis.get<unknown>(`${endpoints.products}?${retryQuery.toString()}`);
+            const res = await authApis().get<unknown>(`${endpoints.products}?${retryQuery.toString()}`);
             return parseProducts(res.data);
         }
     },
 
     async getProductDetail(id: number | string): Promise<Product | null> {
         try {
-            const res = await Apis.get<unknown>(endpoints['product-detail'](id));
+            const res = await authApis().get<unknown>(endpoints['product-detail'](id));
             if (!res.data) return null;
             return normalizeProduct(isRecord(res.data) && res.data.data ? res.data.data : res.data);
         } catch (err) {
@@ -160,6 +160,19 @@ export const productService = {
         // Fallback: fetch broader list and match.
         const all = await productService.getProducts({ size: 500 });
         return all.find((p) => String(p.barcode ?? '').trim() === code) ?? null;
+    },
+
+    /**
+     * Tìm kiếm sản phẩm theo keyword cho màn hình nhập hàng / kiểm kho.
+     * Gọi thẳng endpoint /search (POS-optimized, không phân trang, max 20 kết quả)
+     * để luôn tìm được sản phẩm mới tạo, kể cả khi stock = 0.
+     */
+    async searchForImport(keyword: string): Promise<Product[]> {
+        const kw = keyword.trim();
+        if (!kw) return [];
+        const query = new URLSearchParams({ keyword: kw });
+        const res = await authApis().get<unknown>(`${endpoints.products}/search?${query.toString()}`);
+        return pickArray(res.data).map(normalizeProduct).filter(Boolean) as Product[];
     },
 };
 

@@ -56,5 +56,5 @@ public class Role {
 
     @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
     @Builder.Default
-    private List<User> users = new ArrayList<>();
+    private List<StoreMember> storeMembers = new ArrayList<>();
 }

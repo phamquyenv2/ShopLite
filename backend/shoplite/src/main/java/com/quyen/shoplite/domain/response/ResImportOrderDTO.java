@@ -1,6 +1,7 @@
 package com.quyen.shoplite.domain.response;
 
 import com.quyen.shoplite.util.constant.ImportOrderStatusEnum;
+import com.quyen.shoplite.util.constant.ImportReturnStatusEnum;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,6 +22,7 @@ public class ResImportOrderDTO {
     private Double totalAmount;
     private Double amountPaid;
     private ImportOrderStatusEnum status;
+    private ImportReturnStatusEnum returnStatus;
     private String note;
     private LocalDateTime createdAt;
 

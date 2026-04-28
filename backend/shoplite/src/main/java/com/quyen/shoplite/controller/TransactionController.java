@@ -8,7 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
 import jakarta.validation.constraints.Positive;
 import org.springframework.validation.annotation.Validated;
 
@@ -30,7 +30,8 @@ public class TransactionController {
 
     @GetMapping("/{id}")
     @ApiMessage("Get transaction success")
-    public ResponseEntity<ResTransactionDTO> findById(@PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
+    public ResponseEntity<ResTransactionDTO> findById(
+            @PathVariable("id") @Positive(message = "id must be greater than 0") Integer id) {
         return ResponseEntity.ok(transactionService.findById(id));
     }
 
@@ -40,10 +41,17 @@ public class TransactionController {
         return ResponseEntity.ok(transactionService.findAll());
     }
 
-    @GetMapping("/order/{orderId}")
-    @ApiMessage("Get order transactions success")
-    public ResponseEntity<List<ResTransactionDTO>> findByOrderId(@PathVariable("orderId") @Positive(message = " must be greater than 0") Integer orderId) {
-        return ResponseEntity.ok(transactionService.findByOrderId(orderId));
+    @GetMapping("/fund-account/{fundAccountId}")
+    @ApiMessage("Get fund account transactions success")
+    public ResponseEntity<List<ResTransactionDTO>> findByFundAccountId(
+            @PathVariable("fundAccountId") @Positive(message = "fundAccountId must be greater than 0") Integer fundAccountId) {
+        return ResponseEntity.ok(transactionService.findByFundAccountId(fundAccountId));
+    }
+
+    @GetMapping("/payment/{paymentId}")
+    @ApiMessage("Get payment transactions success")
+    public ResponseEntity<List<ResTransactionDTO>> findByPaymentId(
+            @PathVariable("paymentId") @Positive(message = "paymentId must be greater than 0") Integer paymentId) {
+        return ResponseEntity.ok(transactionService.findByPaymentId(paymentId));
     }
 }
-

@@ -22,14 +22,8 @@ public class DTOMapper {
         }
         ResUserDTO dto = new ResUserDTO();
         dto.setId(user.getId());
-        dto.setVersion(user.getVersion());
         dto.setUsername(user.getUsername());
         dto.setActive(user.isActive());
-        dto.setCreatedAt(user.getCreatedAt());
-        if (user.getRole() != null) {
-            dto.setRoleId(user.getRole().getId());
-            dto.setRoleName(user.getRole().getName());
-        }
         return dto;
     }
 
@@ -187,12 +181,13 @@ public class DTOMapper {
         dto.setQr(employee.getQr());
         dto.setNote(employee.getNote());
         dto.setDeleted(employee.isDeleted());
-        if (employee.getUser() != null) {
-            dto.setUserId(employee.getUser().getId());
-            dto.setUsername(employee.getUser().getUsername());
-            dto.setPhone(employee.getUser().getPhone());
-            if (employee.getUser().getRole() != null) {
-                dto.setRoleName(employee.getUser().getRole().getName());
+        if (employee.getStoreMember() != null && employee.getStoreMember().getUser() != null) {
+            User user = employee.getStoreMember().getUser();
+            dto.setUserId(user.getId());
+            dto.setUsername(user.getUsername());
+            dto.setPhone(user.getPhone());
+            if (employee.getStoreMember().getRole() != null) {
+                dto.setRoleName(employee.getStoreMember().getRole().getName());
             }
         }
         if (employee.getOffice() != null) {
@@ -230,8 +225,8 @@ public class DTOMapper {
         }
         if (attendance.getEmployee() != null) {
             dto.setEmployeeId(attendance.getEmployee().getId());
-            if (attendance.getEmployee().getUser() != null) {
-                dto.setEmployeeUsername(attendance.getEmployee().getUser().getUsername());
+            if (attendance.getEmployee().getStoreMember() != null && attendance.getEmployee().getStoreMember().getUser() != null) {
+                dto.setEmployeeUsername(attendance.getEmployee().getStoreMember().getUser().getUsername());
             }
         }
         if (attendance.getOffice() != null) {
@@ -256,8 +251,8 @@ public class DTOMapper {
         dto.setTotalSalary(payroll.getTotalSalary());
         if (payroll.getEmployee() != null) {
             dto.setEmployeeId(payroll.getEmployee().getId());
-            if (payroll.getEmployee().getUser() != null) {
-                dto.setEmployeeUsername(payroll.getEmployee().getUser().getUsername());
+            if (payroll.getEmployee().getStoreMember() != null && payroll.getEmployee().getStoreMember().getUser() != null) {
+                dto.setEmployeeUsername(payroll.getEmployee().getStoreMember().getUser().getUsername());
             }
         }
         return dto;
@@ -270,14 +265,18 @@ public class DTOMapper {
         }
         ResPaymentDTO dto = new ResPaymentDTO();
         dto.setId(payment.getId());
-        dto.setMethod(payment.getMethod());
+        dto.setReferenceType(payment.getReferenceType());
+        dto.setReferenceId(payment.getReferenceId());
+        dto.setPaymentMethod(payment.getPaymentMethod());
         dto.setAmount(payment.getAmount());
         dto.setStatus(payment.getStatus());
+        dto.setQrUrl(payment.getQrUrl());
+        dto.setTransferContent(payment.getTransferContent());
+        dto.setProvider(payment.getProvider());
+        dto.setCreatedBy(payment.getCreatedBy());
+        dto.setPaidAt(payment.getPaidAt());
+        dto.setExpiresAt(payment.getExpiresAt());
         dto.setCreatedAt(payment.getCreatedAt());
-        if (payment.getOrder() != null) {
-            dto.setOrderId(payment.getOrder().getId());
-            dto.setOrderCode(payment.getOrder().getCode());
-        }
         return dto;
     }
 
@@ -289,6 +288,7 @@ public class DTOMapper {
         ResImportItemDTO dto = new ResImportItemDTO();
         dto.setId(item.getId());
         dto.setQuantity(item.getQuantity());
+        dto.setReturnedQuantity(item.getReturnedQuantity());
         dto.setImportPrice(item.getImportPrice());
         dto.setSubTotal(item.getSubTotal());
         if (item.getProduct() != null) {
@@ -311,6 +311,7 @@ public class DTOMapper {
         dto.setTotalAmount(importOrder.getTotalAmount());
         dto.setAmountPaid(importOrder.getAmountPaid());
         dto.setStatus(importOrder.getStatus());
+        dto.setReturnStatus(importOrder.getReturnStatus());
         dto.setNote(importOrder.getNote());
         dto.setCreatedAt(importOrder.getCreatedAt());
         if (importOrder.getSupplier() != null) {
@@ -394,24 +395,39 @@ public class DTOMapper {
         }
         ResTransactionDTO dto = new ResTransactionDTO();
         dto.setId(transaction.getId());
-        dto.setAmount(transaction.getAmount());
         dto.setType(transaction.getType());
+        dto.setDirection(transaction.getDirection());
+        dto.setAmount(transaction.getAmount());
         dto.setContent(transaction.getContent());
+        dto.setTransactionCode(transaction.getTransactionCode());
         dto.setTransactionTime(transaction.getTransactionTime());
         dto.setCreatedAt(transaction.getCreatedAt());
-        if (transaction.getOrder() != null) {
-            dto.setOrderId(transaction.getOrder().getId());
-            dto.setOrderCode(transaction.getOrder().getCode());
-        }
-        if (transaction.getImportOrder() != null) {
-            dto.setImportOrderId(transaction.getImportOrder().getId());
-        }
+        dto.setBalanceBefore(transaction.getBalanceBefore());
+        dto.setBalanceAfter(transaction.getBalanceAfter());
         if (transaction.getPayment() != null) {
             dto.setPaymentId(transaction.getPayment().getId());
         }
-        if (transaction.getPayroll() != null) {
-            dto.setPayrollId(transaction.getPayroll().getId());
+        if (transaction.getFundAccount() != null) {
+            dto.setFundAccountId(transaction.getFundAccount().getId());
+            dto.setFundAccountName(transaction.getFundAccount().getName());
         }
+        return dto;
+    }
+
+    // ==================== FundAccount ====================
+    public static ResFundAccountDTO toResFundAccountDTO(FundAccount fundAccount) {
+        if (fundAccount == null) {
+            return null;
+        }
+        ResFundAccountDTO dto = new ResFundAccountDTO();
+        dto.setId(fundAccount.getId());
+        dto.setName(fundAccount.getName());
+        dto.setType(fundAccount.getType());
+        dto.setBalance(fundAccount.getBalance());
+        dto.setOpeningBalance(fundAccount.getOpeningBalance());
+        dto.setIsActive(fundAccount.getIsActive());
+        dto.setCreatedAt(fundAccount.getCreatedAt());
+        dto.setUpdatedAt(fundAccount.getUpdatedAt());
         return dto;
     }
 
@@ -452,8 +468,8 @@ public class DTOMapper {
         dto.setUnpaidBreakMinutes(roster.getUnpaidBreakMinutes());
         if (roster.getEmployee() != null) {
             dto.setEmployeeId(roster.getEmployee().getId());
-            if (roster.getEmployee().getUser() != null) {
-                dto.setEmployeeUsername(roster.getEmployee().getUser().getUsername());
+            if (roster.getEmployee().getStoreMember() != null && roster.getEmployee().getStoreMember().getUser() != null) {
+                dto.setEmployeeUsername(roster.getEmployee().getStoreMember().getUser().getUsername());
             }
         }
         return dto;

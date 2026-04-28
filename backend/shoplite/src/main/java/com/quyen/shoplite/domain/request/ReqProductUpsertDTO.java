@@ -2,13 +2,14 @@ package com.quyen.shoplite.domain.request;
 
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Positive;
+
+import com.quyen.shoplite.util.constant.ProductStatus;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-
-import com.quyen.shoplite.domain.ProductStatus;
 
 @Getter
 @Setter

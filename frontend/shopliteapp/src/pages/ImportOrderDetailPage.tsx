@@ -168,9 +168,9 @@ const ImportOrderDetailPage: React.FC = () => {
                 </div>
             </IonContent>
 
-            {order.status === 'COMPLETED' && (
+            {order.status === 'COMPLETED' && order.returnStatus !== 'FULL_RETURNED' && (
                 <IonFooter className="iod-action-footer ion-no-border">
-                    <div className="iod-action-section">
+                    <div className="iod-action-section" onClick={() => ionRouter.push(`/import-return-orders/create/${order.id}`)} style={{ cursor: 'pointer' }}>
                         <IonIcon icon={shareOutline} className="iod-action-icon" />
                         <span className="iod-action-text">Trả hàng nhập</span>
                     </div>

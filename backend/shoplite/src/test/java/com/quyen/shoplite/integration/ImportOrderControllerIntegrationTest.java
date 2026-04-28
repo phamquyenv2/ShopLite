@@ -528,28 +528,7 @@ class ImportOrderControllerIntegrationTest {
             assertThat(log.getCreatedAt()).isNotNull();
         }
 
-        @Test
-        @DisplayName("Persistence – EXPENSE transaction created with correct amount")
-        void completeImportOrder_CreatesExpenseTransaction() throws Exception {
-            Integer id = createImportOrder(validRequest());
-            // total = 63.0 (qty=3, price=20, tax=5, discount=2)
-            completeImportOrder(id);
 
-            List<Transaction> txs = transactionRepository.findAllByType(TypeTransactionEnum.EXPENSE);
-            // Filter to those linked to our import order
-            txs = txs.stream()
-                    .filter(t -> t.getImportOrder() != null
-                    && t.getImportOrder().getId().equals(id))
-                    .toList();
-
-            assertThat(txs).hasSize(1);
-            Transaction tx = txs.get(0);
-            assertThat(tx.getAmount()).isEqualTo(63.0);
-            assertThat(tx.getType()).isEqualTo(TypeTransactionEnum.EXPENSE);
-            assertThat(tx.getContent()).contains(String.valueOf(id));
-            assertThat(tx.getTransactionTime()).isNotNull();
-            assertThat(tx.getCreatedAt()).isNotNull();
-        }
 
         @Test
         @DisplayName("Persistence – multi-item completion updates all product stocks and creats all logs")
@@ -605,14 +584,8 @@ class ImportOrderControllerIntegrationTest {
             Product p = productRepository.findById(productId).orElseThrow();
             assertThat(p.getStock()).isEqualTo(13); // still 10 + 3, not 10 + 3 + 3
 
-            // Still only 1 inventory log and 1 expense transaction
+            // Still only 1 inventory log
             assertThat(inventoryLogsRepository.findAllByProduct_Id(productId)).hasSize(1);
-            List<Transaction> txs = transactionRepository.findAllByType(TypeTransactionEnum.EXPENSE)
-                    .stream()
-                    .filter(t -> t.getImportOrder() != null
-                    && t.getImportOrder().getId().equals(id))
-                    .toList();
-            assertThat(txs).hasSize(1);
         }
 
         @Test
@@ -668,12 +641,8 @@ class ImportOrderControllerIntegrationTest {
             Product p = productRepository.findById(productId).orElseThrow();
             assertThat(p.getStock()).isEqualTo(10);
 
-            // No inventory logs or transactions created
+            // No inventory logs created
             assertThat(inventoryLogsRepository.findAllByProduct_Id(productId)).isEmpty();
-            assertThat(transactionRepository.findAllByType(TypeTransactionEnum.EXPENSE)
-                    .stream().filter(t -> t.getImportOrder() != null
-                    && t.getImportOrder().getId().equals(id))
-                    .toList()).isEmpty();
         }
 
         @Test

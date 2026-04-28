@@ -45,7 +45,12 @@ public class PermissionInterceptor implements HandlerInterceptor {
         User user = userRepository.findByUsername(username).orElse(null);
         if (user == null) return true;
 
-        Role role = user.getRole();
+        Role role = user.getStoreMemberships().stream()
+                .filter(m -> m.getStatus() == com.quyen.shoplite.util.constant.StoreMemberStatus.ACTIVE)
+                .findFirst()
+                .map(com.quyen.shoplite.domain.StoreMember::getRole)
+                .orElse(null);
+
         if (role == null) {
             throw new PermissionException("Tài khoản chưa được gán Role");
         }

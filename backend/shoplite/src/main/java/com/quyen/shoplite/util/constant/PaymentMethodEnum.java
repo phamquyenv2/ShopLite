@@ -2,5 +2,7 @@ package com.quyen.shoplite.util.constant;
 
 public enum PaymentMethodEnum {
     CASH,
-    BANK
+    BANK_QR,
+    BANK_TRANSFER,
+    EWALLET
 }

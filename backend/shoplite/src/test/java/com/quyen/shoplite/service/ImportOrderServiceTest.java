@@ -7,7 +7,7 @@ import com.quyen.shoplite.domain.response.ResImportOrderDTO;
 import com.quyen.shoplite.repository.*;
 import com.quyen.shoplite.util.constant.ImportOrderStatusEnum;
 import com.quyen.shoplite.util.constant.TypeInventoryEnum;
-import com.quyen.shoplite.util.constant.TypeTransactionEnum;
+import com.quyen.shoplite.util.constant.TypeInventoryEnum;
 import com.quyen.shoplite.util.error.IdInvalidException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -46,7 +46,7 @@ class ImportOrderServiceTest {
     @Mock
     private InventoryLogsRepository inventoryLogsRepository;
     @Mock
-    private TransactionRepository transactionRepository;
+    private PaymentService paymentService;
 
     @InjectMocks
     private ImportOrderService importOrderService;
@@ -419,11 +419,9 @@ class ImportOrderServiceTest {
 
             when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(transactionRepository.existsByImportOrder_Id(1)).thenReturn(false);
             when(importItemRepository.findByImportOrder_Id(1)).thenReturn(List.of(item));
             when(productRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(inventoryLogsRepository.save(any())).thenReturn(new InventoryLogs());
-            when(transactionRepository.save(any())).thenReturn(new Transaction());
 
             // Act
             importOrderService.updateStatus(1, ImportOrderStatusEnum.COMPLETED);
@@ -443,11 +441,9 @@ class ImportOrderServiceTest {
 
             when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(transactionRepository.existsByImportOrder_Id(1)).thenReturn(false);
             when(importItemRepository.findByImportOrder_Id(1)).thenReturn(List.of(item));
             when(productRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(inventoryLogsRepository.save(any())).thenReturn(new InventoryLogs());
-            when(transactionRepository.save(any())).thenReturn(new Transaction());
 
             // Act
             importOrderService.updateStatus(1, ImportOrderStatusEnum.COMPLETED);
@@ -467,38 +463,7 @@ class ImportOrderServiceTest {
             assertNotNull(log.getCreatedAt());
         }
 
-        @Test
-        @DisplayName("Success – creates EXPENSE transaction linked to import order")
-        void complete_CreatesExpenseTransaction() {
-            // Arrange
-            ImportOrder order = makeOrder(1, ImportOrderStatusEnum.PENDING, 750.0);
-            Product product = makeProduct(1, 20);
-            ImportItem item = makeItem(3, order, product, 5, 150.0);
 
-            when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
-            when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(transactionRepository.existsByImportOrder_Id(1)).thenReturn(false);
-            when(importItemRepository.findByImportOrder_Id(1)).thenReturn(List.of(item));
-            when(productRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(inventoryLogsRepository.save(any())).thenReturn(new InventoryLogs());
-            when(transactionRepository.save(any())).thenReturn(new Transaction());
-
-            // Act
-            importOrderService.updateStatus(1, ImportOrderStatusEnum.COMPLETED);
-
-            // Assert – EXPENSE transaction
-            ArgumentCaptor<Transaction> txCaptor = ArgumentCaptor.forClass(Transaction.class);
-            verify(transactionRepository).save(txCaptor.capture());
-            Transaction tx = txCaptor.getValue();
-
-            assertEquals(750.0, tx.getAmount(), 1e-9);
-            assertEquals(TypeTransactionEnum.EXPENSE, tx.getType());
-            assertEquals(order, tx.getImportOrder());
-            assertNotNull(tx.getContent());
-            assertTrue(tx.getContent().contains("1")); // order id in content
-            assertNotNull(tx.getTransactionTime());
-            assertNotNull(tx.getCreatedAt());
-        }
 
         @Test
         @DisplayName("Success – multi-item completion: all stocks and logs updated")
@@ -512,11 +477,9 @@ class ImportOrderServiceTest {
 
             when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(transactionRepository.existsByImportOrder_Id(1)).thenReturn(false);
             when(importItemRepository.findByImportOrder_Id(1)).thenReturn(List.of(item1, item2));
             when(productRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(inventoryLogsRepository.save(any())).thenReturn(new InventoryLogs());
-            when(transactionRepository.save(any())).thenReturn(new Transaction());
 
             // Act
             importOrderService.updateStatus(1, ImportOrderStatusEnum.COMPLETED);
@@ -526,7 +489,6 @@ class ImportOrderServiceTest {
             assertEquals(23, p2.getStock()); // 20 + 3
             verify(productRepository, times(2)).save(any(Product.class));
             verify(inventoryLogsRepository, times(2)).save(any(InventoryLogs.class));
-            verify(transactionRepository).save(any(Transaction.class)); // only once
         }
 
         @Test
@@ -539,11 +501,9 @@ class ImportOrderServiceTest {
 
             when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(transactionRepository.existsByImportOrder_Id(1)).thenReturn(false);
             when(importItemRepository.findByImportOrder_Id(1)).thenReturn(List.of(item));
             when(productRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(inventoryLogsRepository.save(any())).thenReturn(new InventoryLogs());
-            when(transactionRepository.save(any())).thenReturn(new Transaction());
 
             // Act
             importOrderService.updateStatus(1, ImportOrderStatusEnum.COMPLETED);
@@ -580,7 +540,6 @@ class ImportOrderServiceTest {
             verify(importItemRepository, never()).findByImportOrder_Id(anyInt());
             verify(productRepository, never()).save(any());
             verify(inventoryLogsRepository, never()).save(any());
-            verify(transactionRepository, never()).save(any());
         }
 
         @Test
@@ -594,29 +553,9 @@ class ImportOrderServiceTest {
             assertTrue(ex.getMessage().contains("huỷ"));
 
             verify(productRepository, never()).save(any());
-            verify(transactionRepository, never()).save(any());
         }
 
-        @Test
-        @DisplayName("Failure – duplicate completion prevented by transaction guard")
-        void complete_DuplicateCompletion_TransactionGuardThrows() {
-            // The order is somehow PENDING again but a transaction already exists
-            // (defensive second guard inside the COMPLETED block)
-            ImportOrder order = makeOrder(1, ImportOrderStatusEnum.PENDING, 100.0);
-            when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
-            when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(transactionRepository.existsByImportOrder_Id(1)).thenReturn(true); // already processed
 
-            IdInvalidException ex = assertThrows(IdInvalidException.class,
-                    () -> importOrderService.updateStatus(1, ImportOrderStatusEnum.COMPLETED));
-            assertTrue(ex.getMessage().contains("đã được xử lý"));
-
-            // Side effects must NOT run
-            verify(productRepository, never()).save(any());
-            verify(inventoryLogsRepository, never()).save(any());
-            // transactionRepository.save() should NOT be called (only existsByImportOrder_Id was)
-            verify(transactionRepository, never()).save(any());
-        }
     }
 
     // ==========================================================================
@@ -643,7 +582,6 @@ class ImportOrderServiceTest {
             // Stock, logs, transaction untouched
             verify(productRepository, never()).save(any());
             verify(inventoryLogsRepository, never()).save(any());
-            verify(transactionRepository, never()).save(any());
         }
     }
 

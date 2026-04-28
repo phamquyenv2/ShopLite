@@ -35,7 +35,7 @@ class PermissionControllerIntegrationTest {
     private PermissionRepository permissionRepository;
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = "admin", roles = "STORE_MANAGER")
     @DisplayName("create permission success")
     void createPermission_Success() throws Exception {
         ReqPermissionDTO req = new ReqPermissionDTO();
@@ -55,7 +55,7 @@ class PermissionControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = "admin", roles = "STORE_MANAGER")
     @DisplayName("get permission by id success")
     void getPermission_Success() throws Exception {
         Permission permission = Permission.builder()
@@ -73,7 +73,7 @@ class PermissionControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = "admin", roles = "STORE_MANAGER")
     @DisplayName("update permission success")
     void updatePermission_Success() throws Exception {
         Permission permission = Permission.builder()
@@ -101,7 +101,7 @@ class PermissionControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = "admin", roles = "STORE_MANAGER")
     @DisplayName("delete permission success")
     void deletePermission_Success() throws Exception {
         Permission permission = Permission.builder()

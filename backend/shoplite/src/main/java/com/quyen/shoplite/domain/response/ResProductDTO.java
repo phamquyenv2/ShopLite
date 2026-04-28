@@ -1,10 +1,11 @@
 package com.quyen.shoplite.domain.response;
 
-import com.quyen.shoplite.domain.ProductStatus;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+
+import com.quyen.shoplite.util.constant.ProductStatus;
 
 @Getter
 @Setter

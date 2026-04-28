@@ -38,5 +38,8 @@ private Double tax;
 
     private String paymentMethod;
 
+    /** ID quỹ dùng để chi tiền nhập hàng */
+    private Integer fundAccountId;
+
     private com.quyen.shoplite.util.constant.ImportOrderStatusEnum status;
 }

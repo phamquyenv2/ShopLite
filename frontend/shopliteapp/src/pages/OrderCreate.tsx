@@ -55,8 +55,8 @@ type OrderCreateLocationState = {
     draftOrderId?: number;
 };
 
-type PaymentMethodUi = 'cash' | 'transfer' | 'card' | 'wallet';
-type ScreenMode = 'create' | 'payment';
+type PaymentMethodUi = 'cash' | 'transfer' | 'sepay_qr' | 'card' | 'momo';
+type ScreenMode = 'create' | 'payment' | 'qr_payment';
 
 const normalizeItems = (value: unknown): SaleCartLine[] => {
     if (!Array.isArray(value)) return [];
@@ -128,7 +128,38 @@ const OrderCreatePage: React.FC = () => {
         const id = location.state?.draftOrderId;
         return typeof id === 'number' ? id : null;
     });
+    const requestIdRef = useRef<string>(
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `order-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     const [isConfirmed, setIsConfirmed] = useState(false);
+    // Trạng thái thực tế từ server — dùng để phân nhánh retry flow
+    const [orderServerStatus, setOrderServerStatus] = useState<string | null>(null);
+    const [qrData, setQrData] = useState<{ qrUrl?: string; transferContent?: string; amount?: number } | null>(null);
+
+    useEffect(() => {
+        let interval: ReturnType<typeof setInterval>;
+        if (screenMode === 'qr_payment' && draftOrderId) {
+            interval = setInterval(async () => {
+                try {
+                    const res = await authApis().get(endpoints['payment-status'](draftOrderId));
+                    const stat = pickData<{ status?: string }>(res.data);
+                    if (stat?.status === 'PAID') {
+                        clearInterval(interval);
+                        sessionStorage.removeItem(CART_KEY);
+                        setToast('Thanh toán thành công');
+                        history.replace('/sales');
+                    }
+                } catch {
+                    // ignore polling errors
+                }
+            }, 3000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [screenMode, draftOrderId, history]);
 
     const hasItems = items.length > 0;
     const itemCount = useMemo(() => items.reduce((sum, it) => sum + toNumber(it.quantity), 0), [items]);
@@ -183,6 +214,23 @@ const OrderCreatePage: React.FC = () => {
             setToast('Chưa thấy dữ liệu đơn tạm, hãy chọn món ở màn Bán hàng');
         }
         void loadLookups(draft.customerId ?? undefined);
+
+        // Nếu được truyền draftOrderId từ màn DraftOrders (retry),
+        // fetch trạng thái thực tế để phân nhánh đúng.
+        const locOrderId = location.state?.draftOrderId;
+        if (typeof locOrderId === 'number' && locOrderId > 0) {
+            authApis().get(endpoints['order-detail'](locOrderId))
+                .then((res) => {
+                    const order = pickData<{ status?: string }>(res.data);
+                    const serverStatus = order?.status ?? null;
+                    setOrderServerStatus(serverStatus);
+                    // Nếu đƣn đã confirm (không còn là DRAFT) thì đánh dấu isConfirmed
+                    if (serverStatus && serverStatus !== 'DRAFT') {
+                        setIsConfirmed(true);
+                    }
+                })
+                .catch(() => { /* ignore, flow vẫn hoạt động bình thường */ });
+        }
     });
 
     const isFirstRender = useRef(true);
@@ -205,6 +253,7 @@ const OrderCreatePage: React.FC = () => {
 
     const buildOrderPayload = (): OrderUpsert => ({
         userId: toNumber(user?.id),
+        requestId: requestIdRef.current,
         customerId: customerId > 0 ? customerId : null,
         discount: discountAmount,
         items: items.map((it) => ({
@@ -291,20 +340,53 @@ const OrderCreatePage: React.FC = () => {
 
         setBusy(true);
         try {
-            await updateDraftOrder(draftOrderId);
-            if (!isConfirmed) {
-                await authApis().patch(endpoints['order-confirm'](draftOrderId));
-                setIsConfirmed(true);
+            const isPendingPayment = orderServerStatus === 'PENDING_PAYMENT';
+
+            if (!isPendingPayment) {
+                // Lần đầu hoặc đơn vẫn ở DRAFT:
+                // update → confirm → payment
+                await updateDraftOrder(draftOrderId);
+                if (!isConfirmed) {
+                    await authApis().patch(endpoints['order-confirm'](draftOrderId));
+                    setIsConfirmed(true);
+                    setOrderServerStatus('PENDING_PAYMENT');
+                }
             }
-            await authApis().post(endpoints['order-payments'](draftOrderId), {
-                orderId: draftOrderId,
-                method: paymentMethod === 'cash' ? 'CASH' : 'BANK',
+            // Nếu isPendingPayment === true: bỏ qua update + confirm,
+            // thực hiện payment ngay lập tức.
+
+            // Map paymentMethod UI → backend PaymentMethodEnum
+            const backendMethod = paymentMethod === 'cash'     ? 'CASH'
+                                : paymentMethod === 'transfer' ? 'BANK_TRANSFER'
+                                : paymentMethod === 'sepay_qr' ? 'BANK_QR'
+                                : paymentMethod === 'momo'     ? 'EWALLET'
+                                : 'CASH';
+
+            const paymentPayload = {
+                referenceType: 'ORDER',
+                referenceId: draftOrderId,
+                paymentMethod: backendMethod,
                 amount: total,
-                status: 'COMPLETED',
-            });
-            sessionStorage.removeItem(CART_KEY);
-            setToast('Hoàn thành đơn hàng');
-            history.replace('/sales');
+            };
+
+            if (paymentMethod === 'sepay_qr' || paymentMethod === 'momo') {
+                const res = await authApis().post(endpoints['order-payments'](draftOrderId), paymentPayload);
+                const paymentData = pickData<{ qrUrl?: string; transferContent?: string; amount?: number }>(res.data);
+
+                if (paymentData?.qrUrl) {
+                    setQrData(paymentData);
+                    setScreenMode('qr_payment');
+                    return;
+                } else {
+                    setToast('Không thể tạo QR thanh toán');
+                    return;
+                }
+            } else {
+                await authApis().post(endpoints['order-payments'](draftOrderId), paymentPayload);
+                sessionStorage.removeItem(CART_KEY);
+                setToast('Hoàn thành đơn hàng');
+                history.replace('/sales');
+            }
         } catch (err) {
             setToast(err instanceof ApiError ? err.message : 'Không thể hoàn thành thanh toán');
         } finally {
@@ -532,17 +614,17 @@ const OrderCreatePage: React.FC = () => {
                                 </button>
                                 <button
                                     type="button"
-                                    className={paymentMethod === 'card' ? 'payment-tab is-active' : 'payment-tab'}
-                                    onClick={() => setPaymentMethod('card')}
+                                    className={paymentMethod === 'sepay_qr' ? 'payment-tab is-active' : 'payment-tab'}
+                                    onClick={() => setPaymentMethod('sepay_qr')}
                                 >
-                                    Thẻ
-                                </button>
+                                    SePay QR
+                                </button>   
                                 <button
                                     type="button"
-                                    className={paymentMethod === 'wallet' ? 'payment-tab is-active' : 'payment-tab'}
-                                    onClick={() => setPaymentMethod('wallet')}
+                                    className={paymentMethod === 'momo' ? 'payment-tab is-active' : 'payment-tab'}
+                                    onClick={() => setPaymentMethod('momo')}
                                 >
-                                    Ví
+                                    MoMo
                                 </button>
                             </div>
 
@@ -557,10 +639,47 @@ const OrderCreatePage: React.FC = () => {
 
                     <div className="order-action-bar payment-footer">
                         <button className="order-btn-primary payment-complete" type="button" disabled={busy || !draftOrderId} onClick={() => void onCompletePayment()}>
-                            Hoàn thành
+                            {paymentMethod === 'sepay_qr' || paymentMethod === 'momo' ? 'Tạo QR thanh toán' : 'Hoàn thành'}
                         </button>
                     </div>
                 </>
+            )}
+
+            {screenMode === 'qr_payment' && qrData && (
+                <IonContent className="order-create-content" style={{ textAlign: 'center', padding: '20px' }}>
+                    <div className="payment-card">
+                        <h3>Quét mã QR để thanh toán</h3>
+                        <p>Số tiền: <strong>{formatVnd(qrData.amount ?? 0)}</strong></p>
+                        <p>Nội dung CK: <strong>{qrData.transferContent}</strong></p>
+                        
+                        <div style={{ margin: '20px auto', display: 'flex', justifyContent: 'center' }}>
+                            <img src={qrData.qrUrl} alt="QR Code" style={{ maxWidth: '300px', width: '100%', borderRadius: '8px' }} />
+                        </div>
+                        
+                        <p style={{ color: '#666', fontSize: '14px' }}>Hệ thống đang chờ thanh toán. Đơn hàng sẽ tự động hoàn thành khi nhận được tiền.</p>
+                        
+                        <button 
+                            className="order-btn-secondary" 
+                            style={{ marginTop: '20px', width: '100%' }}
+                            onClick={() => {
+                                navigator.clipboard.writeText(qrData.transferContent || '');
+                                setToast('Đã copy nội dung CK');
+                            }}
+                        >
+                            Copy nội dung CK
+                        </button>
+                        <button 
+                            className="order-btn-primary payment-complete" 
+                            style={{ marginTop: '10px' }}
+                            onClick={() => {
+                                sessionStorage.removeItem(CART_KEY);
+                                history.replace('/sales');
+                            }}
+                        >
+                            Bỏ qua chờ
+                        </button>
+                    </div>
+                </IonContent>
             )}
 
             <IonActionSheet

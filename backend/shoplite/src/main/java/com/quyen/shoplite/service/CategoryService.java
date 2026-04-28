@@ -1,6 +1,7 @@
 package com.quyen.shoplite.service;
 
 import com.quyen.shoplite.domain.Category;
+import com.quyen.shoplite.domain.Store;
 import com.quyen.shoplite.domain.request.ReqCategoryUpsertDTO;
 import com.quyen.shoplite.domain.response.ResCategoryDTO;
 import com.quyen.shoplite.repository.CategoryRepository;
@@ -17,39 +18,46 @@ import java.util.List;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final CurrentStoreService currentStoreService;
 
-    public CategoryService(CategoryRepository categoryRepository) {
+    public CategoryService(CategoryRepository categoryRepository, CurrentStoreService currentStoreService) {
         this.categoryRepository = categoryRepository;
+        this.currentStoreService = currentStoreService;
     }
 
     public ResCategoryDTO create(ReqCategoryUpsertDTO req) {
+        Store store = currentStoreService.getCurrentStore();
         String normalizedName = req.getName().trim();
-        if (categoryRepository.existsByName(normalizedName)) {
+        if (categoryRepository.existsByStoreIdAndName(store.getId(), normalizedName)) {
             throw new BadRequestException("Category name already exists: " + normalizedName);
         }
         Category category = Category.builder()
+                .store(store)
                 .name(normalizedName)
                 .build();
         return DTOMapper.toResCategoryDTO(categoryRepository.save(category));
     }
 
     public ResCategoryDTO findById(Integer id) {
-        Category category = categoryRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Category category = categoryRepository.findByIdAndStoreId(id, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id=" + id));
         return DTOMapper.toResCategoryDTO(category);
     }
 
     public List<ResCategoryDTO> findAll() {
-        return categoryRepository.findAll().stream()
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return categoryRepository.findAllByStoreIdOrderByNameAsc(storeId).stream()
                 .map(DTOMapper::toResCategoryDTO)
                 .toList();
     }
 
     public ResCategoryDTO update(Integer id, ReqCategoryUpsertDTO req) {
-        Category category = categoryRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Category category = categoryRepository.findByIdAndStoreId(id, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id=" + id));
         String normalizedName = req.getName().trim();
-        if (categoryRepository.existsByNameAndIdNot(normalizedName, id)) {
+        if (categoryRepository.existsByStoreIdAndNameAndIdNot(storeId, normalizedName, id)) {
             throw new BadRequestException("Category name already exists: " + normalizedName);
         }
         category.setName(normalizedName);
@@ -57,7 +65,8 @@ public class CategoryService {
     }
 
     public void delete(Integer id) {
-        Category category = categoryRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        Category category = categoryRepository.findByIdAndStoreId(id, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id=" + id));
         categoryRepository.delete(category);
     }

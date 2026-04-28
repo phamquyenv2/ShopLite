@@ -17,6 +17,13 @@ public class ResLoginDTO {
     private String accessToken;
     private String refreshToken;
     private UserInfo user;
+    private StoreInfo currentStore;
+
+    public ResLoginDTO(String accessToken, String refreshToken, UserInfo user) {
+        this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
+        this.user = user;
+    }
 
     @Getter
     @Setter
@@ -26,5 +33,14 @@ public class ResLoginDTO {
         private Integer id;
         private String username;
         private String roleName;    // Tên role (thay RoleEnum)
+    }
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StoreInfo {
+        private Long id;
+        private String name;
+        private String memberRole;
     }
 }

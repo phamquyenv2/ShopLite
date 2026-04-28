@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     IonPage, IonHeader, IonToolbar, IonContent, IonIcon, IonButtons, IonButton,
     IonSpinner, IonToast, IonFooter, IonModal, useIonRouter, useIonViewWillEnter
@@ -10,6 +10,7 @@ import {
 import { useParams } from 'react-router';
 import { importOrderService } from '../services/importOrder.service';
 import { supplierService } from '../services/supplier.service';
+import { productService } from '../services/product.service';
 import { authApis, endpoints } from '../utils/Apis';
 import type { Product, Supplier, ImportOrderUpsert } from '../api/types';
 import './ImportOrderCreatePage.css';
@@ -35,9 +36,12 @@ const ImportOrderCreatePage: React.FC = () => {
     const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
     const [showSupplierPicker, setShowSupplierPicker] = useState(false);
 
-    const [products, setProducts] = useState<Product[]>([]);
+    // Product search — gọi API trực tiếp với debounce 500ms
     const [searchText, setSearchText] = useState('');
+    const [searchResults, setSearchResults] = useState<Product[]>([]);
+    const [searching, setSearching] = useState(false);
     const [showProductSearch, setShowProductSearch] = useState(false);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [cart, setCart] = useState<CartItem[]>([]);
     const [saving, setSaving] = useState(false);
@@ -50,42 +54,56 @@ const ImportOrderCreatePage: React.FC = () => {
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'TRANSFER' | 'CARD'>('CASH');
     const [note, setNote] = useState('');
 
+    // Trạng thái thực tế của order từ server (dùng để xác định retry flow)
+    const [orderStatus, setOrderStatus] = useState<string | null>(null);
+
     useIonViewWillEnter(() => {
         loadInitial();
     });
 
     const loadInitial = async () => {
         try {
-            const [s, p] = await Promise.all([
+            const [s] = await Promise.all([
                 supplierService.getAll(),
-                authApis().get(endpoints.products)
             ]);
             setSuppliers(s);
-            const pData = p.data?.data;
-            const loadedProducts = Array.isArray(pData) ? pData : pData?.data || [];
-            setProducts(loadedProducts);
 
             if (isEditMode) {
                 const orderData = await importOrderService.getById(id);
                 const sup = s.find(sup => sup.id === orderData.supplierId);
                 if (sup) setSelectedSupplier(sup);
 
-                setCart(orderData.items?.map(item => {
-                    const prod = loadedProducts.find((product: Product) => product.id === item.productId);
-                    return {
-                        productId: item.productId,
-                        name: item.productName || prod?.name || 'Sản phẩm',
-                        sku: item.productSku || prod?.sku || '',
-                        quantity: item.quantity,
-                        importPrice: item.importPrice,
-                        stock: prod?.stock || 0,
-                        imageUrl: prod?.image || ''
-                    };
-                }) || []);
+                // Lưu status thực tế — dùng để phân nhánh retry flow
+                setOrderStatus(orderData.status ?? null);
+
+                setCart(orderData.items?.map(item => ({
+                    productId: item.productId,
+                    name: item.productName || 'Sản phẩm',
+                    sku: item.productSku || '',
+                    quantity: item.quantity,
+                    importPrice: item.importPrice,
+                    stock: 0,
+                    imageUrl: ''
+                })) || []);
                 setDiscount(orderData.discount || 0);
                 if (orderData.note && orderData.note !== 'Lưu tạm') setNote(orderData.note);
             }
         } catch { /* */ }
+    };
+
+    // Debounce search — gọi API mỗi khi người dùng gõ, sau 500ms
+    const handleSearchChange = (value: string) => {
+        setSearchText(value);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        if (!value.trim()) { setSearchResults([]); return; }
+        setSearching(true);
+        debounceRef.current = setTimeout(async () => {
+            try {
+                const results = await productService.searchForImport(value.trim());
+                setSearchResults(results);
+            } catch { setSearchResults([]); }
+            finally { setSearching(false); }
+        }, 500);
     };
 
     const addToCart = (prod: Product) => {
@@ -105,6 +123,7 @@ const ImportOrderCreatePage: React.FC = () => {
         }
         setShowProductSearch(false);
         setSearchText('');
+        setSearchResults([]);
     };
 
     const updateQty = (productId: number, delta: number) => {
@@ -136,26 +155,64 @@ const ImportOrderCreatePage: React.FC = () => {
 
         setSaving(true);
         try {
-            const payload: ImportOrderUpsert = {
-                supplierId: selectedSupplier.id,
-                items: cart.map(c => ({
-                    productId: c.productId,
-                    quantity: c.quantity,
-                    importPrice: c.importPrice
-                })),
-                note: asDraft ? 'Lưu tạm' : note,
-                discount: discount,
-                paidAmount: asDraft ? 0 : paidAmount,
-                paymentMethod: asDraft ? undefined : paymentMethod,
-                status: asDraft ? 'PENDING' : 'COMPLETED'
-            };
-            
-            if (isEditMode && id) {
-                await importOrderService.update(id, payload);
-                setToast('Cập nhật phiếu nhập thành công');
+            if (asDraft) {
+                // Lưu tạm: luôn update hoặc create bình thường
+                const payload: ImportOrderUpsert = {
+                    supplierId: selectedSupplier.id,
+                    items: cart.map(c => ({
+                        productId: c.productId,
+                        quantity: c.quantity,
+                        importPrice: c.importPrice
+                    })),
+                    note: 'Lưu tạm',
+                    discount: discount,
+                    paidAmount: 0,
+                    status: 'PENDING'
+                };
+                if (isEditMode && id) {
+                    await importOrderService.update(id, payload);
+                } else {
+                    await importOrderService.create(payload);
+                }
+                setToast('Lưu tạm thành công');
             } else {
-                await importOrderService.create(payload);
-                setToast('Tạo phiếu nhập thành công');
+                // Hoàn thành: phân nhánh theo trạng thái hiện tại
+                //
+                // PENDING_PAYMENT: bước confirm trước đó đã thành công, chỉ cần thực hiện
+                //   payment để hoàn tất. TUYỆT ĐỐI KHÔNG gọi update/confirm lại.
+                //
+                // DRAFT / PENDING: chưa confirm, thực hiện đầy đủ cả 2 bước.
+                if (isEditMode && id && orderStatus === 'PENDING_PAYMENT') {
+                    // Retry: chỉ gọi payment
+                    await importOrderService.payOnly(id, {
+                        paidAmount,
+                        paymentMethod,
+                        note,
+                    });
+                    setToast('Thanh toán phệu nhập thành công');
+                } else {
+                    // Lần đầu: update (nếu edit) + hoàn thành
+                    const payload: ImportOrderUpsert = {
+                        supplierId: selectedSupplier.id,
+                        items: cart.map(c => ({
+                            productId: c.productId,
+                            quantity: c.quantity,
+                            importPrice: c.importPrice
+                        })),
+                        note,
+                        discount,
+                        paidAmount,
+                        paymentMethod,
+                        status: 'COMPLETED'
+                    };
+                    if (isEditMode && id) {
+                        await importOrderService.update(id, payload);
+                        setToast('Cập nhật phiếu nhập thành công');
+                    } else {
+                        await importOrderService.create(payload);
+                        setToast('Tạo phiếu nhập thành công');
+                    }
+                }
             }
             setTimeout(() => ionRouter.goBack(), 500);
         } catch (err: any) {
@@ -165,11 +222,9 @@ const ImportOrderCreatePage: React.FC = () => {
         }
     };
 
-    const filteredProducts = products.filter(p =>
-        p.name.toLowerCase().includes(searchText.toLowerCase()) ||
-        (p.sku?.toLowerCase() || '').includes(searchText.toLowerCase()) ||
-        (p.barcode?.toLowerCase() || '').includes(searchText.toLowerCase())
-    );
+    // Chỉ filter khi người dùng đã nhập tìm kiếm
+    const trimmedSearch = searchText.trim();
+
 
     if (checkoutMode) {
         return (
@@ -362,14 +417,16 @@ const ImportOrderCreatePage: React.FC = () => {
                 )}
                 <div className="ioc-footer-actions">
                     <button className="ioc-btn-draft" onClick={() => handleSave(true)} disabled={saving || cart.length === 0}>Lưu tạm</button>
-                    <button className="ioc-btn-save" onClick={() => setCheckoutMode(true)} disabled={cart.length === 0}>
+                    <button className="ioc-btn-save" onClick={() => {
+                        if (!selectedSupplier) { setToast('Vui lòng chọn nhà cung cấp'); return; }
+                        setCheckoutMode(true);
+                    }} disabled={cart.length === 0}>
                         Tiếp tục
                     </button>
                 </div>
             </IonFooter>
 
-            {/* Product Search Modal */}
-            <IonModal isOpen={showProductSearch} onDidDismiss={() => setShowProductSearch(false)} className="ioc-modal">
+            <IonModal isOpen={showProductSearch} onDidDismiss={() => { setShowProductSearch(false); setSearchText(''); setSearchResults([]); }} className="ioc-modal">
                 <IonHeader>
                     <IonToolbar>
                         <IonButtons slot="start">
@@ -382,15 +439,28 @@ const ImportOrderCreatePage: React.FC = () => {
                                 className="ioc-modal-search"
                                 placeholder="Tìm sản phẩm..."
                                 value={searchText}
-                                onChange={e => setSearchText(e.target.value)}
+                                onChange={e => handleSearchChange(e.target.value)}
                                 autoFocus
                             />
                         </div>
                     </IonToolbar>
                 </IonHeader>
                 <IonContent>
+                    {searching && (
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}>
+                            <IonSpinner name="crescent" color="primary" />
+                        </div>
+                    )}
                     <div className="ioc-product-list">
-                        {filteredProducts.map(p => (
+                        {!searching && !trimmedSearch && (
+                            <div className="ioc-empty-search ioc-search-hint">
+                                Nhập tên, mã hàng hoặc barcode để tìm kiếm
+                            </div>
+                        )}
+                        {!searching && trimmedSearch && searchResults.length === 0 && (
+                            <div className="ioc-empty-search">Không tìm thấy sản phẩm</div>
+                        )}
+                        {!searching && searchResults.map(p => (
                             <div key={p.id} className="ioc-product-item" onClick={() => addToCart(p)}>
                                 <div>
                                     <div className="ioc-prod-name">{p.name}</div>
@@ -399,9 +469,6 @@ const ImportOrderCreatePage: React.FC = () => {
                                 <div className="ioc-prod-price">{fmt(p.costPrice)}</div>
                             </div>
                         ))}
-                        {filteredProducts.length === 0 && (
-                            <div className="ioc-empty-search">Không tìm thấy sản phẩm</div>
-                        )}
                     </div>
                 </IonContent>
             </IonModal>

@@ -1,5 +1,6 @@
 package com.quyen.shoplite.service;
 
+import com.quyen.shoplite.domain.Store;
 import com.quyen.shoplite.domain.Unit;
 import com.quyen.shoplite.domain.request.ReqUnitUpsertDTO;
 import com.quyen.shoplite.domain.response.ResUnitDTO;
@@ -18,15 +19,18 @@ import java.util.List;
 public class UnitService {
 
     private final UnitRepository unitRepository;
+    private final CurrentStoreService currentStoreService;
 
     @Transactional
     public ResUnitDTO create(ReqUnitUpsertDTO req) {
+        Store store = currentStoreService.getCurrentStore();
         String normalizedName = req.getName().trim();
-        if (unitRepository.existsByName(normalizedName)) {
+        if (unitRepository.existsByStoreIdAndName(store.getId(), normalizedName)) {
             throw new BadRequestException("Unit name already exists: " + normalizedName);
         }
 
         Unit unit = Unit.builder()
+                .store(store)
                 .name(normalizedName)
                 .description(normalize(req.getDescription()))
                 .build();
@@ -38,7 +42,8 @@ public class UnitService {
     }
 
     public List<ResUnitDTO> findAll() {
-        return unitRepository.findAll().stream()
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return unitRepository.findAllByStoreIdOrderByNameAsc(storeId).stream()
                 .map(DTOMapper::toResUnitDTO)
                 .toList();
     }
@@ -47,7 +52,8 @@ public class UnitService {
     public ResUnitDTO update(Integer id, ReqUnitUpsertDTO req) {
         Unit unit = findEntityById(id);
         String normalizedName = req.getName().trim();
-        if (unitRepository.existsByNameAndIdNot(normalizedName, id)) {
+        Long storeId = currentStoreService.getCurrentStoreId();
+        if (unitRepository.existsByStoreIdAndNameAndIdNot(storeId, normalizedName, id)) {
             throw new BadRequestException("Unit name already exists: " + normalizedName);
         }
 
@@ -63,7 +69,8 @@ public class UnitService {
     }
 
     private Unit findEntityById(Integer id) {
-        return unitRepository.findById(id)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return unitRepository.findByIdAndStoreId(id, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Unit not found with id=" + id));
     }
 

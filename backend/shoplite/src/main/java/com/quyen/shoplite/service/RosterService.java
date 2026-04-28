@@ -23,6 +23,7 @@ public class RosterService {
 
     private final RosterRepository rosterRepository;
     private final EmployeeRepository employeeRepository;
+    private final CurrentStoreService currentStoreService;
 
     // ------------------------------------------------------------------ create
 
@@ -30,7 +31,8 @@ public class RosterService {
     public ResRosterDTO create(ReqRosterDTO req) {
         Employee employee = findActiveEmployee(req.getEmployeeId());
 
-        if (rosterRepository.existsByEmployee_IdAndWorkingDay(employee.getId(), req.getWorkingDay())) {
+        Long storeId = currentStoreService.getCurrentStoreId();
+        if (rosterRepository.existsByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDay(storeId, employee.getId(), req.getWorkingDay())) {
             throw new BadRequestException(
                     "Roster already exists for employee id=" + employee.getId()
                             + " on date=" + req.getWorkingDay());
@@ -49,7 +51,8 @@ public class RosterService {
         // If employee changes check for conflict
         if (!req.getEmployeeId().equals(roster.getEmployee().getId())) {
             Employee newEmployee = findActiveEmployee(req.getEmployeeId());
-            if (rosterRepository.existsByEmployee_IdAndWorkingDay(newEmployee.getId(), req.getWorkingDay())
+            Long storeId = currentStoreService.getCurrentStoreId();
+            if (rosterRepository.existsByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDay(storeId, newEmployee.getId(), req.getWorkingDay())
                     && !req.getWorkingDay().equals(roster.getWorkingDay())) {
                 throw new BadRequestException(
                         "Roster conflict for employee id=" + newEmployee.getId()
@@ -58,7 +61,8 @@ public class RosterService {
             roster.setEmployee(newEmployee);
         } else if (!req.getWorkingDay().equals(roster.getWorkingDay())) {
             // Same employee, different day — check conflict
-            if (rosterRepository.existsByEmployee_IdAndWorkingDay(roster.getEmployee().getId(), req.getWorkingDay())) {
+            Long storeId = currentStoreService.getCurrentStoreId();
+            if (rosterRepository.existsByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDay(storeId, roster.getEmployee().getId(), req.getWorkingDay())) {
                 throw new BadRequestException(
                         "Roster already exists for employee id=" + roster.getEmployee().getId()
                                 + " on date=" + req.getWorkingDay());
@@ -83,7 +87,8 @@ public class RosterService {
             throw new BadRequestException("from must be <= to");
         }
         return rosterRepository
-                .findByEmployee_IdAndWorkingDayBetweenOrderByWorkingDayAsc(employeeId, from, to)
+                .findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDayBetweenOrderByWorkingDayAsc(
+                        currentStoreService.getCurrentStoreId(), employeeId, from, to)
                 .stream()
                 .map(DTOMapper::toResRosterDTO)
                 .toList();
@@ -93,7 +98,8 @@ public class RosterService {
      * Lấy lịch tất cả nhân viên trong một ngày cụ thể (daily overview).
      */
     public List<ResRosterDTO> findByDay(LocalDate day) {
-        return rosterRepository.findByWorkingDayOrderByEmployee_IdAsc(day)
+        return rosterRepository.findByEmployee_StoreMember_Store_IdAndWorkingDayOrderByEmployee_IdAsc(
+                        currentStoreService.getCurrentStoreId(), day)
                 .stream()
                 .map(DTOMapper::toResRosterDTO)
                 .toList();
@@ -110,12 +116,15 @@ public class RosterService {
     // ------------------------------------------------------------------ helpers
 
     private Roster findEntity(Integer id) {
+        Long storeId = currentStoreService.getCurrentStoreId();
         return rosterRepository.findById(id)
+                .filter(roster -> roster.getEmployee().getStoreMember().getStore().getId().equals(storeId))
                 .orElseThrow(() -> new ResourceNotFoundException("Roster not found with id=" + id));
     }
 
     private Employee findActiveEmployee(Integer employeeId) {
-        return employeeRepository.findById(employeeId)
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return employeeRepository.findByIdAndStoreMember_Store_IdAndDeletedFalse(employeeId, storeId)
                 .filter(e -> !e.isDeleted())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Active employee not found with id=" + employeeId));

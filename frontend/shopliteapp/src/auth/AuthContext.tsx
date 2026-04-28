@@ -6,11 +6,12 @@ import {
     clearStoredAuth,
     createApiClient,
     endpoints,
+    getStoredAccessToken,
     getStoredRefreshToken,
     getStoredUser,
     storeAuthFromPayload,
 } from '../utils/Apis';
-import type { AuthUser, LoginResponse } from './types';
+import type { AuthUser, LoginResponse, OtpSendResponse, OtpVerifyResponse } from './types';
 
 export type AuthStatus = 'checking' | 'authenticated' | 'unauthenticated';
 
@@ -21,9 +22,48 @@ export type AuthContextValue = {
     register: (username: string, phone: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
     refreshSession: () => Promise<void>;
+    // OTP Registration Flow
+    sendOtp: (phone: string) => Promise<OtpSendResponse>;
+    verifyOtp: (phone: string, otp: string) => Promise<OtpVerifyResponse>;
+    setStoreName: (sessionId: string, storeName: string) => Promise<void>;
+    completeRegister: (sessionId: string, password: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Decode JWT payload (base64url) mà không cần verify signature.
+ * Trả về null nếu token không hợp lệ.
+ */
+const decodeJwtPayload = (token: string): Record<string, unknown> | null => {
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+        const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        const json = atob(base64);
+        return JSON.parse(json) as Record<string, unknown>;
+    } catch {
+        return null;
+    }
+};
+
+/**
+ * Trả về true nếu access token trong localStorage còn hợp lệ
+ * (exp > now + bufferSeconds). Buffer mặc định 60s để proactively
+ * refresh trước khi thật sự hết hạn.
+ */
+const isAccessTokenValid = (bufferSeconds = 60): boolean => {
+    const token = getStoredAccessToken();
+    if (!token) return false;
+    const payload = decodeJwtPayload(token);
+    if (!payload || typeof payload.exp !== 'number') return false;
+    const expiresAtMs = payload.exp * 1000;
+    return Date.now() < expiresAtMs - bufferSeconds * 1000;
+};
+
+// ──────────────────────────────────────────────────────────────────────────────
 
 export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     const [status, setStatus] = useState<AuthStatus>('checking');
@@ -43,8 +83,21 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     }, []);
 
     const refreshSession = useCallback(async () => {
-        const refreshToken = getStoredRefreshToken();
+        // ── Bước 1: Decode access token trong localStorage ────────────────────────
+        // Nếu còn hợp lệ → restore session từ storage mà KHÔNG gọi API.
+        // Đây là trường hợp phổ biến nhất khi focus/visibilitychange xảy ra
+        // ngay sau khi vừa login, tránh rotate refresh token không cần thiết.
+        if (isAccessTokenValid()) {
+            const storedUser = getStoredUser<AuthUser>();
+            if (storedUser) {
+                setUser(storedUser);
+                setStatus('authenticated');
+                return;
+            }
+        }
 
+        // ── Bước 2: Access token hết hạn / không có → cần gọi POST /refresh ──────
+        const refreshToken = getStoredRefreshToken();
         if (!refreshToken) {
             clearStoredAuth();
             setUser(null);
@@ -52,12 +105,11 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             return;
         }
 
+        // Guard chống concurrent calls (e.g. focus + visibilitychange cùng lúc)
         if (refreshingRef.current) return;
         refreshingRef.current = true;
 
         try {
-            // Always validate session by refreshing with refresh token.
-            // This ensures we also respect DB-level refresh token expiry.
             const refreshClient = createApiClient({ getToken: () => refreshToken });
             const res = await refreshClient.post<LoginResponse>(endpoints.refresh);
             const stored = storeAuthFromPayload(res.data);
@@ -138,6 +190,53 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         setStatus('authenticated');
     }, []);
 
+    // ─── OTP Registration Flow ────────────────────────────────────────────────
+
+    const sendOtp = useCallback(async (phone: string): Promise<OtpSendResponse> => {
+        const client = createApiClient();
+        const res = await client.post<{ data: OtpSendResponse }>(endpoints['register-otp-send'], { phone });
+        const payload = res.data as unknown as { data?: OtpSendResponse } & OtpSendResponse;
+        return payload?.data ?? payload;
+    }, []);
+
+    const verifyOtp = useCallback(async (phone: string, otp: string): Promise<OtpVerifyResponse> => {
+        const client = createApiClient();
+        const res = await client.post<{ data: OtpVerifyResponse }>(endpoints['register-otp-verify'], { phone, otp });
+        const payload = res.data as unknown as { data?: OtpVerifyResponse } & OtpVerifyResponse;
+        return payload?.data ?? payload;
+    }, []);
+
+    const setStoreName = useCallback(async (sessionId: string, storeName: string): Promise<void> => {
+        const client = createApiClient();
+        await client.post(endpoints['register-store'], {
+            registerSessionId: sessionId,
+            storeName,
+        });
+    }, []);
+
+    const completeRegister = useCallback(async (sessionId: string, password: string): Promise<void> => {
+        const client = createApiClient();
+        const res = await client.post<LoginResponse>(endpoints['register-complete'], {
+            registerSessionId: sessionId,
+            password,
+        });
+        const stored = storeAuthFromPayload(res.data);
+
+        if (!stored.accessToken || !stored.refreshToken) {
+            clearStoredAuth();
+            setUser(null);
+            setStatus('unauthenticated');
+            throw new ApiError('Register complete response missing tokens', {
+                status: res.status,
+                data: res.data,
+                headers: res.headers,
+            });
+        }
+
+        setUser((stored.user as AuthUser | null) ?? getStoredUser<AuthUser>());
+        setStatus('authenticated');
+    }, []);
+
     const logout = useCallback(async () => {
         const refreshToken = getStoredRefreshToken();
         try {
@@ -155,8 +254,10 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     }, []);
 
     const value = useMemo<AuthContextValue>(
-        () => ({ status, user, login, register, logout, refreshSession }),
-        [status, user, login, register, logout, refreshSession],
+        () => ({ status, user, login, register, logout, refreshSession,
+                 sendOtp, verifyOtp, setStoreName, completeRegister }),
+        [status, user, login, register, logout, refreshSession,
+         sendOtp, verifyOtp, setStoreName, completeRegister],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

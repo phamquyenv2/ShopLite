@@ -5,8 +5,14 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import com.quyen.shoplite.util.constant.ProductStatus;
+
 @Entity
-@Table(name = "products")
+@Table(name = "products",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_products_store_sku", columnNames = {"store_id", "sku"}),
+                @UniqueConstraint(name = "uk_products_store_barcode", columnNames = {"store_id", "barcode"})
+        })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,6 +25,10 @@ public class Product {
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
@@ -29,10 +39,10 @@ public class Product {
     @Column(nullable = false, length = 200)
     private String name;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, length = 100)
     private String sku;
 
-    @Column(unique = true)
+    @Column
     private String barcode;
 
     @Column(nullable = false)
@@ -71,6 +81,21 @@ public class Product {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public void setStock(Integer stock) {
+        this.stock = stock;
+        if (this.stock != null) {
+            if (this.stock <= 0) {
+                if (this.status != ProductStatus.INACTIVE) {
+                    this.status = ProductStatus.OUT_OF_STOCK;
+                }
+            } else {
+                if (this.status == ProductStatus.OUT_OF_STOCK) {
+                    this.status = ProductStatus.ACTIVE;
+                }
+            }
+        }
+    }
 
     @PrePersist
     void onCreate() {

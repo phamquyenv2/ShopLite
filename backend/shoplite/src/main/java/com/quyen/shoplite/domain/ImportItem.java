@@ -32,4 +32,8 @@ public class ImportItem {
 
     @Column(name = "sub_total", nullable = false)
     private Double subTotal;
+
+    @Column(name = "returned_quantity")
+    @Builder.Default
+    private Integer returnedQuantity = 0;
 }
