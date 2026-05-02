@@ -11,9 +11,11 @@ import com.quyen.shoplite.repository.StoreMemberRepository;
 import com.quyen.shoplite.repository.UserRepository;
 import com.quyen.shoplite.repository.UserTokenRepository;
 import com.quyen.shoplite.util.SecurityUtil;
+import com.quyen.shoplite.util.DTOMapper;
 import com.quyen.shoplite.util.constant.StoreMemberStatus;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.UnauthorizedException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,6 +26,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -151,15 +155,19 @@ public class AuthService {
                 .findAllByUserIdAndStatusFetchStore(user.getId(), StoreMemberStatus.ACTIVE);
 
         List<ResMeDTO.StoreInfo> stores = memberships.stream()
-                .map(sm -> ResMeDTO.StoreInfo.builder()
-                        .id(sm.getStore().getId())
-                        .name(sm.getStore().getName())
-                        .memberRole(sm.getRole() != null ? sm.getRole().getName() : "USER")
-                        .membershipStatus(sm.getStatus().name())
-                        .build())
+                .map(this::toMeStoreInfo)
                 .toList();
 
-        ResMeDTO.StoreInfo currentStore = stores.isEmpty() ? null : stores.get(0);
+        Long requestedStoreId = readStoreIdHeader();
+        ResMeDTO.StoreInfo currentStore = null;
+        if (!stores.isEmpty()) {
+            currentStore = requestedStoreId == null
+                    ? stores.get(0)
+                    : stores.stream()
+                            .filter(store -> store.getId().equals(requestedStoreId))
+                            .findFirst()
+                            .orElse(stores.get(0));
+        }
         String globalRole = memberships.stream()
                 .filter(m -> m.getStatus() == StoreMemberStatus.ACTIVE)
                 .findFirst()
@@ -175,6 +183,18 @@ public class AuthService {
                         .build())
                 .currentStore(currentStore)
                 .stores(stores)
+                .build();
+    }
+
+    private ResMeDTO.StoreInfo toMeStoreInfo(StoreMember sm) {
+        return ResMeDTO.StoreInfo.builder()
+                .id(sm.getStore().getId())
+                .name(sm.getStore().getName())
+                .memberRole(sm.getRole() != null ? sm.getRole().getName() : "USER")
+                .membershipStatus(sm.getStatus().name())
+                .permissions(sm.getRole() == null ? List.of() : sm.getRole().getPermissions().stream()
+                        .map(DTOMapper::toResPermissionDTO)
+                        .toList())
                 .build();
     }
 
@@ -229,5 +249,25 @@ public class AuthService {
                         sm.getStore().getName(),
                         sm.getRole() != null ? sm.getRole().getName() : "USER"))
                 .orElse(null);
+    }
+
+    private Long readStoreIdHeader() {
+        ServletRequestAttributes attributes =
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            return null;
+        }
+
+        HttpServletRequest request = attributes.getRequest();
+        String rawStoreId = request.getHeader(CurrentStoreService.STORE_HEADER);
+        if (rawStoreId == null || rawStoreId.isBlank()) {
+            return null;
+        }
+
+        try {
+            return Long.valueOf(rawStoreId.trim());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 }

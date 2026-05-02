@@ -17,9 +17,10 @@ public class ProductSpecification {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // Luôn loại bỏ sản phẩm bị xóa mềm
+            // Luôn lọc theo store và loại bỏ sản phẩm đã xóa mềm
+            // Dùng cb.isFalse() để tránh vấn đề type-mismatch với primitive boolean field
             predicates.add(cb.equal(root.get("store").get("id"), storeId));
-            predicates.add(cb.equal(root.get("isDeleted"), false));
+            predicates.add(cb.isFalse(root.get("isDeleted")));
 
             // Lọc theo keyword (tên hoặc SKU)
             if (keyword != null && !keyword.isBlank()) {

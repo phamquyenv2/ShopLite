@@ -2,8 +2,8 @@ package com.quyen.shoplite.config;
 
 import com.quyen.shoplite.domain.Permission;
 import com.quyen.shoplite.domain.Role;
-import com.quyen.shoplite.domain.User;
-import com.quyen.shoplite.repository.UserRepository;
+import com.quyen.shoplite.domain.StoreMember;
+import com.quyen.shoplite.service.CurrentStoreService;
 import com.quyen.shoplite.util.SecurityUtil;
 import com.quyen.shoplite.util.error.PermissionException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,7 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PermissionInterceptor implements HandlerInterceptor {
 
-    private final UserRepository userRepository;
+    private final CurrentStoreService currentStoreService;
 
     @Override
     @Transactional
@@ -42,14 +42,8 @@ public class PermissionInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        User user = userRepository.findByUsername(username).orElse(null);
-        if (user == null) return true;
-
-        Role role = user.getStoreMemberships().stream()
-                .filter(m -> m.getStatus() == com.quyen.shoplite.util.constant.StoreMemberStatus.ACTIVE)
-                .findFirst()
-                .map(com.quyen.shoplite.domain.StoreMember::getRole)
-                .orElse(null);
+        StoreMember membership = currentStoreService.getCurrentStoreMembership();
+        Role role = membership.getRole();
 
         if (role == null) {
             throw new PermissionException("Tài khoản chưa được gán Role");
@@ -58,7 +52,7 @@ public class PermissionInterceptor implements HandlerInterceptor {
         List<Permission> permissions = role.getPermissions();
 
         boolean hasPermission = permissions.stream()
-                .anyMatch(p -> p.getApiPath().equals(path) && p.getMethod().equals(httpMethod));
+                .anyMatch(p -> p.getApiPath().equals(path) && p.getMethod().equalsIgnoreCase(httpMethod));
 
         if (!hasPermission) {
             System.out.println("⚠️ Mising Permission: [" + httpMethod + "] " + path + " for role: " + role.getName());

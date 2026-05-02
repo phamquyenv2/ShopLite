@@ -95,6 +95,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                 perm("Complete register", "/api/v1/auth/register/complete", "POST", "AUTH"),
                 // PRODUCTS
                 perm("View products", "/api/v1/products", "GET", "PRODUCTS"),
+                perm("Search products for POS", "/api/v1/products/search", "GET", "PRODUCTS"),
                 perm("View product by id", "/api/v1/products/{id}", "GET", "PRODUCTS"),
                 perm("Create product", "/api/v1/products", "POST", "PRODUCTS"),
                 perm("Update product", "/api/v1/products/{id}", "PUT", "PRODUCTS"),
@@ -208,10 +209,18 @@ public class DatabaseInitializer implements CommandLineRunner {
                 perm("Delete role", "/api/v1/roles/{id}", "DELETE", "ROLES"),
                 // PERMISSIONS
                 perm("View permissions", "/api/v1/permissions", "GET", "PERMISSIONS"),
+                perm("View all permissions", "/api/v1/permissions/all", "GET", "PERMISSIONS"),
                 perm("View permission by id", "/api/v1/permissions/{id}", "GET", "PERMISSIONS"),
                 perm("Create permission", "/api/v1/permissions", "POST", "PERMISSIONS"),
                 perm("Update permission", "/api/v1/permissions/{id}", "PUT", "PERMISSIONS"),
                 perm("Delete permission", "/api/v1/permissions/{id}", "DELETE", "PERMISSIONS"),
+                // STORE INVITATIONS
+                perm("Create store invitation", "/api/v1/store-invitations", "POST", "STORE_INVITATIONS"),
+                perm("Accept store invitation", "/api/v1/store-invitations/{id}/accept", "POST", "STORE_INVITATIONS"),
+                perm("Decline store invitation", "/api/v1/store-invitations/{id}/decline", "POST", "STORE_INVITATIONS"),
+                // NOTIFICATIONS
+                perm("View notifications", "/api/v1/notifications", "GET", "NOTIFICATIONS"),
+                perm("Mark notification read", "/api/v1/notifications/{id}/read", "PATCH", "NOTIFICATIONS"),
                 // FUND ACCOUNTS
                 perm("Create fund account", "/api/v1/fund-accounts", "POST", "FUND_ACCOUNTS"),
                 perm("View fund accounts", "/api/v1/fund-accounts", "GET", "FUND_ACCOUNTS"),

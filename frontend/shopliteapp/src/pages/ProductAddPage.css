@@ -271,3 +271,40 @@
     z-index: 100;
     cursor: pointer;
 }
+
+/* Picker row (replaces <select> for category / unit) */
+.pa-picker-row {
+    width: 100%;
+    height: 48px;
+    background: #f0f4ff;
+    border-radius: 8px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+}
+
+.pa-picker-row:active {
+    background: #e0e8ff;
+}
+
+.pa-picker-placeholder {
+    font-size: 14px;
+    color: #666;
+}
+
+.pa-picker-value {
+    font-size: 14px;
+    color: #111;
+    font-weight: 500;
+}
+
+.pa-picker-chevron {
+    font-size: 18px;
+    color: #999;
+    flex-shrink: 0;
+}

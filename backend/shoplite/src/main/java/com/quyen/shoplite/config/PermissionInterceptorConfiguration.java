@@ -18,8 +18,12 @@ public class PermissionInterceptorConfiguration implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/api/v1/auth/login",
                         "/api/v1/auth/register",
+                        "/api/v1/auth/me",
                         "/api/v1/auth/refresh",
                         "/api/v1/auth/logout",
+                        "/api/v1/notifications/**",
+                        "/api/v1/store-invitations/*/accept",
+                        "/api/v1/store-invitations/*/decline",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/swagger-ui.html",

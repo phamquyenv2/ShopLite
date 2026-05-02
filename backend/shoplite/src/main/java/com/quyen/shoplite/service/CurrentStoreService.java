@@ -31,11 +31,16 @@ public class CurrentStoreService {
 
     @Transactional(readOnly = true)
     public Long getCurrentStoreId() {
-        return getCurrentStore().getId();
+        return getCurrentStoreMembership().getStore().getId();
     }
 
     @Transactional(readOnly = true)
     public Store getCurrentStore() {
+        return getCurrentStoreMembership().getStore();
+    }
+
+    @Transactional(readOnly = true)
+    public StoreMember getCurrentStoreMembership() {
         User user = getCurrentUser();
         Long requestedStoreId = readStoreIdHeader();
 
@@ -47,12 +52,11 @@ public class CurrentStoreService {
         }
 
         if (requestedStoreId == null) {
-            return memberships.get(0).getStore();
+            return memberships.get(0);
         }
 
         return memberships.stream()
-                .map(StoreMember::getStore)
-                .filter(store -> store.getId().equals(requestedStoreId))
+                .filter(member -> member.getStore().getId().equals(requestedStoreId))
                 .findFirst()
                 .orElseThrow(() -> new UnauthorizedException("Current user cannot access store id=" + requestedStoreId));
     }

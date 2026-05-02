@@ -213,6 +213,54 @@ export type Permission = {
     module: string;
 };
 
+export type StoreInvitationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+
+export type StoreInvitation = {
+    id: number;
+    storeId: number;
+    storeName: string;
+    invitedUserId: number;
+    invitedUsername: string;
+    phone: string;
+    roleId: number;
+    roleName: string;
+    status: StoreInvitationStatus;
+    expiresAt: string;
+    createdAt: string;
+    respondedAt?: string | null;
+};
+
+export type Notification = {
+    id: number;
+    type: 'STORE_INVITATION';
+    title: string;
+    message: string;
+    referenceId?: number | null;
+    read: boolean;
+    actionTaken: boolean;
+    createdAt: string;
+    invitation?: {
+        id: number;
+        storeId: number;
+        storeName: string;
+        roleName: string;
+        invitedByUsername: string;
+        status: StoreInvitationStatus;
+        expiresAt: string;
+    } | null;
+};
+
+export type AcceptInvitationResponse = {
+    currentStore: {
+        id: number;
+        name: string;
+        memberRole: string;
+        membershipStatus: string;
+        permissions?: Permission[];
+    };
+    permissions: Permission[];
+};
+
 export type Role = {
     id: number;
     name: string;

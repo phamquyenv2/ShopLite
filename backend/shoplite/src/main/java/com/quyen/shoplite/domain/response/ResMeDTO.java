@@ -40,5 +40,6 @@ public class ResMeDTO {
         private String name;
         private String memberRole;
         private String membershipStatus;
+        private List<ResPermissionDTO> permissions;
     }
 }

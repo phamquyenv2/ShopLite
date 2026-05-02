@@ -14,6 +14,7 @@ import {
     arrowBackOutline,
     barcodeOutline,
     cameraOutline,
+    chevronForwardOutline,
     cubeOutline,
     ellipsisHorizontalOutline,
     informationCircleOutline,
@@ -22,6 +23,8 @@ import type { Category, ProductUpsert, Unit } from '../api/types';
 import { productService } from '../services/product.service';
 import { ApiError, authApis, endpoints } from '../utils/Apis';
 import { uploadToCloudinary } from '../utils/cloudinary';
+import CategoryPickerModal from './CategoryPickerModal';
+import UnitPickerModal from './UnitPickerModal';
 import './ProductAddPage.css';
 
 const ProductAddPage: React.FC = () => {
@@ -35,7 +38,9 @@ const ProductAddPage: React.FC = () => {
     const [name, setName] = useState('');
     const [sku, setSku] = useState('');
     const [categoryId, setCategoryId] = useState<number | ''>('');
+    const [categoryName, setCategoryName] = useState<string>('');
     const [unitId, setUnitId] = useState<number | ''>('');
+    const [unitName, setUnitName] = useState<string>('');
     const [sellingPrice, setSellingPrice] = useState<number | ''>('');
     const [costPrice, setCostPrice] = useState<number | ''>('');
     const [minStock, setMinStock] = useState<number | ''>('');
@@ -44,6 +49,9 @@ const ProductAddPage: React.FC = () => {
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+    const [showUnitPicker, setShowUnitPicker] = useState(false);
 
     const [toast, setToast] = useState<string | null>(null);
 
@@ -56,7 +64,8 @@ const ProductAddPage: React.FC = () => {
                     authApis().get(endpoints.units).catch(() => ({ data: { data: [] } })),
                 ]);
                 setCategories(cats);
-                setUnits(unitRes.data?.data || []);
+                const rawUnits = (unitRes.data as { data?: Unit[] })?.data ?? unitRes.data;
+                setUnits(Array.isArray(rawUnits) ? (rawUnits as Unit[]) : []);
             } catch (err) {
                 setToast(err instanceof ApiError ? err.message : 'Khong the tai du lieu form');
             } finally {
@@ -198,12 +207,16 @@ const ProductAddPage: React.FC = () => {
 
                         <div className="pa-field">
                             <label className="pa-label">NHÓM HÀNG</label>
-                            <select className="pa-select-box" value={categoryId} onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : '')}>
-                                <option value="">Chọn nhóm hàng</option>
-                                {categories.map((c) => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
+                            <button
+                                type="button"
+                                className="pa-picker-row"
+                                onClick={() => setShowCategoryPicker(true)}
+                            >
+                                <span className={categoryName ? 'pa-picker-value' : 'pa-picker-placeholder'}>
+                                    {categoryName || 'Chọn nhóm hàng'}
+                                </span>
+                                <IonIcon icon={chevronForwardOutline} className="pa-picker-chevron" />
+                            </button>
                         </div>
                     </div>
 
@@ -262,18 +275,44 @@ const ProductAddPage: React.FC = () => {
 
                         <div className="pa-field" style={{ paddingBottom: '32px' }}>
                             <label className="pa-label">ĐƠN VỊ TÍNH</label>
-                            <select className="pa-select-box" value={unitId} onChange={(e) => setUnitId(e.target.value ? Number(e.target.value) : '')}>
-                                <option value="">Chọn đơn vị tính</option>
-                                {units.map((u) => (
-                                    <option key={u.id} value={u.id}>{u.name}</option>
-                                ))}
-                            </select>
+                            <button
+                                type="button"
+                                className="pa-picker-row"
+                                onClick={() => setShowUnitPicker(true)}
+                            >
+                                <span className={unitName ? 'pa-picker-value' : 'pa-picker-placeholder'}>
+                                    {unitName || 'Chọn đơn vị tính'}
+                                </span>
+                                <IonIcon icon={chevronForwardOutline} className="pa-picker-chevron" />
+                            </button>
                         </div>
                     </div>
                 </div>
             </IonContent>
 
             <IonToast isOpen={toast !== null} message={toast ?? ''} duration={2000} onDidDismiss={() => setToast(null)} />
+
+            <CategoryPickerModal
+                isOpen={showCategoryPicker}
+                selected={categoryId}
+                onClose={() => setShowCategoryPicker(false)}
+                onSelect={(cat) => {
+                    setCategoryId(cat.id);
+                    setCategoryName(cat.name);
+                    setShowCategoryPicker(false);
+                }}
+            />
+
+            <UnitPickerModal
+                isOpen={showUnitPicker}
+                selected={unitId}
+                onClose={() => setShowUnitPicker(false)}
+                onSelect={(unit) => {
+                    setUnitId(unit.id);
+                    setUnitName(unit.name);
+                    setShowUnitPicker(false);
+                }}
+            />
         </IonPage>
     );
 };

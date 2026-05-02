@@ -9,6 +9,13 @@ export type MeStore = {
     name: string;
     memberRole: string;
     membershipStatus: string;
+    permissions?: {
+        id: number;
+        name: string;
+        apiPath: string;
+        method: string;
+        module: string;
+    }[];
 };
 
 export type MeResponse = {

@@ -132,7 +132,7 @@ const Login: React.FC = () => {
                             <button
                                 type="button"
                                 className="signup-link"
-                                onClick={() => history.push('/register')}
+                                onClick={() => history.push('/get-started')}
                                 disabled={busy}
                             >
                                 Đăng ký ngay

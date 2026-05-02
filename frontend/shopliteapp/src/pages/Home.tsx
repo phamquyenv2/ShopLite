@@ -3,10 +3,10 @@ import {
   IonHeader,
   IonIcon,
   IonPage,
+  IonToast,
   IonToolbar,
 } from '@ionic/react';
 import {
-  searchOutline,
   personCircleOutline,
   cashOutline,
   cartOutline,
@@ -27,7 +27,10 @@ import { useHistory } from 'react-router-dom';
 import { useState } from 'react';
 import { useIonViewWillEnter } from '@ionic/react';
 import { authApis, endpoints } from '../utils/Apis';
-import type { Order } from '../api/types';
+import { notificationService } from '../services/notification.service';
+import { storeInvitationService } from '../services/storeInvitation.service';
+import { hasPermission } from '../utils/permissions';
+import type { Notification, Order, Permission } from '../api/types';
 import type { MeResponse } from '../auth/types';
 import './Home.css';
 
@@ -42,6 +45,63 @@ const Home: React.FC = () => {
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [storeName, setStoreName] = useState('');
   const [memberRole, setMemberRole] = useState('');
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const loadNotifications = async (): Promise<Notification[]> => {
+    try {
+      const items = await notificationService.getNotifications();
+      setNotifications(items);
+      return items;
+    } catch (err) {
+      console.error(err);
+      return [];
+    }
+  };
+
+  const toggleNotifications = async () => {
+    const nextOpen = !notificationOpen;
+    setNotificationOpen(nextOpen);
+    if (!nextOpen) return;
+
+    const items = await loadNotifications();
+    const unread = items.filter(n => !n.read);
+    if (unread.length > 0) {
+      void Promise.all(unread.map(n => notificationService.markRead(n.id)))
+        .then(loadNotifications)
+        .catch(console.error);
+    }
+  };
+
+  const handleAcceptInvitation = async (notification: Notification) => {
+    if (!notification.referenceId) return;
+    try {
+      const result = await storeInvitationService.accept(notification.referenceId);
+      setStoreName(result.currentStore?.name || 'ShopLite');
+      setMemberRole(result.currentStore?.memberRole || '');
+      setPermissions(result.permissions || result.currentStore?.permissions || []);
+      setToast('Da tham gia cua hang');
+      await loadNotifications();
+      history.replace('/home');
+    } catch (err: any) {
+      setToast(err.message || 'Khong the chap nhan loi moi');
+    }
+  };
+
+  const handleDeclineInvitation = async (notification: Notification) => {
+    if (!notification.referenceId) return;
+    try {
+      await storeInvitationService.decline(notification.referenceId);
+      setToast('Da tu choi loi moi');
+      await loadNotifications();
+    } catch (err: any) {
+      setToast(err.message || 'Khong the tu choi loi moi');
+    }
+  };
 
   useIonViewWillEnter(() => {
     const loadData = async () => {
@@ -51,49 +111,62 @@ const Home: React.FC = () => {
         const currentStore = mePayload?.currentStore ?? null;
         setStoreName(currentStore?.name || 'Chua co cua hang');
         setMemberRole(currentStore?.memberRole || '');
+        setPermissions((currentStore?.permissions || []) as Permission[]);
 
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const params = new URLSearchParams();
         params.set('from', startOfDay.toISOString());
         params.set('to', now.toISOString());
-        
-        const url = `${endpoints.orders}?${params.toString()}`;
-        const res = await authApis().get<any>(url);
-        
+
+        const res = await authApis().get<any>(`${endpoints.orders}?${params.toString()}`);
+
         let orders: Order[] = [];
         if (Array.isArray(res.data?.data)) orders = res.data.data;
         else if (Array.isArray(res.data)) orders = res.data;
 
         const validOrders = orders.filter(o => {
-          const isStatusValid = o.status === 'COMPLETED' || o.status === 'PAID' || o.status === 'PENDING_PAYMENT';
-          if (!isStatusValid) return false;
-          if (!o.createdAt) return false;
+          const isStatusValid = o.status === 'COMPLETED' || o.status === 'PENDING_PAYMENT';
+          if (!isStatusValid || !o.createdAt) return false;
           const orderDate = new Date(o.createdAt);
           return orderDate >= startOfDay && orderDate <= now;
         });
-        
-        // Cũng lọc recentOrders theo ngày hôm nay
+
         const todayOrdersForRecent = orders.filter(o => {
           if (!o.createdAt) return false;
           const orderDate = new Date(o.createdAt);
           return orderDate >= startOfDay && orderDate <= now;
         });
-        const rev = validOrders.reduce((sum, o) => sum + (o.totalAmount ?? 0), 0);
-        const profit = validOrders.reduce((sum, o) => sum + ((o as any).profit ?? ((o.totalAmount ?? 0) * 0.3)), 0);
 
-        setTodayRevenue(rev);
+        setTodayRevenue(validOrders.reduce((sum, o) => sum + (o.totalAmount ?? 0), 0));
         setTodayOrdersCount(validOrders.length);
-        setTodayProfit(profit);
+        setTodayProfit(validOrders.reduce((sum, o) => sum + ((o as any).profit ?? ((o.totalAmount ?? 0) * 0.3)), 0));
 
-        const sorted = [...todayOrdersForRecent].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        const sorted = [...todayOrdersForRecent].sort((a, b) =>
+          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
         setRecentOrders(sorted.slice(0, 3));
       } catch (err) {
         console.error(err);
       }
     };
     loadData();
+    loadNotifications();
   });
+
+  const shortcuts = [
+    { label: 'Tạo đơn', icon: cartOutline, color: 'blue', route: '/sales', show: hasPermission(permissions, '/api/v1/orders', 'POST') },
+    { label: 'Sản phẩm', icon: cubeOutline, color: 'indigo', route: '/products', show: hasPermission(permissions, '/api/v1/products', 'GET') },
+    { label: 'Nhân viên', icon: peopleOutline, color: 'orange', route: '/employees', show: hasPermission(permissions, '/api/v1/employees', 'GET') },
+    { label: 'Nhập hàng', icon: logInOutline, color: 'red', route: '/import-orders', show: hasPermission(permissions, '/api/v1/import-orders', 'GET') },
+  ].filter(item => item.show);
+
+  const tabs = [
+    { label: 'Tổng quan', icon: homeOutline, active: true, route: '/home', show: true },
+    { label: 'Hàng hóa', icon: gridOutline, route: '/products', show: hasPermission(permissions, '/api/v1/products', 'GET') },
+    { label: 'Bán hàng', icon: storefrontOutline, route: '/sales', show: hasPermission(permissions, '/api/v1/orders', 'POST') },
+    { label: 'Hóa đơn', icon: receiptOutline, route: '/orders', show: hasPermission(permissions, '/api/v1/orders', 'GET') },
+    { label: 'Khác', icon: reorderThreeOutline, route: '/more', show: true },
+  ].filter(item => item.show);
 
   return (
     <IonPage className="home-page">
@@ -109,7 +182,10 @@ const Home: React.FC = () => {
             </div>
             <div className="header-right">
               <IonIcon icon={callOutline} className="header-action-icon" />
-              <IonIcon icon={notificationsOutline} className="header-action-icon" />
+              <button className="notification-button" type="button" onClick={toggleNotifications} aria-label="Notifications">
+                <IonIcon icon={notificationsOutline} className="header-action-icon" />
+                {unreadCount > 0 ? <span className="notification-badge">{unreadCount}</span> : null}
+              </button>
               <IonIcon icon={mailOutline} className="header-action-icon" />
             </div>
           </div>
@@ -118,119 +194,140 @@ const Home: React.FC = () => {
 
       <IonContent className="home-content">
         <div className="home-container">
-          {/* Thẻ doanh thu chính */}
           <div className="revenue-main-card">
-          <div className="revenue-info">
-            <p className="label1">DOANH THU HÔM NAY</p>
-            <h2 className="amount">{fmt(todayRevenue)}đ</h2>
-            <div className="trend-badge">
-              <IonIcon icon={cashOutline} />
-              <span>Cập nhật mới nhất</span>
+            <div className="revenue-info">
+              <p className="label1">Doanh Thu Hôm Nay</p>
+              <h2 className="amount">{fmt(todayRevenue)}d</h2>
+              <div className="trend-badge">
+                <IonIcon icon={cashOutline} />
+                <span>Cap nhat moi nhat</span>
+              </div>
             </div>
-          </div>
-          <IonIcon icon={cashOutline} className="bg-icon" />
-        </div>
-
-        <div className="stats-row">
-          <div className="stats-card">
-            <p className="label1">ĐƠN HÀNG</p>
-            <h3 className="value">{todayOrdersCount}</h3>
-            <p className="sub-label">Hoàn thành</p>
-          </div>
-          <div className="stats-card">
-            <p className="label1">LỢI NHUẬN</p>
-            <h3 className="value">{fmt(todayProfit)}đ</h3>
-            <p className="sub-label warning">Tỷ suất ~30%</p>
-          </div>
-        </div>
-
-        {/* Phím tắt nhanh */}
-        <div className="section-container">
-          <h4 className="section-title">Phím tắt nhanh</h4>
-          <div className="shortcut-grid">
-            <div className="shortcut-item">
-              <div className="icon-box blue" onClick={() => history.push('/sales')}>
-                <IonIcon icon={cartOutline} /></div>
-              <span>Tạo đơn</span>
-            </div>
-            <div className="shortcut-item" onClick={() => history.push('/products')}>
-              <div className="icon-box indigo"><IonIcon icon={cubeOutline} /></div>
-              <span>Sản phẩm</span>
-            </div>
-            <div className="shortcut-item" onClick={() => history.push('/employees')}>
-              <div className="icon-box orange"><IonIcon icon={peopleOutline} /></div>
-              <span>Nhân viên</span>
-            </div>
-            <div className="shortcut-item" onClick={() => history.push('/import-orders')}>
-              <div className="icon-box red"><IonIcon icon={logInOutline} /></div>
-              <span>Nhập hàng</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Đơn hàng mới */}
-        <div className="section-container">
-          <div className="section-header">
-            <h4 className="section-title">Đơn hàng mới</h4>
-            <span className="view-all" onClick={() => history.push('/orders')}>Xem tất cả</span>
+            <IonIcon icon={cashOutline} className="bg-icon" />
           </div>
 
-          {recentOrders.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '16px', color: '#6b7280', fontSize: '14px' }}>
-              Chưa có đơn hàng nào
+          <div className="stats-row">
+            <div className="stats-card">
+              <p className="label1">Đơn hàng hôm nay</p>
+              <h3 className="value">{todayOrdersCount}</h3>
+              <p className="sub-label">Hoàn thành</p>
             </div>
-          ) : recentOrders.map((o, idx) => {
-            const timeStr = o.createdAt ? new Date(o.createdAt).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) : '';
-            const isCompleted = o.status === 'COMPLETED' || o.status === 'PAID';
-            const statusColor = isCompleted ? 'blue' : o.status === 'PENDING_PAYMENT' ? 'orange' : 'red';
-            const statusText = isCompleted ? 'Hoàn thành' : o.status === 'PENDING_PAYMENT' ? 'Chờ thanh toán' : 'Nháp';
-            const itemsCount = o.items?.reduce((sum, i) => sum + (i.quantity ?? 1), 0) || 0;
+            <div className="stats-card">
+              <p className="label1">Lợi nhuận hôm nay</p>
+              <h3 className="value">{fmt(todayProfit)}d</h3>
+              <p className="sub-label warning">Tỷ suất ~30%</p>
+            </div>
+          </div>
 
-            return (
-              <div className="order-card" key={o.id || idx}>
-                <div className={`order-user-icon ${statusColor}`}><IonIcon icon={personCircleOutline} /></div>
-                <div className="order-info">
-                  <div className="order-row">
-                    <span className="name">{o.customerName || 'Khách lẻ'}</span>
-                    <span className="amount">{fmt(o.totalAmount)}đ</span>
-                  </div>
-                  <div className="order-row">
-                    <span className="detail">{timeStr} • {itemsCount} sản phẩm</span>
-                    <span className={`status-badge ${statusColor}`}>{statusText}</span>
+          <div className="section-container">
+            <h4 className="section-title">Phím tắt nhanh</h4>
+            <div className="shortcut-grid">
+              {shortcuts.length === 0 ? (
+                <div className="shortcut-empty">Không có chức năng khả dụng</div>
+              ) : shortcuts.map(item => (
+                <div className="shortcut-item" key={item.route} onClick={() => history.push(item.route)}>
+                  <div className={`icon-box ${item.color}`}><IonIcon icon={item.icon} /></div>
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="section-container">
+            <div className="section-header">
+              <h4 className="section-title">Đơn hàng mới</h4>
+              <span className="view-all" onClick={() => history.push('/orders')}>Xem tất cả</span>
+            </div>
+
+            {recentOrders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '16px', color: '#6b7280', fontSize: '14px' }}>
+                Chưa có đơn hàng nào
+              </div>
+            ) : recentOrders.map((o, idx) => {
+              const timeStr = o.createdAt ? new Date(o.createdAt).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) : '';
+              const isCompleted = o.status === 'COMPLETED';
+              const statusColor = isCompleted ? 'blue' : o.status === 'PENDING_PAYMENT' ? 'orange' : 'red';
+              const statusText = isCompleted ? 'Hoan thanh' : o.status === 'PENDING_PAYMENT' ? 'Cho thanh toan' : 'Nhap';
+              const itemsCount = o.items?.reduce((sum, i) => sum + (i.quantity ?? 1), 0) || 0;
+
+              return (
+                <div className="order-card" key={o.id || idx}>
+                  <div className={`order-user-icon ${statusColor}`}><IonIcon icon={personCircleOutline} /></div>
+                  <div className="order-info">
+                    <div className="order-row">
+                      <span className="name">{o.customerName || 'Khach le'}</span>
+                      <span className="amount">{fmt(o.totalAmount)}d</span>
+                    </div>
+                    <div className="order-row">
+                      <span className="detail">{timeStr} - {itemsCount} san pham</span>
+                      <span className={`status-badge ${statusColor}`}>{statusText}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
 
           <div className="bottom-spacer"></div>
         </div>
       </IonContent>
 
-      {/* Thanh Tab giả lập theo ảnh */}
       <div className="custom-tab-bar">
-        <div className="tab-item active" role="button" tabIndex={0}>
-          <IonIcon icon={homeOutline} />
-          <span>Tổng quan</span>
-        </div>
-        <div className="tab-item" role="button" tabIndex={0} onClick={() => history.push('/products')}>
-          <IonIcon icon={gridOutline} />
-          <span>Hàng hóa</span>
-        </div>
-        <div className="tab-item" role="button" tabIndex={0} onClick={() => history.push('/sales')}>
-          <IonIcon icon={storefrontOutline} />
-          <span>Bán hàng</span>
-        </div>
-        <div className="tab-item" role="button" tabIndex={0} onClick={() => history.push('/orders')}>
-          <IonIcon icon={receiptOutline} />
-          <span>Hoá đơn</span>
-        </div>
-        <div className="tab-item" role="button" tabIndex={0} onClick={() => history.push('/more')} >
-          <IonIcon icon={reorderThreeOutline} />
-          <span>Khác</span>
-        </div>
+        {tabs.map(item => (
+          <div
+            key={item.route}
+            className={`tab-item ${item.active ? 'active' : ''}`}
+            role="button"
+            tabIndex={0}
+            onClick={() => !item.active && history.push(item.route)}
+          >
+            <IonIcon icon={item.icon} />
+            <span>{item.label}</span>
+          </div>
+        ))}
       </div>
+      {notificationOpen ? (
+        <div className="notification-overlay" onClick={() => setNotificationOpen(false)}>
+          <div className="notification-panel" onClick={event => event.stopPropagation()}>
+            <div className="notification-panel-head">
+              <div className="notification-panel-title">Thong bao</div>
+              <button type="button" className="notification-close" onClick={() => setNotificationOpen(false)}>x</button>
+            </div>
+            {notifications.length === 0 ? (
+              <div className="notification-empty">Chua co thong bao</div>
+            ) : notifications.map(item => {
+              const invitation = item.invitation;
+              const canAct = item.type === 'STORE_INVITATION'
+                && !item.actionTaken
+                && invitation?.status === 'PENDING';
+              return (
+                <div className="notification-item" key={item.id}>
+                  <div className="notification-title">{item.title}</div>
+                  <div className="notification-message">{item.message}</div>
+                  {invitation ? (
+                    <div className="notification-meta">
+                      {invitation.storeName} - {invitation.roleName}
+                    </div>
+                  ) : null}
+                  {canAct ? (
+                    <div className="notification-actions">
+                      <button type="button" className="notification-accept" onClick={() => handleAcceptInvitation(item)}>
+                        Accept
+                      </button>
+                      <button type="button" className="notification-decline" onClick={() => handleDeclineInvitation(item)}>
+                        Decline
+                      </button>
+                    </div>
+                  ) : item.actionTaken ? (
+                    <div className="notification-done">Da xu ly</div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+      <IonToast isOpen={toast !== null} message={toast ?? ''} duration={2000} onDidDismiss={() => setToast(null)} />
     </IonPage>
   );
 };

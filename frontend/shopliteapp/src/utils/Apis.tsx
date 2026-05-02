@@ -92,6 +92,13 @@ export const endpoints = {
     permissions: '/api/v1/permissions',
     'permission-detail': (id: number | string) => `/api/v1/permissions/${id}`,
 
+    // invitations + notifications
+    'store-invitations': '/api/v1/store-invitations',
+    'store-invitation-accept': (id: number | string) => `/api/v1/store-invitations/${id}/accept`,
+    'store-invitation-decline': (id: number | string) => `/api/v1/store-invitations/${id}/decline`,
+    notifications: '/api/v1/notifications',
+    'notification-read': (id: number | string) => `/api/v1/notifications/${id}/read`,
+
     // orders
     orders: '/api/v1/orders',
     'order-detail': (id: number | string) => `/api/v1/orders/${id}`,

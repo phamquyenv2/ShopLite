@@ -73,8 +73,6 @@ public class SecurityConfiguration {
                         -> ex.authenticationEntryPoint(customAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                .requestMatchers("/api/v1/users/**").hasAuthority("ROLE_STORE_MANAGER")
-                .requestMatchers("/api/v1/permissions/**").hasAuthority("ROLE_STORE_MANAGER")
                 .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

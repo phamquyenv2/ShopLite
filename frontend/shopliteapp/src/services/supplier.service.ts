@@ -9,5 +9,13 @@ export const supplierService = {
         } catch (error: any) {
             throw new ApiError(error.response?.data?.message || 'Không thể tải nhà cung cấp');
         }
+    },
+    async create(data: { name: string; phone?: string; address?: string; email?: string }): Promise<Supplier> {
+        try {
+            const res = await authApis().post(endpoints.suppliers, data);
+            return res.data?.data as Supplier;
+        } catch (error: any) {
+            throw new ApiError(error.response?.data?.message || 'Không thể tạo nhà cung cấp');
+        }
     }
 };

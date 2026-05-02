@@ -13,6 +13,7 @@ import { supplierService } from '../services/supplier.service';
 import { productService } from '../services/product.service';
 import { authApis, endpoints } from '../utils/Apis';
 import type { Product, Supplier, ImportOrderUpsert } from '../api/types';
+import SupplierPickerModal from './SupplierPickerModal';
 import './ImportOrderCreatePage.css';
 
 type CartItem = {
@@ -474,22 +475,22 @@ const ImportOrderCreatePage: React.FC = () => {
             </IonModal>
 
             {/* Supplier Picker Modal */}
-            <IonModal isOpen={showSupplierPicker} onDidDismiss={() => setShowSupplierPicker(false)} className="ioc-modal" initialBreakpoint={0.5} breakpoints={[0, 0.5, 0.75]}>
-                <IonContent>
-                    <div className="ioc-supplier-list">
-                        <div className="ioc-supplier-list-title">Chọn nhà cung cấp</div>
-                        {suppliers.map(s => (
-                            <div key={s.id} className="ioc-supplier-item" onClick={() => { setSelectedSupplier(s); setShowSupplierPicker(false); }}>
-                                <div className="ioc-supplier-name">{s.name}</div>
-                                <div className="ioc-supplier-phone">{s.phone || ''}</div>
-                            </div>
-                        ))}
-                        {suppliers.length === 0 && (
-                            <div className="ioc-empty-search">Chưa có nhà cung cấp</div>
-                        )}
-                    </div>
-                </IonContent>
-            </IonModal>
+            <SupplierPickerModal
+                isOpen={showSupplierPicker}
+                selected={selectedSupplier?.id || ''}
+                onClose={() => setShowSupplierPicker(false)}
+                onSelect={(supplier) => {
+                    setSelectedSupplier(supplier);
+                    setShowSupplierPicker(false);
+                    // Add the new supplier to the local list if it's not there
+                    setSuppliers(prev => {
+                        if (!prev.find(s => s.id === supplier.id)) {
+                            return [supplier, ...prev];
+                        }
+                        return prev;
+                    });
+                }}
+            />
 
             <IonToast isOpen={toast !== null} message={toast ?? ''} duration={2000} onDidDismiss={() => setToast(null)} />
         </IonPage>

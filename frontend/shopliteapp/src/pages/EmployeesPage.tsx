@@ -1,42 +1,43 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-    IonPage,
-    IonHeader,
-    IonToolbar,
-    IonContent,
-    IonIcon,
-    IonButtons,
     IonButton,
+    IonButtons,
+    IonContent,
     IonFab,
     IonFabButton,
+    IonHeader,
+    IonIcon,
+    IonPage,
     IonSpinner,
     IonToast,
+    IonToolbar,
     useIonRouter,
     useIonViewWillEnter
 } from '@ionic/react';
 import {
-    searchOutline,
     addOutline,
-    shieldCheckmarkOutline,
-    documentTextOutline,
-    cashOutline,
     archiveOutline,
-    personOutline,
     arrowForwardOutline,
-    chevronBackOutline
+    cashOutline,
+    chevronBackOutline,
+    documentTextOutline,
+    personOutline,
+    searchOutline,
+    shieldCheckmarkOutline
 } from 'ionicons/icons';
 import { employeeService } from '../services/employee.service';
 import { roleService } from '../services/role.service';
+import { storeInvitationService } from '../services/storeInvitation.service';
 import type { Employee, Role } from '../api/types';
 import './EmployeesPage.css';
 
 const avatarColors = [
-    { bg: '#8b9dfe', color: '#111' }, // purple-blue
-    { bg: '#b26a00', color: '#fff' }, // brown-orange
-    { bg: '#baccf5', color: '#111' }, // light blue
-    { bg: '#e0e5ed', color: '#444' }, // gray
-    { bg: '#feca57', color: '#111' }, // yellow
-    { bg: '#ff6b6b', color: '#fff' }  // red
+    { bg: '#8b9dfe', color: '#111' },
+    { bg: '#b26a00', color: '#fff' },
+    { bg: '#baccf5', color: '#111' },
+    { bg: '#e0e5ed', color: '#444' },
+    { bg: '#feca57', color: '#111' },
+    { bg: '#ff6b6b', color: '#fff' }
 ];
 
 const getAvatarStyle = (name: string) => {
@@ -44,54 +45,36 @@ const getAvatarStyle = (name: string) => {
     for (let i = 0; i < name.length; i++) {
         hash = name.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const index = Math.abs(hash) % avatarColors.length;
-    return avatarColors[index];
+    return avatarColors[Math.abs(hash) % avatarColors.length];
 };
 
 const getInitials = (name: string) => {
     if (!name) return 'U';
     const words = name.trim().split(' ');
-    if (words.length >= 2) {
-        return words[words.length - 1][0].toUpperCase();
-    }
+    if (words.length >= 2) return words[words.length - 1][0].toUpperCase();
     return name[0].toUpperCase();
 };
 
 const getRoleIconAndStyle = (roleName: string) => {
     const name = roleName?.toUpperCase() || '';
-    if (name.includes('ORDER')) {
-        return { icon: documentTextOutline, colorClass: 'icon-blue' };
-    }
-    if (name.includes('CASHIER')) {
-        return { icon: cashOutline, colorClass: 'icon-green' };
-    }
-    if (name.includes('WAREHOUSE')) {
-        return { icon: archiveOutline, colorClass: 'icon-orange' };
-    }
-    if (name.includes('MANAGER') || name.includes('ADMIN')) {
-        return { icon: personOutline, colorClass: 'icon-purple' };
-    }
+    if (name.includes('ORDER')) return { icon: documentTextOutline, colorClass: 'icon-blue' };
+    if (name.includes('CASHIER')) return { icon: cashOutline, colorClass: 'icon-green' };
+    if (name.includes('WAREHOUSE')) return { icon: archiveOutline, colorClass: 'icon-orange' };
+    if (name.includes('MANAGER') || name.includes('ADMIN')) return { icon: personOutline, colorClass: 'icon-purple' };
     return { icon: documentTextOutline, colorClass: 'icon-gray' };
 };
 
-const getRoleDescs = (roleName: string, desc: string) => {
-    if (desc) {
-        // e.g. "Nhân viên ghi đơn - tạo đơn, xem sản phẩm"
-        const parts = desc.split('-');
-        if (parts.length > 1) {
-            return parts[1].split(',').map(s => s.trim());
-        }
-        return [desc];
-    }
-    return [];
+const getRoleDescs = (_roleName: string, desc: string) => {
+    if (!desc) return [];
+    const parts = desc.split('-');
+    if (parts.length > 1) return parts[1].split(',').map(s => s.trim());
+    return [desc];
 };
 
 const getRoleTitle = (desc: string, name: string) => {
-    if (desc) {
-        const parts = desc.split('-');
-        if (parts.length > 0) return parts[0].trim();
-    }
-    return name;
+    if (!desc) return name;
+    const parts = desc.split('-');
+    return parts[0]?.trim() || name;
 };
 
 const EmployeesPage: React.FC = () => {
@@ -100,10 +83,14 @@ const EmployeesPage: React.FC = () => {
     const [roles, setRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [currentTab, setCurrentTab] = useState<'active' | 'role' | 'inactive'>('active');
     const [toast, setToast] = useState<string | null>(null);
+    const [inviteOpen, setInviteOpen] = useState(false);
+    const [invitePhone, setInvitePhone] = useState('');
+    const [inviteRoleId, setInviteRoleId] = useState<string>('');
+    const [inviting, setInviting] = useState(false);
 
-    // Load data
     const loadData = async () => {
         setLoading(true);
         try {
@@ -113,8 +100,9 @@ const EmployeesPage: React.FC = () => {
             ]);
             setEmployees(emps);
             setRoles(rols);
+            if (!inviteRoleId && rols.length > 0) setInviteRoleId(String(rols[0].id));
         } catch (err: any) {
-            setToast(err.message || 'Lỗi khi tải dữ liệu');
+            setToast(err.message || 'Loi khi tai du lieu');
         } finally {
             setLoading(false);
         }
@@ -124,32 +112,23 @@ const EmployeesPage: React.FC = () => {
         loadData();
     });
 
-    const [debouncedSearch, setDebouncedSearch] = useState('');
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedSearch(searchQuery);
-        }, 500);
+        const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Filter employees
     const filteredEmployees = useMemo(() => {
         const query = debouncedSearch.toLowerCase();
-
         return employees.filter(emp => {
-            // Filter by search
             const nameMatch = emp.username?.toLowerCase().includes(query) || false;
             const phoneMatch = emp.phone?.includes(query) || false;
             if (!nameMatch && !phoneMatch && query !== '') return false;
-
-            // Filter by tab
             if (currentTab === 'active') return !emp.deleted;
             if (currentTab === 'inactive') return emp.deleted;
             return true;
         });
     }, [employees, debouncedSearch, currentTab]);
 
-    // Search roles
     const filteredRoles = useMemo(() => {
         const query = debouncedSearch.toLowerCase();
         return roles.filter(r =>
@@ -157,6 +136,29 @@ const EmployeesPage: React.FC = () => {
             (r.description && r.description.toLowerCase().includes(query))
         );
     }, [roles, debouncedSearch]);
+
+    const submitInvitation = async () => {
+        const phone = invitePhone.trim();
+        if (!phone) {
+            setToast('Vui long nhap so dien thoai');
+            return;
+        }
+        if (!inviteRoleId) {
+            setToast('Vui long chon vai tro');
+            return;
+        }
+        setInviting(true);
+        try {
+            await storeInvitationService.createInvitation(phone, inviteRoleId);
+            setToast('Da gui loi moi');
+            setInvitePhone('');
+            setInviteOpen(false);
+        } catch (err: any) {
+            setToast(err.message || 'Khong the gui loi moi');
+        } finally {
+            setInviting(false);
+        }
+    };
 
     return (
         <IonPage className="employees-page">
@@ -167,7 +169,7 @@ const EmployeesPage: React.FC = () => {
                             <IonIcon icon={chevronBackOutline} style={{ fontSize: '26px' }} />
                         </IonButton>
                     </IonButtons>
-                    <div className="ep-title">Nhân viên</div>
+                    <div className="ep-title">Nhan vien</div>
                 </IonToolbar>
 
                 <div className="ep-search-container">
@@ -175,7 +177,7 @@ const EmployeesPage: React.FC = () => {
                         <IonIcon icon={searchOutline} />
                         <input
                             type="text"
-                            placeholder={currentTab === 'role' ? "Tìm kiếm vai trò..." : "Tìm kiếm nhân viên..."}
+                            placeholder={currentTab === 'role' ? 'Tim kiem vai tro...' : 'Tim kiem nhan vien...'}
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                         />
@@ -183,23 +185,14 @@ const EmployeesPage: React.FC = () => {
                 </div>
 
                 <div className="ep-segments">
-                    <button
-                        className={`ep-segment-btn ${currentTab === 'active' ? 'active' : ''}`}
-                        onClick={() => setCurrentTab('active')}
-                    >
-                        Đang làm việc
+                    <button className={`ep-segment-btn ${currentTab === 'active' ? 'active' : ''}`} onClick={() => setCurrentTab('active')}>
+                        Dang lam viec
                     </button>
-                    <button
-                        className={`ep-segment-btn ${currentTab === 'role' ? 'active' : ''}`}
-                        onClick={() => setCurrentTab('role')}
-                    >
-                        Vai trò
+                    <button className={`ep-segment-btn ${currentTab === 'role' ? 'active' : ''}`} onClick={() => setCurrentTab('role')}>
+                        Vai tro
                     </button>
-                    <button
-                        className={`ep-segment-btn ${currentTab === 'inactive' ? 'active' : ''}`}
-                        onClick={() => setCurrentTab('inactive')}
-                    >
-                        Đã nghỉ việc
+                    <button className={`ep-segment-btn ${currentTab === 'inactive' ? 'active' : ''}`} onClick={() => setCurrentTab('inactive')}>
+                        Da nghi viec
                     </button>
                 </div>
             </IonHeader>
@@ -214,37 +207,31 @@ const EmployeesPage: React.FC = () => {
                         {currentTab !== 'role' && (
                             <div className="ep-list">
                                 {filteredEmployees.length === 0 ? (
-                                    <div className="ep-empty">Không có nhân viên nào</div>
-                                ) : (
-                                    filteredEmployees.map(emp => {
-                                        const name = emp.username || 'Unknown';
-                                        const style = getAvatarStyle(name);
-                                        const isManager = emp.roleName?.toLowerCase().includes('manager');
-                                        const roleBadgeClass = isManager ? 'badge-blue' : 'badge-gray';
-                                        const roleLabel = emp.roleName || 'Nhân viên';
+                                    <div className="ep-empty">Khong co nhan vien nao</div>
+                                ) : filteredEmployees.map(emp => {
+                                    const name = emp.username || 'Unknown';
+                                    const style = getAvatarStyle(name);
+                                    const isManager = emp.roleName?.toLowerCase().includes('manager');
+                                    const roleBadgeClass = isManager ? 'badge-blue' : 'badge-gray';
 
-                                        return (
-                                            <div key={emp.id} className="ep-card">
-                                                <div
-                                                    className="ep-card-avatar"
-                                                    style={{ background: style.bg, color: style.color }}
-                                                >
-                                                    {getInitials(name)}
-                                                    <div className={`ep-avatar-status ${emp.deleted ? 'status-inactive' : 'status-active'}`}></div>
-                                                </div>
-
-                                                <div className="ep-card-info">
-                                                    <div className="ep-card-name">{name}</div>
-                                                    <div className="ep-card-phone">{emp.phone || 'Chưa cập nhật'}</div>
-                                                </div>
-
-                                                <div className={`ep-card-badge ${roleBadgeClass}`}>
-                                                    {roleLabel}
-                                                </div>
+                                    return (
+                                        <div key={emp.id} className="ep-card">
+                                            <div className="ep-card-avatar" style={{ background: style.bg, color: style.color }}>
+                                                {getInitials(name)}
+                                                <div className={`ep-avatar-status ${emp.deleted ? 'status-inactive' : 'status-active'}`}></div>
                                             </div>
-                                        );
-                                    })
-                                )}
+
+                                            <div className="ep-card-info">
+                                                <div className="ep-card-name">{name}</div>
+                                                <div className="ep-card-phone">{emp.phone || 'Chua cap nhat'}</div>
+                                            </div>
+
+                                            <div className={`ep-card-badge ${roleBadgeClass}`}>
+                                                {emp.roleName || 'Nhan vien'}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
 
@@ -252,57 +239,99 @@ const EmployeesPage: React.FC = () => {
                             <div className="ep-list role-list">
                                 <div className="role-banner">
                                     <div className="role-banner-content">
-                                        <h3 className="role-banner-title">Phân quyền thông minh</h3>
-                                        <p className="role-banner-desc">Tối ưu hóa quy trình làm việc bằng cách cấp đúng quyền cho đúng người. Bảo mật dữ liệu cửa hàng tuyệt đối.</p>
+                                        <h3 className="role-banner-title">Phan quyen thong minh</h3>
+                                        <p className="role-banner-desc">Cap dung quyen cho tung vai tro de bao ve du lieu cua hang.</p>
                                     </div>
                                     <IonIcon icon={shieldCheckmarkOutline} className="role-banner-icon" />
                                 </div>
 
                                 {filteredRoles.length === 0 ? (
-                                    <div className="ep-empty">Không có vai trò nào</div>
-                                ) : (
-                                    filteredRoles.map(role => {
-                                        const { icon, colorClass } = getRoleIconAndStyle(role.name);
-                                        const title = getRoleTitle(role.description, role.name);
-                                        const descs = getRoleDescs(role.name, role.description);
+                                    <div className="ep-empty">Khong co vai tro nao</div>
+                                ) : filteredRoles.map(role => {
+                                    const { icon, colorClass } = getRoleIconAndStyle(role.name);
+                                    const title = getRoleTitle(role.description, role.name);
+                                    const descs = getRoleDescs(role.name, role.description);
 
-                                        return (
-                                            <div
-                                                key={role.id}
-                                                className="role-card"
-                                                onClick={() => ionRouter.push(`/roles/${role.id}`)}
-                                                style={{ cursor: 'pointer' }}
-                                            >
-                                                <div className={`role-card-icon-wrap ${colorClass}`}>
-                                                    <IonIcon icon={icon} />
-                                                </div>
-
-                                                <div className="role-card-info">
-                                                    <div className="role-card-title">{title}</div>
-                                                    <div className="role-card-pills">
-                                                        {descs.map((d, index) => (
-                                                            <span key={index} className="role-pill">{d}</span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                <IonIcon icon={arrowForwardOutline} className="role-card-arrow" />
+                                    return (
+                                        <div
+                                            key={role.id}
+                                            className="role-card"
+                                            onClick={() => ionRouter.push(`/roles/${role.id}`)}
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            <div className={`role-card-icon-wrap ${colorClass}`}>
+                                                <IonIcon icon={icon} />
                                             </div>
-                                        );
-                                    })
-                                )}
+
+                                            <div className="role-card-info">
+                                                <div className="role-card-title">{title}</div>
+                                                <div className="role-card-pills">
+                                                    {descs.map((d, index) => (
+                                                        <span key={index} className="role-pill">{d}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <IonIcon icon={arrowForwardOutline} className="role-card-arrow" />
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
                     </>
                 )}
 
                 <IonFab vertical="bottom" horizontal="end" slot="fixed" style={{ marginBottom: '20px', marginRight: '8px' }}>
-                    <IonFabButton className="ep-fab ep-fab-btn" onClick={() => setToast('Tính năng đang phát triển')}>
+                    <IonFabButton className="ep-fab ep-fab-btn" onClick={() => setInviteOpen(true)}>
                         <IonIcon icon={addOutline} style={{ fontSize: '28px' }} />
                     </IonFabButton>
                 </IonFab>
-
             </IonContent>
+
+            {inviteOpen ? (
+                <div className="invite-overlay">
+                    <div className="invite-dialog">
+                        <div className="invite-header">
+                            <div>
+                                <div className="invite-title">Moi member</div>
+                                <div className="invite-subtitle">Nhap so dien thoai da dang ky va chon vai tro.</div>
+                            </div>
+                            <button type="button" className="invite-close" onClick={() => setInviteOpen(false)}>x</button>
+                        </div>
+
+                        <label className="invite-label" htmlFor="invite-phone">So dien thoai</label>
+                        <input
+                            id="invite-phone"
+                            className="invite-input"
+                            value={invitePhone}
+                            onChange={e => setInvitePhone(e.target.value)}
+                            placeholder="0901234567"
+                            inputMode="tel"
+                        />
+
+                        <label className="invite-label" htmlFor="invite-role">Vai tro</label>
+                        <select
+                            id="invite-role"
+                            className="invite-input"
+                            value={inviteRoleId}
+                            onChange={e => setInviteRoleId(e.target.value)}
+                        >
+                            {roles.map(role => (
+                                <option key={role.id} value={role.id}>{role.name}</option>
+                            ))}
+                        </select>
+
+                        <div className="invite-actions">
+                            <button type="button" className="invite-secondary" onClick={() => setInviteOpen(false)}>
+                                Huy
+                            </button>
+                            <button type="button" className="invite-primary" disabled={inviting} onClick={submitInvitation}>
+                                {inviting ? 'Dang gui...' : 'Gui loi moi'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
 
             <IonToast isOpen={toast !== null} message={toast ?? ''} duration={2000} onDidDismiss={() => setToast(null)} />
         </IonPage>
