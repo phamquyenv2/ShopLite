@@ -61,7 +61,7 @@ const ProductAddPage: React.FC = () => {
             try {
                 const [cats, unitRes] = await Promise.all([
                     productService.getCategories(),
-                    authApis().get(endpoints.units).catch(() => ({ data: { data: [] } })),
+                    authApis().get<any>(endpoints.units).catch(() => ({ data: { data: [] } })),
                 ]);
                 setCategories(cats);
                 const rawUnits = (unitRes.data as { data?: Unit[] })?.data ?? unitRes.data;
@@ -105,7 +105,7 @@ const ProductAddPage: React.FC = () => {
                 image: imageUrl,
             };
 
-            await authApis().post(endpoints.products, payload);
+            await authApis().post<any>(endpoints.products, payload);
             setToast('Thêm thành công');
             setTimeout(() => {
                 ionRouter.goBack();

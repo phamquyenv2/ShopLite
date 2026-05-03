@@ -69,7 +69,7 @@ const CategoryPickerModal: React.FC<CategoryPickerModalProps> = ({
         }
         setSaving(true);
         try {
-            const res = await authApis().post(endpoints.categories, { name: newName.trim() });
+            const res = await authApis().post<any>(endpoints.categories, { name: newName.trim() });
             const raw = (res.data as { id?: number; data?: { id?: number; name?: string }; name?: string }) ?? {};
             const savedId: number =
                 typeof (raw as { id?: number }).id === 'number'

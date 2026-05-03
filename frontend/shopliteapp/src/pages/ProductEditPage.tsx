@@ -109,7 +109,7 @@ const ProductEditPage: React.FC = () => {
                 version: product.version ?? null,
             };
 
-            await authApis().put(endpoints['product-detail'](product.id), payload);
+            await authApis().put<any>(endpoints['product-detail'](product.id), payload);
             setToast('Lưu thành công');
             setTimeout(() => {
                 ionRouter.goBack();
@@ -125,7 +125,7 @@ const ProductEditPage: React.FC = () => {
         if (!product) return;
         setSaving(true);
         try {
-            await authApis().delete(endpoints['product-detail'](product.id));
+            await authApis().delete<any>(endpoints['product-detail'](product.id));
             setToast('Đã xóa hàng hóa');
             setTimeout(() => {
                 ionRouter.push('/products', 'root', 'replace');

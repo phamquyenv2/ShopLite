@@ -40,7 +40,7 @@ const UnitPickerModal: React.FC<UnitPickerModalProps> = ({
     const reload = async () => {
         setLoadingList(true);
         try {
-            const res = await authApis().get(endpoints.units);
+            const res = await authApis().get<any>(endpoints.units);
             const raw = (res.data as { data?: Unit[] })?.data ?? res.data;
             if (Array.isArray(raw)) setUnits(raw as Unit[]);
         } finally {
@@ -69,7 +69,7 @@ const UnitPickerModal: React.FC<UnitPickerModalProps> = ({
         }
         setSaving(true);
         try {
-            const res = await authApis().post(endpoints.units, {
+            const res = await authApis().post<any>(endpoints.units, {
                 name: newName.trim(),
                 description: newDesc.trim() || null,
             });

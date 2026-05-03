@@ -63,7 +63,7 @@ const fallbackResponse = { status: 500, data: null, headers: new Headers() };
 export const inventoryAdjustmentService = {
   async getAll(): Promise<InventoryAdjustment[]> {
     try {
-      const res = await authApis().get(endpoints['inventory-adjustments']);
+      const res = await authApis().get<any>(endpoints['inventory-adjustments']);
       return extractList(res.data);
     } catch (error: any) {
       throw new ApiError(error.response?.data?.message || 'Khong the tai danh sach kiem kho', error.response ?? fallbackResponse);
@@ -72,7 +72,7 @@ export const inventoryAdjustmentService = {
 
   async getById(id: number | string): Promise<InventoryAdjustment> {
     try {
-      const res = await authApis().get(endpoints['inventory-adjustment-detail'](id));
+      const res = await authApis().get<any>(endpoints['inventory-adjustment-detail'](id));
       const data = extractDetail(res.data);
       if (!data) throw new Error('Invalid payload');
       return data;
@@ -83,7 +83,7 @@ export const inventoryAdjustmentService = {
 
   async create(payload: InventoryAdjustmentUpsert): Promise<InventoryAdjustment> {
     try {
-      const res = await authApis().post(endpoints['inventory-adjustments'], payload);
+      const res = await authApis().post<any>(endpoints['inventory-adjustments'], payload);
       const data = extractDetail(res.data);
       if (!data) throw new Error('Invalid payload');
       return data;

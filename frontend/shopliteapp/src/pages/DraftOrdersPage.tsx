@@ -62,7 +62,7 @@ const DraftOrdersPage: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await authApis().get(endpoints.orders + '?statuses=DRAFT');
+            const res = await authApis().get<any>(endpoints.orders + '?statuses=DRAFT');
             const payload = res.data as any;
             const list = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []);
             setOrders(list);

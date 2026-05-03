@@ -143,7 +143,7 @@ const OrderCreatePage: React.FC = () => {
         if (screenMode === 'qr_payment' && draftOrderId) {
             interval = setInterval(async () => {
                 try {
-                    const res = await authApis().get(endpoints['payment-status'](draftOrderId));
+                    const res = await authApis().get<any>(endpoints['payment-status'](draftOrderId));
                     const stat = pickData<{ status?: string }>(res.data);
                     if (stat?.status === 'PAID') {
                         clearInterval(interval);
@@ -219,7 +219,7 @@ const OrderCreatePage: React.FC = () => {
         // fetch trạng thái thực tế để phân nhánh đúng.
         const locOrderId = location.state?.draftOrderId;
         if (typeof locOrderId === 'number' && locOrderId > 0) {
-            authApis().get(endpoints['order-detail'](locOrderId))
+            authApis().get<any>(endpoints['order-detail'](locOrderId))
                 .then((res) => {
                     const order = pickData<{ status?: string }>(res.data);
                     const serverStatus = order?.status ?? null;
@@ -287,7 +287,7 @@ const OrderCreatePage: React.FC = () => {
 
     const updateDraftOrder = async (orderId: number): Promise<void> => {
         const payload = buildOrderPayload();
-        await authApis().put(endpoints['order-detail'](orderId), payload);
+        await authApis().put<any>(endpoints['order-detail'](orderId), payload);
     };
 
     const ensureDraftOrder = async (): Promise<number> => {
@@ -347,7 +347,7 @@ const OrderCreatePage: React.FC = () => {
                 // update → confirm → payment
                 await updateDraftOrder(draftOrderId);
                 if (!isConfirmed) {
-                    await authApis().patch(endpoints['order-confirm'](draftOrderId));
+                    await authApis().patch<any>(endpoints['order-confirm'](draftOrderId));
                     setIsConfirmed(true);
                     setOrderServerStatus('PENDING_PAYMENT');
                 }
@@ -370,7 +370,7 @@ const OrderCreatePage: React.FC = () => {
             };
 
             if (paymentMethod === 'sepay_qr' || paymentMethod === 'momo') {
-                const res = await authApis().post(endpoints['order-payments'](draftOrderId), paymentPayload);
+                const res = await authApis().post<any>(endpoints['order-payments'](draftOrderId), paymentPayload);
                 const paymentData = pickData<{ qrUrl?: string; transferContent?: string; amount?: number }>(res.data);
 
                 if (paymentData?.qrUrl) {
@@ -382,7 +382,7 @@ const OrderCreatePage: React.FC = () => {
                     return;
                 }
             } else {
-                await authApis().post(endpoints['order-payments'](draftOrderId), paymentPayload);
+                await authApis().post<any>(endpoints['order-payments'](draftOrderId), paymentPayload);
                 sessionStorage.removeItem(CART_KEY);
                 setToast('Hoàn thành đơn hàng');
                 history.replace('/sales');

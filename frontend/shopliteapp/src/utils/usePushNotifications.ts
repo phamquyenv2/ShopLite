@@ -30,7 +30,7 @@ export function usePushNotifications() {
             PushNotifications.addListener('registration', async (token) => {
                 console.log('[FCM] Token:', token.value);
                 try {
-                    await authApis().post(endpoints['device-tokens-register'], {
+                    await authApis().post<any>(endpoints['device-tokens-register'], {
                         token: token.value,
                         deviceType: DEVICE_TYPE,
                     });

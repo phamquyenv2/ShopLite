@@ -4,46 +4,46 @@ import type { ImportOrder, ImportOrderUpsert } from '../api/types';
 export const importOrderService = {
     async getAll(): Promise<ImportOrder[]> {
         try {
-            const res = await authApis().get(endpoints['import-orders']);
+            const res = await authApis().get<any>(endpoints['import-orders']);
             return res.data?.data || [];
         } catch (error: any) {
-            throw new ApiError(error.response?.data?.message || 'Không thể tải danh sách nhập hàng');
+            throw new ApiError(error.response?.data?.message || 'Không thể tải danh sách nhập hàng', error.response || { status: 500, data: null, headers: new Headers() });
         }
     },
 
     async getById(id: number | string): Promise<ImportOrder> {
         try {
-            const res = await authApis().get(endpoints['import-order-detail'](id));
+            const res = await authApis().get<any>(endpoints['import-order-detail'](id));
             return res.data?.data;
         } catch (error: any) {
-            throw new ApiError(error.response?.data?.message || 'Không thể tải phiếu nhập');
+            throw new ApiError(error.response?.data?.message || 'Không thể tải phiếu nhập', error.response || { status: 500, data: null, headers: new Headers() });
         }
     },
 
     async create(data: ImportOrderUpsert): Promise<ImportOrder> {
         try {
-            const res = await authApis().post(endpoints['import-orders'], data);
+            const res = await authApis().post<any>(endpoints['import-orders'], data);
             return res.data?.data;
         } catch (error: any) {
-            throw new ApiError(error.response?.data?.message || 'Không thể tạo phiếu nhập');
+            throw new ApiError(error.response?.data?.message || 'Không thể tạo phiếu nhập', error.response || { status: 500, data: null, headers: new Headers() });
         }
     },
 
     async update(id: number | string, data: ImportOrderUpsert): Promise<ImportOrder> {
         try {
-            const res = await authApis().put(endpoints['import-order-detail'](id), data);
+            const res = await authApis().put<any>(endpoints['import-order-detail'](id), data);
             return res.data?.data;
         } catch (error: any) {
-            throw new ApiError(error.response?.data?.message || 'Không thể cập nhật phiếu nhập');
+            throw new ApiError(error.response?.data?.message || 'Không thể cập nhật phiếu nhập', error.response || { status: 500, data: null, headers: new Headers() });
         }
     },
 
     async updateStatus(id: number | string, status: string): Promise<ImportOrder> {
         try {
-            const res = await authApis().put(endpoints['import-order-status'](id), { status });
+            const res = await authApis().put<any>(endpoints['import-order-status'](id), { status });
             return res.data?.data;
         } catch (error: any) {
-            throw new ApiError(error.response?.data?.message || 'Không thể cập nhật trạng thái');
+            throw new ApiError(error.response?.data?.message || 'Không thể cập nhật trạng thái', error.response || { status: 500, data: null, headers: new Headers() });
         }
     },
 
@@ -58,10 +58,10 @@ export const importOrderService = {
         note?: string;
     }): Promise<ImportOrder> {
         try {
-            const res = await authApis().post(`${endpoints['import-orders']}/${id}/pay`, data);
+            const res = await authApis().post<any>(`${endpoints['import-orders']}/${id}/pay`, data);
             return res.data?.data;
         } catch (error: any) {
-            throw new ApiError(error.response?.data?.message || 'Không thể thanh toán phiếu nhập');
+            throw new ApiError(error.response?.data?.message || 'Không thể thanh toán phiếu nhập', error.response || { status: 500, data: null, headers: new Headers() });
         }
     },
 };

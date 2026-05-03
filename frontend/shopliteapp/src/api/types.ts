@@ -307,6 +307,8 @@ export type ImportOrder = {
     id: number;
     supplierId: number;
     supplierName?: string;
+    supplierPhone?: string;
+    username?: string;
     tax?: number;
     discount?: number;
     totalAmount?: number;

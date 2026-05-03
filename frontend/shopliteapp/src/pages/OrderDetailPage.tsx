@@ -68,7 +68,7 @@ const OrderDetailPage: React.FC = () => {
         setShowCancelAlert(false);
         setLoading(true);
         try {
-            await authApis().delete(endpoints['order-detail'](id));
+            await authApis().delete<any>(endpoints['order-detail'](id));
             setToast('Đã huỷ hoá đơn thành công');
             await loadOrder();
         } catch (e: any) {
