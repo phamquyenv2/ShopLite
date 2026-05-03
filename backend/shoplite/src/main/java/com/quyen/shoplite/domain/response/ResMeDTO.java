@@ -41,5 +41,6 @@ public class ResMeDTO {
         private String memberRole;
         private String membershipStatus;
         private List<ResPermissionDTO> permissions;
+        private List<ResMenuDTO> menus;
     }
 }

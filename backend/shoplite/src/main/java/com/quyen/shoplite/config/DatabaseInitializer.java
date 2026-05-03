@@ -2,6 +2,7 @@ package com.quyen.shoplite.config;
 
 import com.quyen.shoplite.domain.Employee;
 import com.quyen.shoplite.domain.FundAccount;
+import com.quyen.shoplite.domain.Menu;
 import com.quyen.shoplite.domain.Office;
 import com.quyen.shoplite.domain.Permission;
 import com.quyen.shoplite.domain.Role;
@@ -10,6 +11,7 @@ import com.quyen.shoplite.domain.StoreMember;
 import com.quyen.shoplite.domain.User;
 import com.quyen.shoplite.repository.EmployeeRepository;
 import com.quyen.shoplite.repository.FundAccountRepository;
+import com.quyen.shoplite.repository.MenuRepository;
 import com.quyen.shoplite.repository.OfficeRepository;
 import com.quyen.shoplite.repository.PermissionRepository;
 import com.quyen.shoplite.repository.RoleRepository;
@@ -28,9 +30,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
+import com.quyen.shoplite.util.constant.MenuType;
 
 @Component
 @Order(0)
@@ -46,6 +52,7 @@ public class DatabaseInitializer implements CommandLineRunner {
     private final FundAccountRepository fundAccountRepository;
     private final StoreRepository storeRepository;
     private final StoreMemberRepository storeMemberRepository;
+    private final MenuRepository menuRepository;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
 
@@ -55,6 +62,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         jdbcTemplate_safeUpdateRoles();
         cleanUpRedundantColumns();
         seedPermissionsAndRoles();
+        seedMenus();
         seedAdminUser();
         seedEmployees();
         seedFundAccounts();
@@ -423,6 +431,67 @@ public class DatabaseInitializer implements CommandLineRunner {
         log.info("Created 3 default fund accounts: Cash, Bank, E-wallet");
     }
 
+    private void seedMenus() {
+        ensureMenu("MENU_HOME", "Tong quan", "/home", "homeOutline", MenuType.TAB, null, 10);
+        ensureMenu("MENU_PRODUCTS", "Hang hoa", "/products", "gridOutline", MenuType.TAB, null, 20,
+                permission("/api/v1/products", "GET"));
+        ensureMenu("MENU_SALES", "Ban hang", "/sales", "storefrontOutline", MenuType.TAB, null, 30,
+                permission("/api/v1/orders", "POST"));
+        ensureMenu("MENU_ORDERS", "Hoa don", "/orders", "receiptOutline", MenuType.TAB, null, 40,
+                permission("/api/v1/orders", "GET"));
+        Menu more = ensureMenu("MENU_MORE", "Khac", "/more", "reorderThreeOutline", MenuType.TAB, null, 50);
+
+        ensureMenu("SHORTCUT_SALES", "Tao don", "/sales", "cartOutline", MenuType.SHORTCUT, null, 110,
+                permission("/api/v1/orders", "POST"));
+        ensureMenu("SHORTCUT_PRODUCTS", "San pham", "/products", "cubeOutline", MenuType.SHORTCUT, null, 120,
+                permission("/api/v1/products", "GET"));
+        ensureMenu("SHORTCUT_EMPLOYEES", "Nhan vien", "/employees", "peopleOutline", MenuType.SHORTCUT, null, 130,
+                permission("/api/v1/employees", "GET"));
+        ensureMenu("SHORTCUT_IMPORT_ORDERS", "Nhap hang", "/import-orders", "logInOutline", MenuType.SHORTCUT, null, 140,
+                permission("/api/v1/import-orders", "GET"));
+
+        Menu transactionGroup = ensureMenu("GROUP_TRANSACTION", "Giao dich", null, "appsOutline", MenuType.GROUP, more, 210);
+        ensureMenu("ITEM_SALES", "Ban hang", "/sales", "bagHandleOutline", MenuType.ITEM, transactionGroup, 211,
+                permission("/api/v1/orders", "POST"));
+        ensureMenu("ITEM_ORDERS", "Hoa don", "/orders", "receiptOutline", MenuType.ITEM, transactionGroup, 212,
+                permission("/api/v1/orders", "GET"));
+        ensureMenu("ITEM_ORDER_CREATE", "Dat hang", "/orders/new", "bagOutline", MenuType.ITEM, transactionGroup, 213,
+                permission("/api/v1/orders", "POST"));
+        ensureMenu("ITEM_FUND_LEDGER", "So quy", "/fund-ledger", "walletOutline", MenuType.ITEM, transactionGroup, 214,
+                permission("/api/v1/fund-accounts", "GET"));
+
+        Menu productGroup = ensureMenu("GROUP_PRODUCTS", "Hang hoa", null, "archiveOutline", MenuType.GROUP, more, 220);
+        ensureMenu("ITEM_PRODUCTS", "Hang hoa", "/products", "archiveOutline", MenuType.ITEM, productGroup, 221,
+                permission("/api/v1/products", "GET"));
+        ensureMenu("ITEM_INVENTORY_ADJUSTMENTS", "Kiem kho", "/inventory-adjustments", "clipboardOutline", MenuType.ITEM, productGroup, 222,
+                permission("/api/v1/inventory-adjustments", "GET"));
+        ensureMenu("ITEM_IMPORT_ORDERS", "Nhap hang", "/import-orders", "cartOutline", MenuType.ITEM, productGroup, 223,
+                permission("/api/v1/import-orders", "GET"));
+        ensureMenu("ITEM_IMPORT_RETURN_ORDERS", "Tra hang nhap", "/import-return-orders", "arrowUndoOutline", MenuType.ITEM, productGroup, 224,
+                permission("/api/v1/import-return-orders", "GET"));
+
+        Menu partnerGroup = ensureMenu("GROUP_PARTNERS", "Doi tac", null, "peopleOutline", MenuType.GROUP, more, 230);
+        ensureMenu("ITEM_CUSTOMERS", "Khach hang", "/customers", "personOutline", MenuType.ITEM, partnerGroup, 231,
+                permission("/api/v1/customers", "GET"));
+        ensureMenu("ITEM_SUPPLIERS", "Nha cung cap", null, "storefrontOutline", MenuType.ITEM, partnerGroup, 232,
+                permission("/api/v1/suppliers", "GET"));
+
+        Menu employeeGroup = ensureMenu("GROUP_EMPLOYEES", "Nhan vien", null, "peopleOutline", MenuType.GROUP, more, 240);
+        ensureMenu("ITEM_EMPLOYEES", "Nhan vien", "/employees", "peopleOutline", MenuType.ITEM, employeeGroup, 241,
+                permission("/api/v1/employees", "GET"));
+        ensureMenu("ITEM_ROSTER", "Lich lam viec", null, "timeOutline", MenuType.ITEM, employeeGroup, 242,
+                permission("/api/v1/roster/day", "GET"));
+        ensureMenu("ITEM_ATTENDANCE", "Cham cong", null, "calendarOutline", MenuType.ITEM, employeeGroup, 243,
+                permission("/api/v1/attendance", "GET"));
+        ensureMenu("ITEM_PAYROLLS", "Bang luong", null, "documentTextOutline", MenuType.ITEM, employeeGroup, 244,
+                permission("/api/v1/payrolls", "GET"));
+
+        Menu settingsGroup = ensureMenu("GROUP_SETTINGS", "Cai dat chung", null, "settingsOutline", MenuType.GROUP, more, 250);
+        ensureMenu("ITEM_ROLE_MANAGEMENT", "Quan ly nguoi dung", "/employees", "personOutline", MenuType.ITEM, settingsGroup, 251,
+                permission("/api/v1/roles", "GET"),
+                permission("/api/v1/permissions", "GET"));
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private Permission perm(String name, String apiPath, String method, String module) {
@@ -433,6 +502,50 @@ public class DatabaseInitializer implements CommandLineRunner {
                 .module(module)
                 .createdAt(LocalDateTime.now())
                 .build();
+    }
+
+    private Permission permission(String apiPath, String method) {
+        return permissionRepository.findByApiPathAndMethod(apiPath, method).orElse(null);
+    }
+
+    private Menu ensureMenu(String code, String title, String route, String icon, MenuType menuType,
+                            Menu parent, int sortOrder, Permission... permissions) {
+        Menu menu = menuRepository.findByCode(code).orElse(null);
+        LocalDateTime now = LocalDateTime.now();
+
+        if (menu == null) {
+            menu = Menu.builder()
+                    .code(code)
+                    .title(title)
+                    .route(route)
+                    .icon(icon)
+                    .menuType(menuType)
+                    .parent(parent)
+                    .sortOrder(sortOrder)
+                    .active(true)
+                    .deleted(false)
+                    .createdAt(now)
+                    .updatedAt(now)
+                    .permissions(new ArrayList<>())
+                    .build();
+        } else {
+            menu.setTitle(title);
+            menu.setRoute(route);
+            menu.setIcon(icon);
+            menu.setMenuType(menuType);
+            menu.setParent(parent);
+            menu.setSortOrder(sortOrder);
+            menu.setActive(true);
+            menu.setDeleted(false);
+            menu.setUpdatedAt(now);
+        }
+
+        List<Permission> desiredPermissions = Arrays.stream(permissions)
+                .filter(Objects::nonNull)
+                .toList();
+        menu.getPermissions().clear();
+        menu.getPermissions().addAll(desiredPermissions);
+        return menuRepository.save(menu);
     }
 
     private List<Permission> mergePermissions(List<Permission> existing, List<Permission> toAdd) {

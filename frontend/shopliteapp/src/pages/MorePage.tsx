@@ -4,71 +4,176 @@ import {
   IonIcon,
   IonPage,
   IonToolbar,
+  useIonViewWillEnter,
 } from '@ionic/react';
 import {
-  personCircleOutline,
-  pencilOutline,
-  chevronForwardOutline,
-  bagHandleOutline,
-  receiptOutline,
-  bagOutline,
-  returnUpBackOutline,
-  walletOutline,
   archiveOutline,
-  cartOutline,
-  swapHorizontalOutline,
-  logOutOutline,
-  clipboardOutline,
   arrowUndoOutline,
-  trashOutline,
-  personOutline,
-  storefrontOutline,
-  peopleOutline,
+  bagHandleOutline,
+  bagOutline,
   calendarOutline,
-  pricetagOutline,
-  timeOutline,
+  cartOutline,
+  chevronForwardOutline,
+  clipboardOutline,
   documentTextOutline,
-  settingsOutline,
-  cashOutline,
-  calculatorOutline,
-  businessOutline,
-  constructOutline,
-  callOutline,
-  chatbubbleEllipsesOutline,
-  headsetOutline,
-  globeOutline,
-  informationCircleOutline,
-  homeOutline,
   gridOutline,
-  personAddOutline,
+  homeOutline,
+  informationCircleOutline,
+  logOutOutline,
+  peopleOutline,
+  personCircleOutline,
+  personOutline,
+  receiptOutline,
   reorderThreeOutline,
-  appsOutline
+  storefrontOutline,
+  timeOutline,
+  walletOutline,
 } from 'ionicons/icons';
+import { useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import type { Menu, Permission } from '../api/types';
+import type { MeResponse } from '../auth/types';
 import { useAuth } from '../auth/useAuth';
+import { authApis, endpoints } from '../utils/Apis';
+import { canShowMenu, getMenuIcon, getMenusByType, getMenuTitle, hasMenuPayload } from '../utils/menuAccess';
 import './MorePage.css';
+
+type StaticItem = {
+  code: string;
+  label: string;
+  route?: string;
+  icon: string;
+  iconClass: string;
+  apiPath: string;
+  method?: string;
+};
+
+type StaticGroup = {
+  title: string;
+  items: StaticItem[];
+};
+
+const iconClassByCode: Record<string, string> = {
+  ITEM_CUSTOMERS: 'icon-green',
+  ITEM_FUND_LEDGER: 'icon-blue',
+  ITEM_PRODUCTS: 'icon-blue',
+};
+
+const fallbackTabs = (permissions: Permission[], menus: Menu[]) => [
+  { label: 'Tổng quan', icon: homeOutline, route: '/home', show: true },
+  { label: 'Hàng hóa', icon: gridOutline, route: '/products', show: canShowMenu(menus, 'MENU_PRODUCTS', permissions, '/api/v1/products') },
+  { label: 'Bán hàng', icon: storefrontOutline, route: '/sales', show: canShowMenu(menus, 'MENU_SALES', permissions, '/api/v1/orders', 'POST') },
+  { label: 'Hoá đơn', icon: receiptOutline, route: '/orders', show: canShowMenu(menus, 'MENU_ORDERS', permissions, '/api/v1/orders') },
+  { label: 'Nhiều hơn', icon: reorderThreeOutline, route: '/more', show: true },
+].filter(item => item.show);
+
+const fallbackGroups: StaticGroup[] = [
+  {
+    title: 'Giao dịch',
+    items: [
+      { code: 'ITEM_SALES', label: 'Bán hàng', route: '/sales', icon: bagHandleOutline, iconClass: 'icon-blue', apiPath: '/api/v1/orders', method: 'POST' },
+      { code: 'ITEM_ORDERS', label: 'Hóa đơn', route: '/orders', icon: receiptOutline, iconClass: 'icon-blue', apiPath: '/api/v1/orders' },
+      { code: 'ITEM_ORDER_CREATE', label: 'Đặt hàng', route: '/orders/new', icon: bagOutline, iconClass: 'icon-blue', apiPath: '/api/v1/orders', method: 'POST' },
+      { code: 'ITEM_FUND_LEDGER', label: 'Sổ quỹ', route: '/fund-ledger', icon: walletOutline, iconClass: 'icon-blue', apiPath: '/api/v1/fund-accounts' },
+    ],
+  },
+  {
+    title: 'Hàng hoá',
+    items: [
+      { code: 'ITEM_PRODUCTS', label: 'Hàng hoá', route: '/products', icon: archiveOutline, iconClass: 'icon-blue', apiPath: '/api/v1/products' },
+      { code: 'ITEM_INVENTORY_ADJUSTMENTS', label: 'Kiểm kho', route: '/inventory-adjustments', icon: clipboardOutline, iconClass: 'icon-blue', apiPath: '/api/v1/inventory-adjustments' },
+      { code: 'ITEM_IMPORT_ORDERS', label: 'Nhập hàng', route: '/import-orders', icon: cartOutline, iconClass: 'icon-blue', apiPath: '/api/v1/import-orders' },
+      { code: 'ITEM_IMPORT_RETURN_ORDERS', label: 'Trả hàng nhập', route: '/import-return-orders', icon: arrowUndoOutline, iconClass: 'icon-blue', apiPath: '/api/v1/import-return-orders' },
+    ],
+  },
+  {
+    title: 'Đối tác',
+    items: [
+      { code: 'ITEM_CUSTOMERS', label: 'Khách hàng', route: '/customers', icon: personOutline, iconClass: 'icon-green', apiPath: '/api/v1/customers' },
+    ],
+  },
+  {
+    title: 'Nhân viên',
+    items: [
+      { code: 'ITEM_EMPLOYEES', label: 'Nhân viên', route: '/employees', icon: peopleOutline, iconClass: 'icon-blue', apiPath: '/api/v1/employees' },
+      { code: 'ITEM_ROSTER', label: 'Lịch làm việc', icon: timeOutline, iconClass: 'icon-blue', apiPath: '/api/v1/roster/day' },
+      { code: 'ITEM_ATTENDANCE', label: 'Chấm công', icon: calendarOutline, iconClass: 'icon-blue', apiPath: '/api/v1/attendance' },
+      { code: 'ITEM_PAYROLLS', label: 'Bảng lương', icon: documentTextOutline, iconClass: 'icon-blue', apiPath: '/api/v1/payrolls' },
+    ],
+  },
+];
 
 const MorePage: React.FC = () => {
   const history = useHistory();
   const { logout } = useAuth();
+  const [storeName, setStoreName] = useState('ShopLite');
+  const [memberRole, setMemberRole] = useState('');
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [menus, setMenus] = useState<Menu[]>([]);
+
+  useIonViewWillEnter(() => {
+    const loadMe = async () => {
+      try {
+        const meRes = await authApis().get<any>(endpoints.me);
+        const mePayload = (meRes.data?.data ?? meRes.data) as MeResponse;
+        const currentStore = mePayload?.currentStore ?? null;
+        setStoreName(currentStore?.name || 'ShopLite');
+        setMemberRole(currentStore?.memberRole || '');
+        setPermissions((currentStore?.permissions || []) as Permission[]);
+        setMenus((currentStore?.menus || []) as Menu[]);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    loadMe();
+  });
 
   const handleLogout = async () => {
     await logout();
     history.replace('/login');
   };
 
+  const menuGroups = hasMenuPayload(menus)
+    ? getMenusByType(menus, 'GROUP')
+        .map(group => ({
+          title: getMenuTitle(group),
+          items: getMenusByType(menus, 'ITEM')
+            .filter(item => item.parentId === group.id)
+            .map(item => ({
+              code: item.code,
+              label: getMenuTitle(item),
+              route: item.route || undefined,
+              icon: getMenuIcon(item.icon, archiveOutline),
+              iconClass: iconClassByCode[item.code] || 'icon-blue',
+              apiPath: '',
+            })),
+        }))
+        .filter(group => group.items.length > 0)
+    : fallbackGroups
+        .map(group => ({
+          ...group,
+          items: group.items.filter(item => canShowMenu(menus, item.code, permissions, item.apiPath, item.method)),
+        }))
+        .filter(group => group.items.length > 0);
+
+  const tabs = hasMenuPayload(menus)
+    ? getMenusByType(menus, 'TAB')
+        .filter(item => item.route)
+        .map(item => ({
+          label: item.code === 'MENU_MORE' ? 'Nhiều hơn' : getMenuTitle(item),
+          icon: getMenuIcon(item.icon, homeOutline),
+          route: item.route || '/home',
+        }))
+    : fallbackTabs(permissions, menus);
+
   return (
     <IonPage className="more-page">
       <IonHeader className="ion-no-border">
-        <IonToolbar className="more-page-toolbar">
-          {/* We optionally keep title empty since the picture doesn't have a title bar, just starts with the profile card */}
-        </IonToolbar>
+        <IonToolbar className="more-page-toolbar" />
       </IonHeader>
 
       <IonContent className="more-page-content" color="light">
         <div className="more-container">
-
-          {/* Profile Card */}
           <div className="profile-card">
             <div className="profile-header">
               <div className="profile-info-wrap">
@@ -76,15 +181,12 @@ const MorePage: React.FC = () => {
                   <IonIcon icon={personCircleOutline} />
                 </div>
                 <div className="profile-details">
-                  <h2>shoplite</h2>
-                  <p>Chi nhánh trung tâm</p>
+                  <h2>{storeName}</h2>
+                  <p>{memberRole || 'Thành viên'}</p>
                 </div>
               </div>
-              <div className="edit-icon-box">
-                <IonIcon icon={pencilOutline} />
-              </div>
             </div>
-            
+
             <div className="profile-footer">
               <span className="store-info-text">Thông tin cửa hàng</span>
               <div className="trial-badge">
@@ -93,183 +195,25 @@ const MorePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Giao dịch */}
-          <div className="menu-group">
-            <h3 className="group-title">Giao dịch</h3>
-            <div className="grid-2-col">
-              <div className="menu-grid-item" onClick={() => history.push('/sales')}>
-                <IonIcon icon={bagHandleOutline} className="icon-blue" />
-                <span>Bán hàng</span>
-              </div>
-              <div className="menu-grid-item" onClick={() => history.push('/orders')}>
-                <IonIcon icon={receiptOutline} className="icon-blue" />
-                <span>Hóa đơn</span>
-              </div>
-              <div className="menu-grid-item" onClick={() => history.push('/orders/new')}>
-                <IonIcon icon={bagOutline} className="icon-blue" />
-                <span>Đặt hàng</span>
-              </div>
-              <div className="menu-grid-item">
-                <IonIcon icon={returnUpBackOutline} className="icon-blue" />
-                <span>Trả hàng</span>
-              </div>
-              <div className="menu-grid-item" onClick={() => history.push('/fund-ledger')}>
-                <IonIcon icon={walletOutline} className="icon-blue" />
-                <span>Sổ quỹ</span>
+          {menuGroups.map(group => (
+            <div className="menu-group" key={group.title}>
+              <h3 className="group-title">{group.title}</h3>
+              <div className="grid-2-col">
+                {group.items.map(item => (
+                  <div
+                    className="menu-grid-item"
+                    key={item.code}
+                    onClick={() => item.route && history.push(item.route)}
+                  >
+                    <IonIcon icon={item.icon} className={item.iconClass} />
+                    <span>{item.label}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
+          ))}
 
-          {/* Hàng hoá */}
-          <div className="menu-group">
-            <h3 className="group-title">Hàng hoá</h3>
-            <div className="grid-2-col">
-              <div className="menu-grid-item" onClick={() => history.push('/products')}>
-                <IonIcon icon={archiveOutline} className="icon-blue" />
-                <span>Hàng hoá</span>
-              </div>
-              <div className="menu-grid-item" onClick={() => history.push('/inventory-adjustments')}>
-                <IonIcon icon={clipboardOutline} className="icon-blue" />
-                <span>Kiểm kho</span>
-              </div>
-              <div className="menu-grid-item" onClick={() => history.push('/import-orders')}>
-                <IonIcon icon={cartOutline} className="icon-blue" />
-                <span>Nhập hàng</span>
-              </div>
-              <div className="menu-grid-item" onClick={() => history.push('/import-return-orders')}>
-                <IonIcon icon={arrowUndoOutline} className="icon-blue" />
-                <span>Trả hàng nhập</span>
-              </div>
-              <div className="menu-grid-item">
-                <IonIcon icon={swapHorizontalOutline} className="icon-green" />
-                <span>Chuyển hàng</span>
-              </div>
-              <div className="menu-grid-item">
-                <IonIcon icon={trashOutline} className="icon-blue" />
-                <span>Xuất huỷ</span>
-              </div>
-              <div className="menu-grid-item">
-                <IonIcon icon={logOutOutline} className="icon-blue" />
-                <span>Xuất dùng nội bộ</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Đối tác */}
-          <div className="menu-group">
-            <h3 className="group-title">Đối tác</h3>
-            <div className="grid-2-col">
-              <div className="menu-grid-item" onClick={() => history.push('/customers')}>
-                <IonIcon icon={personOutline} className="icon-green" />
-                <span>Khách hàng</span>
-              </div>
-              <div className="menu-grid-item">
-                <IonIcon icon={storefrontOutline} className="icon-blue" />
-                <span>Nhà cung cấp</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Nhân viên */}
-          <div className="menu-group">
-            <h3 className="group-title">Nhân viên</h3>
-            <div className="grid-2-col">
-              <div className="menu-grid-item" onClick={() => history.push('/employees')}>
-                <IonIcon icon={peopleOutline} className="icon-blue" />
-                <span>Nhân viên</span>
-              </div>
-              <div className="menu-grid-item">
-                <IonIcon icon={timeOutline} className="icon-blue" />
-                <span>Lịch làm việc</span>
-              </div>
-              <div className="menu-grid-item">
-                <IonIcon icon={calendarOutline} className="icon-blue" />
-                <span>Chấm công</span>
-              </div>
-              <div className="menu-grid-item">
-                <IonIcon icon={documentTextOutline} className="icon-blue" />
-                <span>Bảng lương</span>
-              </div>
-              <div className="menu-grid-item">
-                <IonIcon icon={pricetagOutline} className="icon-blue" />
-                <span>Hoa hồng</span>
-              </div>
-              <div className="menu-grid-item">
-                <IonIcon icon={settingsOutline} className="icon-blue" />
-                <span>Thiết lập nhân viên</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Báo cáo */}
-          <div className="menu-group">
-            <h3 className="group-title">Báo cáo</h3>
-            <div className="grid-2-col">
-              <div className="menu-grid-item">
-                <IonIcon icon={calendarOutline} className="icon-blue" />
-                <span>Cuối ngày</span>
-              </div>
-              <div className="menu-grid-item">
-                <IonIcon icon={cashOutline} className="icon-green" />
-                <span>Bán hàng</span>
-              </div>
-              <div className="menu-grid-item">
-                <IonIcon icon={archiveOutline} className="icon-blue" />
-                <span>Hàng hóa</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Thuế & Kế toán */}
-          <div className="menu-group">
-            <h3 className="group-title">Thuế & Kế toán</h3>
-            <div className="grid-2-col">
-              <div className="menu-grid-item">
-                <IonIcon icon={calculatorOutline} className="icon-green" />
-                <span>Thuế & Kế toán</span>
-              </div>
-              <div className="menu-grid-item">
-                <IonIcon icon={receiptOutline} className="icon-green" />
-                <span>Hóa đơn điện tử</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Cài đặt chung */}
-          <div className="section-title-out">CÀI ĐẶT CHUNG</div>
           <div className="menu-list-group">
-            <div className="menu-list-item">
-              <div className="item-left">
-                <IonIcon icon={settingsOutline} />
-                <span>Thiết lập cửa hàng</span>
-              </div>
-              <IonIcon icon={chevronForwardOutline} className="chevron" />
-            </div>
-            <div className="menu-list-item">
-              <div className="item-left">
-                <IonIcon icon={constructOutline} />
-                <span>Ứng dụng & thiết bị</span>
-              </div>
-              <IonIcon icon={chevronForwardOutline} className="chevron" />
-            </div>
-            <div className="menu-list-item">
-              <div className="item-left">
-                <IonIcon icon={personOutline} />
-                <span>Quản lý người dùng</span>
-              </div>
-              <IonIcon icon={chevronForwardOutline} className="chevron" />
-            </div>
-          </div>
-
-          {/* System Settings & Action */}
-          <div className="menu-list-group">
-            <div className="menu-list-item">
-              <div className="item-left">
-                <IonIcon icon={globeOutline} />
-                <span>Ngôn ngữ</span>
-              </div>
-              <IonIcon icon={chevronForwardOutline} className="chevron" />
-            </div>
             <div className="menu-list-item">
               <div className="item-left">
                 <IonIcon icon={informationCircleOutline} />
@@ -293,28 +237,19 @@ const MorePage: React.FC = () => {
         </div>
       </IonContent>
 
-      {/* Thanh Tab giả lập theo ảnh */}
       <div className="custom-tab-bar">
-        <div className="tab-item" role="button" tabIndex={0} onClick={() => history.push('/home')}>
-          <IonIcon icon={homeOutline} />
-          <span>Tổng quan</span>
-        </div>
-        <div className="tab-item" role="button" tabIndex={0} onClick={() => history.push('/products')}>
-          <IonIcon icon={gridOutline} />
-          <span>Hàng hóa</span>
-        </div>
-        <div className="tab-item" role="button" tabIndex={0} onClick={() => history.push('/sales')}>
-          <IonIcon icon={storefrontOutline} />
-          <span>Bán hàng</span>
-        </div>
-        <div className="tab-item" role="button" tabIndex={0} onClick={() => history.push('/orders')}>
-          <IonIcon icon={receiptOutline} />
-          <span>Hoá đơn</span>
-        </div>
-        <div className="tab-item active" role="button" tabIndex={0}>
-          <IonIcon icon={reorderThreeOutline} />
-          <span>Nhiều hơn</span>
-        </div>
+        {tabs.map(item => (
+          <div
+            className={`tab-item ${item.route === '/more' ? 'active' : ''}`}
+            key={item.route}
+            role="button"
+            tabIndex={0}
+            onClick={() => item.route !== '/more' && history.push(item.route)}
+          >
+            <IonIcon icon={item.icon} />
+            <span>{item.label}</span>
+          </div>
+        ))}
       </div>
     </IonPage>
   );

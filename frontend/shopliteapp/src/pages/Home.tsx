@@ -5,6 +5,7 @@ import {
   IonPage,
   IonToast,
   IonToolbar,
+  IonModal
 } from '@ionic/react';
 import {
   personCircleOutline,
@@ -20,7 +21,9 @@ import {
   reorderThreeOutline,
   callOutline,
   notificationsOutline,
+  notifications as notificationsIcon,
   mailOutline,
+  chevronBackOutline,
   storefront
 } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
@@ -30,11 +33,19 @@ import { authApis, endpoints } from '../utils/Apis';
 import { notificationService } from '../services/notification.service';
 import { storeInvitationService } from '../services/storeInvitation.service';
 import { hasPermission } from '../utils/permissions';
-import type { Notification, Order, Permission } from '../api/types';
+import { getMenuIcon, getMenusByType, getMenuTitle, hasMenuPayload } from '../utils/menuAccess';
+import type { Menu, Notification, Order, Permission } from '../api/types';
 import type { MeResponse } from '../auth/types';
 import './Home.css';
 
 const fmt = (n?: number | null) => (n ?? 0).toLocaleString('vi-VN');
+
+const shortcutColors: Record<string, string> = {
+  SHORTCUT_SALES: 'blue',
+  SHORTCUT_PRODUCTS: 'indigo',
+  SHORTCUT_EMPLOYEES: 'orange',
+  SHORTCUT_IMPORT_ORDERS: 'red',
+};
 
 const Home: React.FC = () => {
   const history = useHistory();
@@ -46,6 +57,7 @@ const Home: React.FC = () => {
   const [storeName, setStoreName] = useState('');
   const [memberRole, setMemberRole] = useState('');
   const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [menus, setMenus] = useState<Menu[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -84,11 +96,12 @@ const Home: React.FC = () => {
       setStoreName(result.currentStore?.name || 'ShopLite');
       setMemberRole(result.currentStore?.memberRole || '');
       setPermissions(result.permissions || result.currentStore?.permissions || []);
-      setToast('Da tham gia cua hang');
+      setMenus(result.currentStore?.menus || []);
+      setToast('Đã tham gia cửa hàng');
       await loadNotifications();
       history.replace('/home');
     } catch (err: any) {
-      setToast(err.message || 'Khong the chap nhan loi moi');
+      setToast(err.message || 'Không thể chấp nhận lời mời');
     }
   };
 
@@ -96,10 +109,10 @@ const Home: React.FC = () => {
     if (!notification.referenceId) return;
     try {
       await storeInvitationService.decline(notification.referenceId);
-      setToast('Da tu choi loi moi');
+      setToast('Đã từ chối lời mời');
       await loadNotifications();
     } catch (err: any) {
-      setToast(err.message || 'Khong the tu choi loi moi');
+      setToast(err.message || 'Không thể từ chối lời mời');
     }
   };
 
@@ -111,13 +124,23 @@ const Home: React.FC = () => {
         const currentStore = mePayload?.currentStore ?? null;
         setStoreName(currentStore?.name || 'Chua co cua hang');
         setMemberRole(currentStore?.memberRole || '');
-        setPermissions((currentStore?.permissions || []) as Permission[]);
+        const currentPermissions = (currentStore?.permissions || []) as Permission[];
+        setPermissions(currentPermissions);
+        setMenus((currentStore?.menus || []) as Menu[]);
 
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const params = new URLSearchParams();
         params.set('from', startOfDay.toISOString());
         params.set('to', now.toISOString());
+
+        if (!hasPermission(currentPermissions, '/api/v1/orders', 'GET')) {
+          setTodayRevenue(0);
+          setTodayOrdersCount(0);
+          setTodayProfit(0);
+          setRecentOrders([]);
+          return;
+        }
 
         const res = await authApis().get<any>(`${endpoints.orders}?${params.toString()}`);
 
@@ -153,20 +176,38 @@ const Home: React.FC = () => {
     loadNotifications();
   });
 
-  const shortcuts = [
-    { label: 'Tạo đơn', icon: cartOutline, color: 'blue', route: '/sales', show: hasPermission(permissions, '/api/v1/orders', 'POST') },
-    { label: 'Sản phẩm', icon: cubeOutline, color: 'indigo', route: '/products', show: hasPermission(permissions, '/api/v1/products', 'GET') },
-    { label: 'Nhân viên', icon: peopleOutline, color: 'orange', route: '/employees', show: hasPermission(permissions, '/api/v1/employees', 'GET') },
-    { label: 'Nhập hàng', icon: logInOutline, color: 'red', route: '/import-orders', show: hasPermission(permissions, '/api/v1/import-orders', 'GET') },
-  ].filter(item => item.show);
+  const shortcuts = hasMenuPayload(menus)
+    ? getMenusByType(menus, 'SHORTCUT')
+        .filter(item => item.route)
+        .map(item => ({
+          label: getMenuTitle(item),
+          icon: getMenuIcon(item.icon, cartOutline),
+          color: shortcutColors[item.code] || 'blue',
+          route: item.route || '/home',
+        }))
+    : [
+        { label: 'Tạo đơn', icon: cartOutline, color: 'blue', route: '/sales', show: hasPermission(permissions, '/api/v1/orders', 'POST') },
+        { label: 'Sản phẩm', icon: cubeOutline, color: 'indigo', route: '/products', show: hasPermission(permissions, '/api/v1/products', 'GET') },
+        { label: 'Nhân viên', icon: peopleOutline, color: 'orange', route: '/employees', show: hasPermission(permissions, '/api/v1/employees', 'GET') },
+        { label: 'Nhập hàng', icon: logInOutline, color: 'red', route: '/import-orders', show: hasPermission(permissions, '/api/v1/import-orders', 'GET') },
+      ].filter(item => item.show);
 
-  const tabs = [
-    { label: 'Tổng quan', icon: homeOutline, active: true, route: '/home', show: true },
-    { label: 'Hàng hóa', icon: gridOutline, route: '/products', show: hasPermission(permissions, '/api/v1/products', 'GET') },
-    { label: 'Bán hàng', icon: storefrontOutline, route: '/sales', show: hasPermission(permissions, '/api/v1/orders', 'POST') },
-    { label: 'Hóa đơn', icon: receiptOutline, route: '/orders', show: hasPermission(permissions, '/api/v1/orders', 'GET') },
-    { label: 'Khác', icon: reorderThreeOutline, route: '/more', show: true },
-  ].filter(item => item.show);
+  const tabs = hasMenuPayload(menus)
+    ? getMenusByType(menus, 'TAB')
+        .filter(item => item.route)
+        .map(item => ({
+          label: getMenuTitle(item),
+          icon: getMenuIcon(item.icon, homeOutline),
+          active: item.route === '/home',
+          route: item.route || '/home',
+        }))
+    : [
+        { label: 'Tổng quan', icon: homeOutline, active: true, route: '/home', show: true },
+        { label: 'Hàng hóa', icon: gridOutline, route: '/products', show: hasPermission(permissions, '/api/v1/products', 'GET') },
+        { label: 'Bán hàng', icon: storefrontOutline, route: '/sales', show: hasPermission(permissions, '/api/v1/orders', 'POST') },
+        { label: 'Hóa đơn', icon: receiptOutline, route: '/orders', show: hasPermission(permissions, '/api/v1/orders', 'GET') },
+        { label: 'Khác', icon: reorderThreeOutline, route: '/more', show: true },
+      ].filter(item => item.show);
 
   return (
     <IonPage className="home-page">
@@ -197,10 +238,10 @@ const Home: React.FC = () => {
           <div className="revenue-main-card">
             <div className="revenue-info">
               <p className="label1">Doanh Thu Hôm Nay</p>
-              <h2 className="amount">{fmt(todayRevenue)}d</h2>
+              <h2 className="amount">{fmt(todayRevenue)}đ</h2>
               <div className="trend-badge">
                 <IonIcon icon={cashOutline} />
-                <span>Cap nhat moi nhat</span>
+                <span>Cập nhật mới nhất</span>
               </div>
             </div>
             <IonIcon icon={cashOutline} className="bg-icon" />
@@ -214,7 +255,7 @@ const Home: React.FC = () => {
             </div>
             <div className="stats-card">
               <p className="label1">Lợi nhuận hôm nay</p>
-              <h3 className="value">{fmt(todayProfit)}d</h3>
+              <h3 className="value">{fmt(todayProfit)}đ</h3>
               <p className="sub-label warning">Tỷ suất ~30%</p>
             </div>
           </div>
@@ -286,47 +327,60 @@ const Home: React.FC = () => {
           </div>
         ))}
       </div>
-      {notificationOpen ? (
-        <div className="notification-overlay" onClick={() => setNotificationOpen(false)}>
-          <div className="notification-panel" onClick={event => event.stopPropagation()}>
-            <div className="notification-panel-head">
-              <div className="notification-panel-title">Thong bao</div>
-              <button type="button" className="notification-close" onClick={() => setNotificationOpen(false)}>x</button>
-            </div>
+      <IonModal isOpen={notificationOpen} onDidDismiss={() => setNotificationOpen(false)} className="notification-modal">
+        <div className="noti-header">
+          <button className="noti-back-btn" onClick={() => setNotificationOpen(false)}>
+            <IonIcon icon={chevronBackOutline} />
+          </button>
+          <span className="noti-header-title">Thông báo</span>
+        </div>
+        <IonContent style={{ '--background': '#f4f6f9' }}>
+          <div className="noti-list">
             {notifications.length === 0 ? (
-              <div className="notification-empty">Chua co thong bao</div>
+              <div className="notification-empty">Chưa có thông báo</div>
             ) : notifications.map(item => {
               const invitation = item.invitation;
               const canAct = item.type === 'STORE_INVITATION'
                 && !item.actionTaken
                 && invitation?.status === 'PENDING';
+              
+              const dateObj = new Date(item.createdAt);
+              const timeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+              const isToday = dateObj.toDateString() === new Date().toDateString();
+              const dateDisplay = `${timeStr} ${isToday ? 'Hôm nay' : dateObj.toLocaleDateString('vi-VN')}`;
+
               return (
-                <div className="notification-item" key={item.id}>
-                  <div className="notification-title">{item.title}</div>
-                  <div className="notification-message">{item.message}</div>
-                  {invitation ? (
-                    <div className="notification-meta">
-                      {invitation.storeName} - {invitation.roleName}
+                <div className="noti-item" key={item.id}>
+                  <div className="noti-icon-wrap">
+                    <div className="noti-icon-bg">
+                      <IonIcon icon={notificationsIcon} className="noti-icon" />
                     </div>
-                  ) : null}
-                  {canAct ? (
-                    <div className="notification-actions">
-                      <button type="button" className="notification-accept" onClick={() => handleAcceptInvitation(item)}>
-                        Accept
-                      </button>
-                      <button type="button" className="notification-decline" onClick={() => handleDeclineInvitation(item)}>
-                        Decline
-                      </button>
+                  </div>
+                  <div className="noti-content-wrap">
+                    <div className="noti-time">{dateDisplay}</div>
+                    <div className="noti-card">
+                      <div className="noti-card-title">{item.title}</div>
+                      <div className="noti-card-message">{item.message}</div>
+                      {canAct ? (
+                        <div className="noti-actions">
+                          <button type="button" className="noti-btn-decline" onClick={() => handleDeclineInvitation(item)}>
+                            Từ chối
+                          </button>
+                          <button type="button" className="noti-btn-accept" onClick={() => handleAcceptInvitation(item)}>
+                            Xác nhận
+                          </button>
+                        </div>
+                      ) : item.actionTaken ? (
+                        <div className="noti-done">Đã xử lý</div>
+                      ) : null}
                     </div>
-                  ) : item.actionTaken ? (
-                    <div className="notification-done">Da xu ly</div>
-                  ) : null}
+                  </div>
                 </div>
               );
             })}
           </div>
-        </div>
-      ) : null}
+        </IonContent>
+      </IonModal>
       <IonToast isOpen={toast !== null} message={toast ?? ''} duration={2000} onDidDismiss={() => setToast(null)} />
     </IonPage>
   );

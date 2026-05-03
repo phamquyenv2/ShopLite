@@ -213,6 +213,19 @@ export type Permission = {
     module: string;
 };
 
+export type MenuType = 'TAB' | 'SHORTCUT' | 'GROUP' | 'ITEM';
+
+export type Menu = {
+    id: number;
+    code: string;
+    title: string;
+    route?: string | null;
+    icon?: string | null;
+    menuType: MenuType;
+    parentId?: number | null;
+    sortOrder?: number | null;
+};
+
 export type StoreInvitationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
 
 export type StoreInvitation = {
@@ -257,6 +270,7 @@ export type AcceptInvitationResponse = {
         memberRole: string;
         membershipStatus: string;
         permissions?: Permission[];
+        menus?: Menu[];
     };
     permissions: Permission[];
 };

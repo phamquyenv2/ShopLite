@@ -44,6 +44,7 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final StoreMemberRepository storeMemberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MenuService menuService;
 
     public ResLoginDTO login(String username, String password) {
         Authentication authentication;
@@ -187,14 +188,16 @@ public class AuthService {
     }
 
     private ResMeDTO.StoreInfo toMeStoreInfo(StoreMember sm) {
+        Role role = sm.getRole();
         return ResMeDTO.StoreInfo.builder()
                 .id(sm.getStore().getId())
                 .name(sm.getStore().getName())
-                .memberRole(sm.getRole() != null ? sm.getRole().getName() : "USER")
+                .memberRole(role != null ? role.getName() : "USER")
                 .membershipStatus(sm.getStatus().name())
-                .permissions(sm.getRole() == null ? List.of() : sm.getRole().getPermissions().stream()
+                .permissions(role == null ? List.of() : role.getPermissions().stream()
                         .map(DTOMapper::toResPermissionDTO)
                         .toList())
+                .menus(menuService.getVisibleMenus(role))
                 .build();
     }
 

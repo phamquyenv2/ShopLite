@@ -33,6 +33,7 @@ public class StoreInvitationService {
     private final StoreMemberRepository storeMemberRepository;
     private final StoreInvitationRepository storeInvitationRepository;
     private final NotificationRepository notificationRepository;
+    private final MenuService menuService;
 
     @Transactional
     public ResStoreInvitationDTO create(ReqStoreInvitationDTO req) {
@@ -170,6 +171,7 @@ public class StoreInvitationService {
                 .memberRole(role != null ? role.getName() : "USER")
                 .membershipStatus(member.getStatus().name())
                 .permissions(permissions)
+                .menus(menuService.getVisibleMenus(role))
                 .build();
     }
 

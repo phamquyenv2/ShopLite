@@ -11,6 +11,8 @@ import {
     IonSpinner,
     IonToast,
     IonToolbar,
+    IonModal,
+    IonTitle,
     useIonRouter,
     useIonViewWillEnter
 } from '@ionic/react';
@@ -23,7 +25,9 @@ import {
     documentTextOutline,
     personOutline,
     searchOutline,
-    shieldCheckmarkOutline
+    shieldCheckmarkOutline,
+    chevronDownOutline,
+    arrowBackOutline
 } from 'ionicons/icons';
 import { employeeService } from '../services/employee.service';
 import { roleService } from '../services/role.service';
@@ -87,6 +91,7 @@ const EmployeesPage: React.FC = () => {
     const [currentTab, setCurrentTab] = useState<'active' | 'role' | 'inactive'>('active');
     const [toast, setToast] = useState<string | null>(null);
     const [inviteOpen, setInviteOpen] = useState(false);
+    const [inviteName, setInviteName] = useState('');
     const [invitePhone, setInvitePhone] = useState('');
     const [inviteRoleId, setInviteRoleId] = useState<string>('');
     const [inviting, setInviting] = useState(false);
@@ -100,7 +105,9 @@ const EmployeesPage: React.FC = () => {
             ]);
             setEmployees(emps);
             setRoles(rols);
-            if (!inviteRoleId && rols.length > 0) setInviteRoleId(String(rols[0].id));
+            setInviteName('');
+            setInvitePhone('');
+            setInviteRoleId('');
         } catch (err: any) {
             setToast(err.message || 'Loi khi tai du lieu');
         } finally {
@@ -140,21 +147,21 @@ const EmployeesPage: React.FC = () => {
     const submitInvitation = async () => {
         const phone = invitePhone.trim();
         if (!phone) {
-            setToast('Vui long nhap so dien thoai');
+            setToast('Vui lòng nhâp số điện thoại');
             return;
         }
         if (!inviteRoleId) {
-            setToast('Vui long chon vai tro');
+            setToast('Vui lòng chọn vai trò');
             return;
         }
         setInviting(true);
         try {
             await storeInvitationService.createInvitation(phone, inviteRoleId);
-            setToast('Da gui loi moi');
+            setToast('Đã gửi lời mời');
             setInvitePhone('');
             setInviteOpen(false);
         } catch (err: any) {
-            setToast(err.message || 'Khong the gui loi moi');
+            setToast(err.message || 'Không thể gửi lời mời');
         } finally {
             setInviting(false);
         }
@@ -169,7 +176,7 @@ const EmployeesPage: React.FC = () => {
                             <IonIcon icon={chevronBackOutline} style={{ fontSize: '26px' }} />
                         </IonButton>
                     </IonButtons>
-                    <div className="ep-title">Nhan vien</div>
+                    <div className="ep-title">Nhân viên</div>
                 </IonToolbar>
 
                 <div className="ep-search-container">
@@ -177,7 +184,7 @@ const EmployeesPage: React.FC = () => {
                         <IonIcon icon={searchOutline} />
                         <input
                             type="text"
-                            placeholder={currentTab === 'role' ? 'Tim kiem vai tro...' : 'Tim kiem nhan vien...'}
+                            placeholder={currentTab === 'role' ? 'Tìm kiếm vai trò...' : 'Tìm kiếm nhân viên...'}
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                         />
@@ -186,13 +193,13 @@ const EmployeesPage: React.FC = () => {
 
                 <div className="ep-segments">
                     <button className={`ep-segment-btn ${currentTab === 'active' ? 'active' : ''}`} onClick={() => setCurrentTab('active')}>
-                        Dang lam viec
+                        Đang làm việc
                     </button>
                     <button className={`ep-segment-btn ${currentTab === 'role' ? 'active' : ''}`} onClick={() => setCurrentTab('role')}>
-                        Vai tro
+                        Vai trò
                     </button>
                     <button className={`ep-segment-btn ${currentTab === 'inactive' ? 'active' : ''}`} onClick={() => setCurrentTab('inactive')}>
-                        Da nghi viec
+                        Đã nghỉ việc
                     </button>
                 </div>
             </IonHeader>
@@ -207,7 +214,7 @@ const EmployeesPage: React.FC = () => {
                         {currentTab !== 'role' && (
                             <div className="ep-list">
                                 {filteredEmployees.length === 0 ? (
-                                    <div className="ep-empty">Khong co nhan vien nao</div>
+                                    <div className="ep-empty">Không có nhân viên nào</div>
                                 ) : filteredEmployees.map(emp => {
                                     const name = emp.username || 'Unknown';
                                     const style = getAvatarStyle(name);
@@ -223,11 +230,11 @@ const EmployeesPage: React.FC = () => {
 
                                             <div className="ep-card-info">
                                                 <div className="ep-card-name">{name}</div>
-                                                <div className="ep-card-phone">{emp.phone || 'Chua cap nhat'}</div>
+                                                <div className="ep-card-phone">{emp.phone || 'Chưa cập nhật'}</div>
                                             </div>
 
                                             <div className={`ep-card-badge ${roleBadgeClass}`}>
-                                                {emp.roleName || 'Nhan vien'}
+                                                {emp.roleName || 'Nhân viên'}
                                             </div>
                                         </div>
                                     );
@@ -239,14 +246,14 @@ const EmployeesPage: React.FC = () => {
                             <div className="ep-list role-list">
                                 <div className="role-banner">
                                     <div className="role-banner-content">
-                                        <h3 className="role-banner-title">Phan quyen thong minh</h3>
-                                        <p className="role-banner-desc">Cap dung quyen cho tung vai tro de bao ve du lieu cua hang.</p>
+                                        <h3 className="role-banner-title">Phân quyền thông minh</h3>
+                                        <p className="role-banner-desc">Cấp quyền cho từng vai trò để bảo vệ dữ liệu cửa hàng.</p>
                                     </div>
                                     <IonIcon icon={shieldCheckmarkOutline} className="role-banner-icon" />
                                 </div>
 
                                 {filteredRoles.length === 0 ? (
-                                    <div className="ep-empty">Khong co vai tro nao</div>
+                                    <div className="ep-empty">Không có vai trò nào</div>
                                 ) : filteredRoles.map(role => {
                                     const { icon, colorClass } = getRoleIconAndStyle(role.name);
                                     const title = getRoleTitle(role.description, role.name);
@@ -288,50 +295,61 @@ const EmployeesPage: React.FC = () => {
                 </IonFab>
             </IonContent>
 
-            {inviteOpen ? (
-                <div className="invite-overlay">
-                    <div className="invite-dialog">
-                        <div className="invite-header">
-                            <div>
-                                <div className="invite-title">Moi member</div>
-                                <div className="invite-subtitle">Nhap so dien thoai da dang ky va chon vai tro.</div>
-                            </div>
-                            <button type="button" className="invite-close" onClick={() => setInviteOpen(false)}>x</button>
+            <IonModal isOpen={inviteOpen} onDidDismiss={() => setInviteOpen(false)} className="ep-invite-modal">
+                <div className="ep-invite-header">
+                    <button className="ep-invite-back" onClick={() => setInviteOpen(false)}>
+                        <IonIcon icon={chevronBackOutline} />
+                    </button>
+                    <span className="ep-invite-title">Thêm nhân viên</span>
+                </div>
+                <IonContent style={{ '--background': '#f4f6f9' }}>
+                    <div className="ep-invite-form">
+                        <div className="ep-invite-field">
+                            <label>Tên nhân viên <span className="ep-invite-required">*</span></label>
+                            <input
+                                type="text"
+                                placeholder="Ví dụ: Nguyễn Văn A"
+                                value={inviteName}
+                                onChange={e => setInviteName(e.target.value)}
+                            />
                         </div>
-
-                        <label className="invite-label" htmlFor="invite-phone">So dien thoai</label>
-                        <input
-                            id="invite-phone"
-                            className="invite-input"
-                            value={invitePhone}
-                            onChange={e => setInvitePhone(e.target.value)}
-                            placeholder="0901234567"
-                            inputMode="tel"
-                        />
-
-                        <label className="invite-label" htmlFor="invite-role">Vai tro</label>
-                        <select
-                            id="invite-role"
-                            className="invite-input"
-                            value={inviteRoleId}
-                            onChange={e => setInviteRoleId(e.target.value)}
-                        >
-                            {roles.map(role => (
-                                <option key={role.id} value={role.id}>{role.name}</option>
-                            ))}
-                        </select>
-
-                        <div className="invite-actions">
-                            <button type="button" className="invite-secondary" onClick={() => setInviteOpen(false)}>
-                                Huy
-                            </button>
-                            <button type="button" className="invite-primary" disabled={inviting} onClick={submitInvitation}>
-                                {inviting ? 'Dang gui...' : 'Gui loi moi'}
-                            </button>
+                        <div className="ep-invite-field">
+                            <label>Số điện thoại <span className="ep-invite-required">*</span></label>
+                            <input
+                                type="tel"
+                                inputMode="tel"
+                                placeholder="Ví dụ: 0912345678"
+                                value={invitePhone}
+                                onChange={e => setInvitePhone(e.target.value)}
+                            />
+                        </div>
+                        <div className="ep-invite-field">
+                            <label>Vai trò <span className="ep-invite-required">*</span></label>
+                            <div className="ep-invite-select-wrap">
+                                <select
+                                    value={inviteRoleId}
+                                    onChange={e => setInviteRoleId(e.target.value)}
+                                >
+                                    <option value="" disabled>Chọn 1 vai trò cho nhân viên</option>
+                                    {roles.map(role => (
+                                        <option key={role.id} value={role.id}>{role.name}</option>
+                                    ))}
+                                </select>
+                                <IonIcon icon={chevronDownOutline} className="ep-invite-select-icon" />
+                            </div>
                         </div>
                     </div>
+                </IonContent>
+                <div className="ep-invite-footer">
+                    <button
+                        className="ep-invite-submit"
+                        disabled={!inviteName.trim() || !invitePhone.trim() || !inviteRoleId || inviting}
+                        onClick={submitInvitation}
+                    >
+                        {inviting ? 'Đang gửi...' : 'Tạo và gửi lời mời'}
+                    </button>
                 </div>
-            ) : null}
+            </IonModal>
 
             <IonToast isOpen={toast !== null} message={toast ?? ''} duration={2000} onDidDismiss={() => setToast(null)} />
         </IonPage>

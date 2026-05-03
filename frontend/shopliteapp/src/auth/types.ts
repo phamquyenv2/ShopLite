@@ -4,6 +4,19 @@ export type AuthUser = {
     roleName: string;
 };
 
+export type MenuType = 'TAB' | 'SHORTCUT' | 'GROUP' | 'ITEM';
+
+export type Menu = {
+    id: number;
+    code: string;
+    title: string;
+    route?: string | null;
+    icon?: string | null;
+    menuType: MenuType;
+    parentId?: number | null;
+    sortOrder?: number | null;
+};
+
 export type MeStore = {
     id: number;
     name: string;
@@ -16,6 +29,7 @@ export type MeStore = {
         method: string;
         module: string;
     }[];
+    menus?: Menu[];
 };
 
 export type MeResponse = {
