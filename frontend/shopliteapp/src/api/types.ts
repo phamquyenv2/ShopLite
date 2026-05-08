@@ -205,6 +205,98 @@ export type Employee = {
     officeName?: string | null;
 };
 
+export type RosterType = 'WORKING' | 'LEAVE_APPROVED' | 'LEAVE_UNAPPROVED';
+
+export type Roster = {
+    id: number;
+    employeeId: number;
+    employeeUsername?: string | null;
+    workingDay: string;
+    startTime?: string | null;
+    endTime?: string | null;
+    checkInAllowedFrom?: string | null;
+    checkInAllowedTo?: string | null;
+    checkOutAllowedFrom?: string | null;
+    checkOutAllowedTo?: string | null;
+    expectedHours?: number | null;
+    type: RosterType;
+    note?: string | null;
+    unpaidBreakMinutes?: number | null;
+    expired?: boolean | null;
+};
+
+export type RosterUpsert = {
+    employeeId: number;
+    workingDay: string;
+    startTime?: string | null;
+    endTime?: string | null;
+    checkInAllowedFrom?: string | null;
+    checkInAllowedTo?: string | null;
+    checkOutAllowedFrom?: string | null;
+    checkOutAllowedTo?: string | null;
+    type: RosterType;
+    note?: string | null;
+    unpaidBreakMinutes?: number;
+};
+
+export type AttendanceStatus = 'VALID' | 'LATE' | 'EARLY_LEAVE' | 'ABSENT' | 'AUTO_CLOSED' | 'INVALID';
+
+export type Attendance = {
+    id: number;
+    employeeId: number;
+    employeeUsername?: string | null;
+    officeId?: number | null;
+    officeName?: string | null;
+    rosterId?: number | null;
+    checkIn?: string | null;
+    checkOut?: string | null;
+    workedMinutes?: number | null;
+    payableMinutes?: number | null;
+    workingDay?: string | null;
+    walkIn?: boolean;
+    latitude?: number | null;
+    longitude?: number | null;
+    distance?: number | null;
+    checkOutLatitude?: number | null;
+    checkOutLongitude?: number | null;
+    checkOutDistance?: number | null;
+    lateMinutes?: number | null;
+    earlyLeaveMinutes?: number | null;
+    closedAutomatically?: boolean;
+    status?: AttendanceStatus | string | null;
+};
+
+export type AttendanceLocationPayload = {
+    latitude: number;
+    longitude: number;
+    rosterId?: number | null;
+    deviceId?: string | null;
+};
+
+export type Payroll = {
+    id: number;
+    employeeId: number;
+    employeeUsername?: string | null;
+    period: string;
+    salaryRate?: number | null;
+    totalHours?: number | null;
+    bonus?: number | null;
+    penalty?: number | null;
+    totalSalary?: number | null;
+    scheduledWorkingDays: number;
+    actualPresentDays: number;
+    approvedLeaveDays: number;
+    absentWithoutLeaveDays: number;
+};
+
+export type PayrollSyncPayload = {
+    employeeId?: number | null;
+    period: string;
+    bonus?: number;
+    penalty?: number;
+    penaltyPerAbsent?: number;
+};
+
 export type Permission = {
     id: number;
     name: string;

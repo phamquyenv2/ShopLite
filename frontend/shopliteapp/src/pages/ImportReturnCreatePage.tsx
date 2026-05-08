@@ -8,6 +8,7 @@ import { useParams } from 'react-router';
 import { importOrderService } from '../services/importOrder.service';
 import { importReturnOrderService } from '../services/importReturnOrder.service';
 import { getStoredUser } from '../utils/Apis';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import type { ImportReturnOrderUpsert } from '../api/types';
 import './ImportReturnCreatePage.css';
 
@@ -25,6 +26,8 @@ const fmt = (n: number) => n.toLocaleString('vi-VN');
 const ImportReturnCreatePage: React.FC = () => {
     const { importOrderId } = useParams<{ importOrderId: string }>();
     const ionRouter = useIonRouter();
+    const { can } = useStorePermissions();
+    const canCreateImportReturn = can('/api/v1/import-return-orders', 'POST');
 
     const [loading, setLoading] = useState(false);
     const [supplierId, setSupplierId] = useState<number>(0);
@@ -119,6 +122,10 @@ const ImportReturnCreatePage: React.FC = () => {
     const debtAmount = paidAmount - needToPay; // Tính vào công nợ (âm là NCC nợ mình)
 
     const handleSave = async (asDraft: boolean) => {
+        if (!canCreateImportReturn) {
+            setToast('Bạn không có quyền tạo phiếu trả hàng nhập');
+            return;
+        }
         if (returningItems.length === 0) {
             setToast('Vui lòng chọn sản phẩm để trả');
             return;
@@ -268,8 +275,8 @@ const ImportReturnCreatePage: React.FC = () => {
 
                 <IonFooter className="ion-no-border">
                     <div className="iro-co-actions">
-                        <button className="iro-co-btn-draft" onClick={() => handleSave(true)} disabled={saving}>Lưu tạm</button>
-                        <button className="iro-co-btn-complete" onClick={() => handleSave(false)} disabled={saving}>
+                        <button className="iro-co-btn-draft" onClick={() => handleSave(true)} disabled={saving || !canCreateImportReturn}>Lưu tạm</button>
+                        <button className="iro-co-btn-complete" onClick={() => handleSave(false)} disabled={saving || !canCreateImportReturn}>
                             {saving ? <IonSpinner name="dots" /> : 'Hoàn thành'}
                         </button>
                     </div>
@@ -381,6 +388,7 @@ const ImportReturnCreatePage: React.FC = () => {
                             }
                             setCheckoutMode(true);
                         }}
+                        disabled={!canCreateImportReturn}
                     >
                         Thanh toán
                     </button>

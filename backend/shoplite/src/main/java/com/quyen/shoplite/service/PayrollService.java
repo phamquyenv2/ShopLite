@@ -11,8 +11,10 @@ import com.quyen.shoplite.repository.EmployeeRepository;
 import com.quyen.shoplite.repository.PayrollRepository;
 import com.quyen.shoplite.repository.RosterRepository;
 import com.quyen.shoplite.repository.PaymentRepository;
+import com.quyen.shoplite.repository.UserRepository;
 import com.quyen.shoplite.util.constant.RefTypeEnum;
 import com.quyen.shoplite.util.DTOMapper;
+import com.quyen.shoplite.util.SecurityUtil;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,7 @@ public class PayrollService {
     private final RosterRepository rosterRepository;
     private final PaymentRepository paymentRepository;
     private final CurrentStoreService currentStoreService;
+    private final UserRepository userRepository;
 
     // ------------------------------------------------------------------ sync
 
@@ -190,6 +193,15 @@ public class PayrollService {
                 .toList();
     }
 
+    public List<ResPayrollDTO> findMine() {
+        Employee employee = findCurrentEmployee();
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return payrollRepository.findByEmployee_StoreMember_Store_IdAndEmployee_Id(storeId, employee.getId())
+                .stream()
+                .map(DTOMapper::toResPayrollDTO)
+                .toList();
+    }
+
     public List<ResPayrollDTO> findByEmployee(Integer employeeId) {
         findEmployee(employeeId);
         Long storeId = currentStoreService.getCurrentStoreId();
@@ -206,5 +218,14 @@ public class PayrollService {
         return employeeRepository.findByIdAndStoreMember_Store_IdAndDeletedFalse(employeeId, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Employee not found with id=" + employeeId));
+    }
+
+    private Employee findCurrentEmployee() {
+        String username = SecurityUtil.requireCurrentUserLogin();
+        var user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username=" + username));
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(storeId, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found for user id=" + user.getId()));
     }
 }

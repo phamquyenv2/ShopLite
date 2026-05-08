@@ -70,7 +70,7 @@ public class AuthController {
     @PostMapping("/register/otp/send")
     @ApiMessage("OTP sent")
     public ResponseEntity<ResOtpSendDTO> sendOtp(@Valid @RequestBody ReqOtpSendDTO req) {
-        ResOtpSendDTO result = registrationService.sendOtp(req.getPhone());
+        ResOtpSendDTO result = registrationService.sendOtp(req.getPhone(), req.getFcmToken());
         return ResponseEntity.ok(result);
     }
 

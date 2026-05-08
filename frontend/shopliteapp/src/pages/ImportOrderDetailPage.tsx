@@ -7,6 +7,7 @@ import { arrowBackOutline, ellipsisVertical, shareOutline } from 'ionicons/icons
 import { useParams } from 'react-router';
 import { importOrderService } from '../services/importOrder.service';
 import type { ImportOrder } from '../api/types';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './ImportOrderDetailPage.css';
 
 const statusMap: Record<string, { label: string; cls: string }> = {
@@ -20,6 +21,9 @@ const fmt = (n?: number) => (n ?? 0).toLocaleString('vi-VN');
 const ImportOrderDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const ionRouter = useIonRouter();
+    const { can } = useStorePermissions();
+    const canUpdateImportOrder = can('/api/v1/import-orders/{id}', 'PUT');
+    const canCreateImportReturn = can('/api/v1/import-return-orders', 'POST');
     const [order, setOrder] = useState<ImportOrder | null>(null);
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
@@ -72,7 +76,7 @@ const ImportOrderDetailPage: React.FC = () => {
                         </IonButton>
                     </IonButtons>
                     <IonButtons slot="end">
-                        {order.status === 'PENDING' && (
+                        {canUpdateImportOrder && order.status === 'PENDING' && (
                             <IonButton color="primary" style={{ fontWeight: 600, fontSize: '16px', marginRight: '8px' }} onClick={() => ionRouter.push(`/import-order/edit/${order.id}`)}>Sửa</IonButton>
                         )}
                     </IonButtons>
@@ -168,7 +172,7 @@ const ImportOrderDetailPage: React.FC = () => {
                 </div>
             </IonContent>
 
-            {order.status === 'COMPLETED' && order.returnStatus !== 'FULL_RETURNED' && (
+            {canCreateImportReturn && order.status === 'COMPLETED' && order.returnStatus !== 'FULL_RETURNED' && (
                 <IonFooter className="iod-action-footer ion-no-border">
                     <div className="iod-action-section" onClick={() => ionRouter.push(`/import-return-orders/create/${order.id}`)} style={{ cursor: 'pointer' }}>
                         <IonIcon icon={shareOutline} className="iod-action-icon" />

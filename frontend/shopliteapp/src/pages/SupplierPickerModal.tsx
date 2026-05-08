@@ -7,6 +7,7 @@ import {
 } from 'ionicons/icons';
 import type { Supplier } from '../api/types';
 import { supplierService } from '../services/supplier.service';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './CategoryPickerModal.css'; // reuse same styles
 
 interface SupplierPickerModalProps {
@@ -24,6 +25,8 @@ const SupplierPickerModal: React.FC<SupplierPickerModalProps> = ({
     onClose,
     onSelect,
 }) => {
+    const { can } = useStorePermissions();
+    const canCreateSupplier = can('/api/v1/suppliers', 'POST');
     const [view, setView] = useState<SubView>('list');
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [loadingList, setLoadingList] = useState(false);
@@ -72,6 +75,10 @@ const SupplierPickerModal: React.FC<SupplierPickerModalProps> = ({
     });
 
     const handleAddNew = async () => {
+        if (!canCreateSupplier) {
+            setToast('Bạn không có quyền thêm nhà cung cấp');
+            return;
+        }
         if (!newName.trim()) {
             setToast('Vui lòng nhập tên nhà cung cấp');
             return;
@@ -116,18 +123,20 @@ const SupplierPickerModal: React.FC<SupplierPickerModalProps> = ({
                                 <IonIcon icon={chevronBackOutline} />
                             </button>
                             <span className="cpm-title">Nhà cung cấp</span>
-                            <button
-                                className="cpm-add-btn"
-                                onClick={() => { 
-                                    setNewName(''); 
-                                    setNewPhone(''); 
-                                    setNewAddress(''); 
-                                    setNewEmail(''); 
-                                    setView('add-new'); 
-                                }}
-                            >
-                                <IonIcon icon={addOutline} />
-                            </button>
+                            {canCreateSupplier && (
+                                <button
+                                    className="cpm-add-btn"
+                                    onClick={() => {
+                                        setNewName('');
+                                        setNewPhone('');
+                                        setNewAddress('');
+                                        setNewEmail('');
+                                        setView('add-new');
+                                    }}
+                                >
+                                    <IonIcon icon={addOutline} />
+                                </button>
+                            )}
                         </div>
 
                         <div className="cpm-search-bar">

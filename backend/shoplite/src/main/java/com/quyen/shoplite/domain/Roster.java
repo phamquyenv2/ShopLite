@@ -13,14 +13,10 @@ import java.time.LocalTime;
  * để tính lương chính xác theo từng loại ngày.
  */
 @Entity
-@Table(
-        name = "rosters",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_roster_employee_day",
-                        columnNames = {"employee_id", "working_day"})
-        }
-)
+@Table(name = "rosters", indexes = {
+        @Index(name = "idx_rosters_employee_id", columnList = "employee_id"),
+        @Index(name = "idx_rosters_employee_day", columnList = "employee_id, working_day")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -47,6 +43,18 @@ public class Roster {
     /** Giờ kết thúc ca (null nếu type == OFF / LEAVE_*) */
     @Column(name = "end_time")
     private LocalTime endTime;
+
+    @Column(name = "check_in_allowed_from")
+    private LocalTime checkInAllowedFrom;
+
+    @Column(name = "check_in_allowed_to")
+    private LocalTime checkInAllowedTo;
+
+    @Column(name = "check_out_allowed_from")
+    private LocalTime checkOutAllowedFrom;
+
+    @Column(name = "check_out_allowed_to")
+    private LocalTime checkOutAllowedTo;
 
     /**
      * Số giờ dự kiến của ca — dùng để:

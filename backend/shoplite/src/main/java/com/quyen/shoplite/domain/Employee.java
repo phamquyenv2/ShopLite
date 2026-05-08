@@ -24,6 +24,10 @@ public class Employee {
     @JoinColumn(name = "store_member_id", nullable = false)
     private StoreMember storeMember;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
+
     @Column(name = "salary_rate", nullable = false)
     private Double salaryRate;
 

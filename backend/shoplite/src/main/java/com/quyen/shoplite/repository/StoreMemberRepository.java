@@ -24,6 +24,18 @@ public interface StoreMemberRepository extends JpaRepository<StoreMember, Long> 
 
     Optional<StoreMember> findByStore_IdAndUser_Id(Long storeId, Integer userId);
 
+    @Query("""
+            select sm
+            from StoreMember sm
+            join fetch sm.user u
+            where sm.role.id = :roleId and sm.status = :status
+            """)
+    List<StoreMember> findAllByRoleIdAndStatusFetchUser(
+            @Param("roleId") Long roleId,
+            @Param("status") StoreMemberStatus status);
+
+    List<StoreMember> findAllByStore_IdAndStatus(Long storeId, StoreMemberStatus status);
+
     default Optional<StoreMember> findByStoreIdAndUserId(Long storeId, Integer userId) {
         return findByStore_IdAndUser_Id(storeId, userId);
     }

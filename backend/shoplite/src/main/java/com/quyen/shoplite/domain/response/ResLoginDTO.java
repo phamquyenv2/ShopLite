@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 /**
  * Response trả về sau khi đăng nhập thành công.
  */
@@ -42,5 +44,8 @@ public class ResLoginDTO {
         private Long id;
         private String name;
         private String memberRole;
+        private String membershipStatus;
+        private List<ResPermissionDTO> permissions;
+        private List<ResMenuDTO> menus;
     }
 }

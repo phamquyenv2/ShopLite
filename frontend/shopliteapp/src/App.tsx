@@ -15,6 +15,11 @@ import ProductAddPage from './pages/ProductAddPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import ProductEditPage from './pages/ProductEditPage';
 import EmployeesPage from './pages/EmployeesPage';
+import EmployeeDetailPage from './pages/EmployeeDetailPage';
+import EmployeeSalaryPage from './pages/EmployeeSalaryPage';
+import RosterPage from './pages/RosterPage';
+import AttendancePage from './pages/AttendancePage';
+import PayrollsPage from './pages/PayrollsPage';
 import RoleDetailPage from './pages/RoleDetailPage/RoleDetailPage';
 import ImportOrdersPage from './pages/ImportOrdersPage';
 import ImportOrderCreatePage from './pages/ImportOrderCreatePage';
@@ -27,6 +32,8 @@ import ImportReturnCreatePage from './pages/ImportReturnCreatePage';
 import ImportReturnOrderDetailPage from './pages/ImportReturnOrderDetailPage';
 import MorePage from './pages/MorePage';
 import FundLedgerPage from './pages/FundLedgerPage';
+import CustomersPage from './pages/CustomersPage';
+import CustomerDetailPage from './pages/CustomerDetailPage';
 import WelcomePage from './pages/WelcomePage';
 import GetStartedPage from './pages/GetStartedPage';
 import OtpPage from './pages/OtpPage';
@@ -59,6 +66,12 @@ import '@ionic/react/css/palettes/dark.system.css';
 
 /* Theme variables */
 import './theme/variables.css';
+import CustomerFormPage from './pages/CustomerFormPage';
+import CustomerTransactionsPage from './pages/CustomerTransactionsPage';
+import CustomerDebtPage from './pages/CustomerDebtPage';
+import SuppliersPage from './pages/SuppliersPage';
+import SupplierDetailPage from './pages/SupplierDetailPage';
+import SupplierFormPage from './pages/SupplierFormPage';
 
 setupIonicReact({ mode: 'md' });
 
@@ -72,6 +85,19 @@ const RegisterRoute: React.FC = () => {
   const { status } = useAuth();
   if (status === 'authenticated') return <Redirect to="/home" />;
   return <Register />;
+};
+
+const WelcomeRoute: React.FC = () => {
+  const { status } = useAuth();
+  if (status === 'checking') return null;
+  if (status === 'authenticated') return <Redirect to="/home" />;
+  return <WelcomePage />;
+};
+
+const RootRoute: React.FC = () => {
+  const { status } = useAuth();
+  if (status === 'checking') return null;
+  return <Redirect to={status === 'authenticated' ? '/home' : '/welcome'} />;
 };
 
 /**
@@ -100,6 +126,11 @@ const AppContent: React.FC = () => {
 
       <Route exact path="/sales" render={() => <RequireAuth component={SalesPage} />} />
       <Route exact path="/employees" render={() => <RequireAuth component={EmployeesPage} />} />
+      <Route exact path="/employees/:id(\d+)" render={() => <RequireAuth component={EmployeeDetailPage} />} />
+      <Route exact path="/employees/:id(\d+)/salary" render={() => <RequireAuth component={EmployeeSalaryPage} />} />
+      <Route exact path="/roster" render={() => <RequireAuth component={RosterPage} />} />
+      <Route exact path="/attendance" render={() => <RequireAuth component={AttendancePage} />} />
+      <Route exact path="/payrolls" render={() => <RequireAuth component={PayrollsPage} />} />
       <Route exact path="/roles/:id" render={() => <RequireAuth component={RoleDetailPage} />} />
 
       <Route exact path="/import-orders" render={() => <RequireAuth component={ImportOrdersPage} />} />
@@ -117,17 +148,28 @@ const AppContent: React.FC = () => {
 
       <Route exact path="/fund-ledger" render={() => <RequireAuth component={FundLedgerPage} />} />
 
+      <Route exact path="/customers" render={() => <RequireAuth component={CustomersPage} />} />
+      <Route exact path="/customers/new" render={() => <RequireAuth component={CustomerFormPage} />} />
+      <Route exact path="/customers/:id(\d+)" render={() => <RequireAuth component={CustomerDetailPage} />} />
+      <Route exact path="/customers/:id(\d+)/edit" render={() => <RequireAuth component={CustomerFormPage} />} />
+      <Route exact path="/customers/:id(\d+)/orders" render={() => <RequireAuth component={CustomerTransactionsPage} />} />
+      <Route exact path="/customers/:id(\d+)/debt" render={() => <RequireAuth component={CustomerDebtPage} />} />
+
+      <Route exact path="/suppliers" render={() => <RequireAuth component={SuppliersPage} />} />
+      <Route exact path="/suppliers/new" render={() => <RequireAuth component={SupplierFormPage} />} />
+      <Route exact path="/suppliers/:id(\d+)" render={() => <RequireAuth component={SupplierDetailPage} />} />
+      <Route exact path="/suppliers/:id(\d+)/edit" render={() => <RequireAuth component={SupplierFormPage} />} />
+
+
       <Route exact path="/more" render={() => <RequireAuth component={MorePage} />} />
 
-      <Route exact path="/welcome" render={() => <WelcomePage />} />
+      <Route exact path="/welcome" render={() => <WelcomeRoute />} />
       <Route exact path="/get-started" render={() => <GetStartedPage />} />
       <Route exact path="/otp" render={() => <OtpPage />} />
       <Route exact path="/register/store" render={() => <SetStorePage />} />
       <Route exact path="/register/complete" render={() => <SetPasswordPage />} />
 
-      <Route exact path="/">
-        <Redirect to="/welcome" />
-      </Route>
+      <Route exact path="/" render={() => <RootRoute />} />
     </IonRouterOutlet>
   );
 };

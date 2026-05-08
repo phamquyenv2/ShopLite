@@ -7,6 +7,7 @@ import {
 } from 'ionicons/icons';
 import type { Unit } from '../api/types';
 import { authApis, endpoints } from '../utils/Apis';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './CategoryPickerModal.css'; // reuse same styles
 
 interface UnitPickerModalProps {
@@ -24,6 +25,8 @@ const UnitPickerModal: React.FC<UnitPickerModalProps> = ({
     onClose,
     onSelect,
 }) => {
+    const { can } = useStorePermissions();
+    const canCreateUnit = can('/api/v1/units', 'POST');
     const [view, setView] = useState<SubView>('list');
     const [units, setUnits] = useState<Unit[]>([]);
     const [loadingList, setLoadingList] = useState(false);
@@ -63,6 +66,10 @@ const UnitPickerModal: React.FC<UnitPickerModalProps> = ({
     );
 
     const handleAddNew = async () => {
+        if (!canCreateUnit) {
+            setToast('Bạn không có quyền thêm đơn vị tính');
+            return;
+        }
         if (!newName.trim()) {
             setToast('Vui lòng nhập tên đơn vị');
             return;
@@ -114,12 +121,14 @@ const UnitPickerModal: React.FC<UnitPickerModalProps> = ({
                                 <IonIcon icon={chevronBackOutline} />
                             </button>
                             <span className="cpm-title">Chọn đơn vị tính</span>
-                            <button
-                                className="cpm-add-btn"
-                                onClick={() => { setNewName(''); setNewDesc(''); setView('add-new'); }}
-                            >
-                                <IonIcon icon={addOutline} />
-                            </button>
+                            {canCreateUnit && (
+                                <button
+                                    className="cpm-add-btn"
+                                    onClick={() => { setNewName(''); setNewDesc(''); setView('add-new'); }}
+                                >
+                                    <IonIcon icon={addOutline} />
+                                </button>
+                            )}
                         </div>
 
                         <div className="cpm-search-bar">

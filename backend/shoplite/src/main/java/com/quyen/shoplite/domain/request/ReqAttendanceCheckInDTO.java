@@ -14,6 +14,9 @@ public class ReqAttendanceCheckInDTO {
     @NotNull(message = "longitude khong duoc de trong")
     private Double longitude;
 
+    /** Selected roster/shift id. Required for shift-based attendance. */
+    private Integer rosterId;
+
     /** Optional client device identifier for audit and future anti-fraud checks */
     private String deviceId;
 }

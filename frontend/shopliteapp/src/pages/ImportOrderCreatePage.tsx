@@ -13,6 +13,7 @@ import { supplierService } from '../services/supplier.service';
 import { productService } from '../services/product.service';
 import { authApis, endpoints } from '../utils/Apis';
 import type { Product, Supplier, ImportOrderUpsert } from '../api/types';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import SupplierPickerModal from './SupplierPickerModal';
 import './ImportOrderCreatePage.css';
 
@@ -32,6 +33,11 @@ const ImportOrderCreatePage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const isEditMode = Boolean(id);
     const ionRouter = useIonRouter();
+    const { can } = useStorePermissions();
+    const canCreateImportOrder = can('/api/v1/import-orders', 'POST');
+    const canUpdateImportOrder = can('/api/v1/import-orders/{id}', 'PUT');
+    const canPayImportOrder = can('/api/v1/import-orders/{id}/pay', 'POST');
+    const canCreateProduct = can('/api/v1/products', 'POST');
 
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
@@ -57,6 +63,9 @@ const ImportOrderCreatePage: React.FC = () => {
 
     // Trạng thái thực tế của order từ server (dùng để xác định retry flow)
     const [orderStatus, setOrderStatus] = useState<string | null>(null);
+    const canSaveImportOrder = isEditMode
+        ? (orderStatus === 'PENDING_PAYMENT' ? canPayImportOrder : canUpdateImportOrder)
+        : canCreateImportOrder;
 
     useIonViewWillEnter(() => {
         loadInitial();
@@ -151,6 +160,10 @@ const ImportOrderCreatePage: React.FC = () => {
     const debtAmount = (paidAmount || 0) - needToPay; // âm là công nợ
 
     const handleSave = async (asDraft: boolean) => {
+        if (!canSaveImportOrder) {
+            setToast('Bạn không có quyền lưu phiếu nhập');
+            return;
+        }
         if (!selectedSupplier) { setToast('Vui lòng chọn nhà cung cấp'); return; }
         if (cart.length === 0) { setToast('Vui lòng thêm sản phẩm'); return; }
 
@@ -294,8 +307,8 @@ const ImportOrderCreatePage: React.FC = () => {
 
                 <IonFooter className="ioc-footer ion-no-border">
                     <div className="ioc-footer-actions">
-                        <button className="ioc-btn-draft" onClick={() => handleSave(true)} disabled={saving}>Lưu tạm</button>
-                        <button className="ioc-btn-save" onClick={() => handleSave(false)} disabled={saving}>
+                        <button className="ioc-btn-draft" onClick={() => handleSave(true)} disabled={saving || !canSaveImportOrder}>Lưu tạm</button>
+                        <button className="ioc-btn-save" onClick={() => handleSave(false)} disabled={saving || !canSaveImportOrder}>
                             {saving ? <IonSpinner name="dots" /> : 'Hoàn thành'}
                         </button>
                     </div>
@@ -327,14 +340,16 @@ const ImportOrderCreatePage: React.FC = () => {
                             <IonIcon icon={searchOutline} className="ioc-s-icon" />
                             <span className="ioc-search-placeholder">Tên, mã hàng, mã...</span>
                             <div className="ioc-s-actions">
-                                <IonIcon 
-                                    icon={addOutline} 
-                                    className="ioc-s-add-icon" 
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        ionRouter.push('/product/new'); // Default to Add Product, or /orders/new if you strictly meant Sales Order.
-                                    }}
-                                />
+                                {canCreateProduct && (
+                                    <IonIcon
+                                        icon={addOutline}
+                                        className="ioc-s-add-icon"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            ionRouter.push('/product/new'); // Default to Add Product, or /orders/new if you strictly meant Sales Order.
+                                        }}
+                                    />
+                                )}
                                 <div className="ioc-s-scan">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3M9 8h2v8H9zM13 8h2v8h-2z"/>
@@ -417,11 +432,11 @@ const ImportOrderCreatePage: React.FC = () => {
                     </div>
                 )}
                 <div className="ioc-footer-actions">
-                    <button className="ioc-btn-draft" onClick={() => handleSave(true)} disabled={saving || cart.length === 0}>Lưu tạm</button>
+                    <button className="ioc-btn-draft" onClick={() => handleSave(true)} disabled={saving || cart.length === 0 || !canSaveImportOrder}>Lưu tạm</button>
                     <button className="ioc-btn-save" onClick={() => {
                         if (!selectedSupplier) { setToast('Vui lòng chọn nhà cung cấp'); return; }
                         setCheckoutMode(true);
-                    }} disabled={cart.length === 0}>
+                    }} disabled={cart.length === 0 || !canSaveImportOrder}>
                         Tiếp tục
                     </button>
                 </div>

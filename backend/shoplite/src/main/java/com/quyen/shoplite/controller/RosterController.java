@@ -14,6 +14,7 @@ import jakarta.validation.constraints.Positive;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 @Validated
@@ -46,8 +47,8 @@ public class RosterController {
     @ApiMessage("Get roster by employee success")
     public ResponseEntity<List<ResRosterDTO>> findByEmployee(
             @PathVariable("employeeId") @Positive(message = " must be greater than 0") Integer employeeId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+            @RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return ResponseEntity.ok(rosterService.findByEmployeeAndRange(employeeId, from, to));
     }
 
@@ -58,8 +59,19 @@ public class RosterController {
     @GetMapping("/day")
     @ApiMessage("Get daily roster success")
     public ResponseEntity<List<ResRosterDTO>> findByDay(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(rosterService.findByDay(date));
+    }
+
+    /**
+     * GET /api/v1/roster/month?month=YYYY-MM
+     * Lay lich tat ca nhan vien trong mot thang de ve calendar.
+     */
+    @GetMapping("/month")
+    @ApiMessage("Get monthly roster success")
+    public ResponseEntity<List<ResRosterDTO>> findByMonth(@RequestParam("month") String month) {
+        YearMonth ym = YearMonth.parse(month);
+        return ResponseEntity.ok(rosterService.findByRange(ym.atDay(1), ym.atEndOfMonth()));
     }
 
     /** PUT /api/v1/roster/{id} — Cập nhật lịch (ví dụ đổi type sang LEAVE_APPROVED) */

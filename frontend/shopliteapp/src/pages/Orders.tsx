@@ -9,6 +9,7 @@ import {
 } from 'ionicons/icons';
 import { authApis, endpoints } from '../utils/Apis';
 import type { Order } from '../api/types';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './Orders.css';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -203,6 +204,8 @@ const FilterModal: React.FC<FilterModalProps> = ({ isOpen, initial, onApply, onC
 
 const Orders: React.FC = () => {
     const ionRouter = useIonRouter();
+    const { can } = useStorePermissions();
+    const canCreateOrder = can('/api/v1/orders', 'POST');
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
@@ -370,11 +373,13 @@ const Orders: React.FC = () => {
             </IonContent>
 
             {/* FAB → Sales page */}
-            <IonFab vertical="bottom" horizontal="end" slot="fixed" style={{ marginBottom: '16px' }}>
-                <IonFabButton className="ord-fab" onClick={() => ionRouter.push('/sales')}>
-                    <IonIcon icon={addOutline} />
-                </IonFabButton>
-            </IonFab>
+            {canCreateOrder && (
+                <IonFab vertical="bottom" horizontal="end" slot="fixed" style={{ marginBottom: '16px' }}>
+                    <IonFabButton className="ord-fab" onClick={() => ionRouter.push('/sales')}>
+                        <IonIcon icon={addOutline} />
+                    </IonFabButton>
+                </IonFab>
+            )}
 
             {/* Filter modal */}
             <FilterModal

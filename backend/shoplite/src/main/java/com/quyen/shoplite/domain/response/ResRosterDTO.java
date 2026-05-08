@@ -19,8 +19,13 @@ public class ResRosterDTO {
     private LocalDate workingDay;
     private LocalTime startTime;
     private LocalTime endTime;
+    private LocalTime checkInAllowedFrom;
+    private LocalTime checkInAllowedTo;
+    private LocalTime checkOutAllowedFrom;
+    private LocalTime checkOutAllowedTo;
     private Double expectedHours;
     private RosterTypeEnum type;
     private String note;
     private Long unpaidBreakMinutes;
+    private Boolean expired;
 }

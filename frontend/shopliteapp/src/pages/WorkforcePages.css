@@ -1,0 +1,1342 @@
+.workforce-page {
+  --background: #f4f6f9;
+}
+
+.wf-header {
+  background: transparent;
+  box-shadow: none !important;
+}
+
+.wf-header.header-md {
+  box-shadow: none !important;
+}
+
+.wf-header::after {
+  display: none !important;
+}
+
+.wf-toolbar {
+  --background: transparent;
+  --border-width: 0;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+}
+
+.wf-content {
+  --background: #f4f6f9;
+}
+
+.wf-title {
+  font-size: 19px;
+  font-weight: 600;
+  color: #111;
+  margin-left: -8px;
+}
+
+.wf-top-card {
+  background: #fff;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  padding: 0 16px 14px;
+}
+
+.wf-filter-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding-top: 4px;
+}
+
+.wf-field {
+  flex: 1;
+  height: 44px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #111;
+  font-size: 14px;
+  padding: 0 12px;
+  outline: none;
+}
+
+.wf-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  margin-top: 10px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: #f7f9fb;
+}
+
+.wf-search ion-icon {
+  color: #8a94a6;
+  font-size: 20px;
+}
+
+.wf-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #111;
+  font-size: 15px;
+}
+
+.wf-primary-btn,
+.wf-ghost-btn,
+.wf-danger-btn {
+  border: 0;
+  border-radius: 10px;
+  min-height: 44px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wf-primary-btn {
+  background: #0066ff;
+  color: #fff;
+}
+
+.wf-ghost-btn {
+  background: #eef4ff;
+  color: #0066ff;
+}
+
+.wf-danger-btn {
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+.wf-primary-btn:disabled,
+.wf-ghost-btn:disabled,
+.wf-danger-btn:disabled {
+  opacity: .65;
+}
+
+.wf-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.wf-summary-item {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.wf-summary-value {
+  font-size: 17px;
+  font-weight: 600;
+  color: #111;
+}
+
+.wf-summary-label {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.wf-segments {
+  display: flex;
+  background: #f0f4ff;
+  border-radius: 12px;
+  padding: 4px;
+  margin-top: 10px;
+}
+
+.wf-segment {
+  flex: 1;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #444;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.wf-segment.active {
+  background: #fff;
+  color: #0066ff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
+}
+
+.wf-list-card {
+  background: #fff;
+  margin-top: 12px;
+  border-radius: 16px 16px 0 0;
+  min-height: 65vh;
+  padding-bottom: 90px;
+}
+
+.wf-section-label {
+  padding: 16px 16px 8px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.wf-loading,
+.wf-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  padding: 28px;
+  color: #8a94a6;
+  font-size: 15px;
+  text-align: center;
+}
+
+.wf-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.wf-row:active {
+  background: #f8fafc;
+}
+
+.wf-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #eef4ff;
+  color: #0066ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 22px;
+}
+
+.wf-row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.wf-row-title {
+  color: #111;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wf-row-sub {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.wf-row-note {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.wf-badge {
+  flex: 0 0 auto;
+  padding: 4px 9px;
+  border-radius: 7px;
+  background: #eef4ff;
+  color: #0066ff;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.wf-badge.green {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.wf-badge.orange {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.wf-badge.red {
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+.wf-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wf-icon-btn {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #64748b;
+  font-size: 20px;
+}
+
+.wf-money {
+  color: #111;
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.wf-modal {
+  --background: #f4f6f9;
+}
+
+.wf-modal::part(content) {
+  border-radius: 18px 18px 0 0;
+}
+
+.wf-modal-header {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 12px 16px;
+  background: #fff;
+  color: #111;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.roster-modal-header {
+  min-height: 58px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.wf-modal-content {
+  --background: #f4f6f9;
+}
+
+.wf-form-card {
+  background: #fff;
+  margin-top: 8px;
+}
+
+.roster-form-card {
+  margin-top: 8px;
+  border-top: 1px solid #f8fafc;
+}
+
+.wf-form-field {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.wf-form-field label {
+  display: block;
+  margin-bottom: 8px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.wf-form-field input,
+.wf-form-field select,
+.wf-form-field textarea {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #111;
+  font-size: 15px;
+  line-height: 1.45;
+  padding: 4px 0;
+}
+
+.roster-picker-trigger {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 15px;
+  line-height: 1.45;
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+}
+
+.roster-picker-trigger.has-value {
+  color: #111;
+}
+
+.roster-picker-trigger ion-icon {
+  color: #111;
+  font-size: 18px;
+}
+
+.roster-type-segment {
+  display: flex;
+  gap: 6px;
+  padding: 3px;
+  border-radius: 10px;
+  background: #f1f5f9;
+}
+
+.roster-type-segment button {
+  flex: 1;
+  min-height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.roster-type-segment button.active {
+  background: #fff;
+  color: #0066ff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .06);
+}
+
+.wf-form-field textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.wf-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.wf-form-grid .wf-form-field:first-child {
+  border-right: 1px solid #f1f5f9;
+}
+
+.wf-modal-footer {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: #f4f6f9;
+}
+
+.wf-modal-footer button {
+  flex: 1;
+}
+
+.wf-attendance-panel {
+  margin-top: 6px;
+  padding: 16px;
+  border: 1px solid #e8eef8;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, .06);
+}
+
+.wf-attendance-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wf-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.wf-status-pill.green {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.wf-status-pill.blue {
+  background: #eef4ff;
+  color: #0066ff;
+}
+
+.wf-status-pill.gray {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.wf-attendance-title {
+  margin-top: 8px;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.wf-attendance-icon {
+  width: 42px;
+  height: 42px;
+  padding: 10px;
+  border-radius: 14px;
+  background: #0066ff;
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(0, 102, 255, .25);
+}
+
+.wf-time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.wf-time-box {
+  border-radius: 14px;
+  background: #f1f5f9;
+  padding: 12px;
+}
+
+.wf-time-box span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wf-time-box strong {
+  display: block;
+  margin-top: 4px;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.wf-blocked-card {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.wf-blocked-card ion-icon {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  font-size: 18px;
+}
+
+.wf-attendance-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.wf-action-main,
+.wf-action-dark {
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.wf-action-main {
+  background: #0066ff;
+  color: #fff;
+}
+
+.wf-action-dark {
+  background: #111827;
+  color: #fff;
+}
+
+.wf-action-main:disabled,
+.wf-action-dark:disabled {
+  background: #e5e7eb;
+  color: #94a3b8;
+}
+
+.attendance-page .wf-title,
+.attendance-page .wf-summary-value,
+.attendance-page .wf-row-title {
+  font-weight: 500;
+}
+
+.attendance-page .wf-attendance-panel {
+  box-shadow: 0 8px 20px rgba(15, 23, 42, .045);
+}
+
+.attendance-page .wf-status-pill,
+.attendance-page .wf-time-box span,
+.attendance-page .wf-action-main,
+.attendance-page .wf-action-dark,
+.attendance-page .wf-section-label,
+.attendance-page .wf-badge,
+.attendance-page .wf-segment {
+  font-weight: 500;
+}
+
+.attendance-page .wf-attendance-title {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.attendance-page .wf-attendance-shift-name {
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.wf-shift-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.wf-shift-option {
+  min-height: 58px;
+  border: 1px solid #e8eef8;
+  border-radius: 13px;
+  background: #f8fafc;
+  color: #111827;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  text-align: left;
+}
+
+.wf-shift-option span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.wf-shift-option small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.wf-shift-option.active {
+  border-color: #0066ff;
+  background: #eef4ff;
+  color: #0066ff;
+}
+
+.wf-shift-option.done {
+  border-color: #dcfce7;
+  background: #f0fdf4;
+}
+
+.wf-shift-option.expired {
+  border-color: #fee2e2;
+  background: #fef2f2;
+}
+
+.wf-shift-option.expired small {
+  color: #ef4444;
+}
+
+.wf-shift-option:disabled {
+  opacity: .68;
+}
+
+.attendance-page .wf-time-box strong {
+  font-weight: 500;
+}
+
+.attendance-page .wf-summary-label,
+.attendance-page .wf-row-sub,
+.attendance-page .wf-row-note {
+  font-weight: 400;
+}
+
+.roster-calendar-page .wf-content {
+  --background: #eef3fb;
+}
+
+.roster-top-card {
+  padding-bottom: 16px;
+}
+
+.roster-month-bar {
+  display: grid;
+  grid-template-columns: 42px 1fr 42px;
+  align-items: center;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.roster-month-nav {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.roster-month-title {
+  color: #111;
+  font-size: 19px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.roster-month-sub {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.roster-summary .wf-summary-item {
+  background: #f6f9fd;
+}
+
+.roster-calendar-card {
+  position: relative;
+  margin: 12px 12px 0;
+  padding: 12px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+}
+
+.roster-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.roster-weekdays span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.roster-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.roster-day-cell {
+  position: relative;
+  min-height: 64px;
+  border: 1px solid #eef2f7;
+  border-radius: 13px;
+  background: #f8fafc;
+  color: #111;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.roster-day-cell.muted {
+  opacity: .42;
+}
+
+.roster-day-cell.has-roster {
+  background: #f7fbff;
+  border-color: #dbeafe;
+}
+
+.roster-day-cell.selected {
+  background: #0066ff;
+  border-color: #0066ff;
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(0, 102, 255, .25);
+}
+
+.roster-day-cell.today:not(.selected)::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0066ff;
+}
+
+.roster-day-number {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.roster-day-count {
+  width: 100%;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.roster-day-cell.selected .roster-day-count {
+  color: rgba(255,255,255,.86);
+}
+
+.roster-day-dots {
+  display: flex;
+  gap: 3px;
+  min-height: 5px;
+}
+
+.roster-day-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  display: block;
+}
+
+.roster-day-dots .work {
+  background: #16a34a;
+}
+
+.roster-day-dots .leave {
+  background: #f97316;
+}
+
+.roster-day-cell.selected .roster-day-dots i {
+  background: #fff;
+}
+
+.roster-calendar-loading {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  background: rgba(255,255,255,.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.roster-day-panel {
+  margin-top: 12px;
+  min-height: 320px;
+  border-radius: 18px 18px 0 0;
+}
+
+.roster-selected-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-right: 16px;
+}
+
+.roster-selected-head .wf-section-label {
+  padding-bottom: 2px;
+}
+
+.roster-selected-stats {
+  padding-left: 16px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.roster-employee-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px 6px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.roster-employee-label ion-icon {
+  color: #0066ff;
+  font-size: 17px;
+}
+
+.roster-day-search {
+  margin: 12px 16px;
+}
+
+.roster-shift-row .wf-badge {
+  margin-left: auto;
+}
+
+.roster-shift-row {
+  padding-left: 20px;
+}
+
+.roster-shift-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 19px;
+}
+
+.roster-empty {
+  flex-direction: column;
+  gap: 10px;
+  min-height: 220px;
+}
+
+.roster-empty ion-icon {
+  font-size: 42px;
+  color: #cbd5e1;
+}
+
+.roster-picker-modal {
+  --background: #f4f6f9;
+}
+
+.roster-picker-modal::part(content) {
+  border-radius: 18px 18px 0 0;
+}
+
+.roster-picker-header {
+  min-height: 56px;
+  padding: 12px 16px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.roster-picker-header button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.roster-picker-header span {
+  color: #111;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.roster-picker-content {
+  --background: #f4f6f9;
+}
+
+.roster-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  margin: 12px 16px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.roster-picker-search ion-icon {
+  color: #8a94a6;
+  font-size: 20px;
+}
+
+.roster-picker-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #111;
+  font-size: 15px;
+}
+
+.roster-picker-list {
+  margin: 0 16px 20px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.roster-picker-item {
+  width: 100%;
+  min-height: 62px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.roster-picker-item:last-child {
+  border-bottom: 0;
+}
+
+.roster-picker-item.active {
+  background: #f8fbff;
+}
+
+.roster-picker-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #eef4ff;
+  color: #0066ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.roster-picker-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.roster-picker-info strong {
+  color: #111;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.roster-picker-info span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.roster-picker-check {
+  color: #0066ff;
+  font-size: 20px;
+}
+
+.roster-picker-empty {
+  padding: 32px 16px;
+  color: #8a94a6;
+  font-size: 14px;
+  text-align: center;
+}
+
+@media (max-width: 420px) {
+  .wf-filter-row {
+    align-items: stretch;
+  }
+
+  .wf-primary-btn,
+  .wf-ghost-btn,
+  .wf-danger-btn {
+    padding: 0 12px;
+  }
+
+  .wf-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .roster-calendar-card {
+    margin-left: 10px;
+    margin-right: 10px;
+    padding: 10px;
+  }
+
+  .roster-calendar-grid {
+    gap: 5px;
+  }
+
+  .roster-day-cell {
+    min-height: 58px;
+    border-radius: 11px;
+    padding: 7px 5px;
+  }
+
+  .roster-day-count {
+    font-size: 9px;
+  }
+
+  .roster-selected-head {
+    align-items: flex-start;
+  }
+
+  .roster-selected-head .wf-primary-btn {
+    min-height: 40px;
+    margin-top: 12px;
+  }
+}
+
+/* ── Shift Cards Section ── */
+.shift-cards-section {
+  margin-top: 14px;
+}
+
+.shift-cards-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.shift-cards-title ion-icon {
+  color: #0066ff;
+  font-size: 16px;
+}
+
+.shift-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Base shift card */
+.shift-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid #e5eaf2;
+  border-radius: 14px;
+  background: #f8fafc;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+}
+
+.shift-card__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.shift-card__icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.shift-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.shift-card__time {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+}
+
+.shift-card__note {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Badge on right */
+.shift-card__badge {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* Pulse dot for open shift */
+.shift-card__pulse {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: shift-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes shift-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* ── Status variants ── */
+
+/* Active – can check-in */
+.shift-card--active {
+  border-color: #bfdbfe;
+  background: #f0f7ff;
+}
+.shift-card--active .shift-card__icon {
+  background: #dbeafe;
+  color: #2563eb;
+}
+.shift-card--active .shift-card__badge--active {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* Selected active */
+.shift-card--active.shift-card--selected {
+  border-color: #0066ff;
+  background: #eef4ff;
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.12);
+}
+.shift-card--active.shift-card--selected .shift-card__time {
+  color: #0066ff;
+}
+.shift-card--active.shift-card--selected .shift-card__badge--active {
+  background: #0066ff;
+  color: #fff;
+}
+
+/* Open – currently clocked in */
+.shift-card--open {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+.shift-card--open .shift-card__icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.shift-card--open .shift-card__time {
+  color: #15803d;
+}
+.shift-card__badge--open {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+/* Done – checked out */
+.shift-card--done {
+  border-color: #d1fae5;
+  background: #f0fdf4;
+  opacity: 0.85;
+}
+.shift-card--done .shift-card__icon {
+  background: #d1fae5;
+  color: #059669;
+}
+.shift-card--done .shift-card__time {
+  color: #374151;
+}
+.shift-card__badge--done {
+  background: #d1fae5;
+  color: #059669;
+}
+
+/* Expired – past checkout time, no check-in allowed */
+.shift-card--expired {
+  border-color: #fecaca;
+  background: #fff5f5;
+  cursor: not-allowed;
+  opacity: 0.82;
+}
+.shift-card--expired .shift-card__icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.shift-card--expired .shift-card__time {
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+.shift-card--expired .shift-card__note {
+  color: #ef4444;
+}
+.shift-card__badge--expired {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Leave / non-working */
+.shift-card--leave {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  cursor: default;
+  opacity: 0.8;
+}
+.shift-card--leave .shift-card__icon {
+  background: #ffedd5;
+  color: #ea580c;
+}
+.shift-card__badge--leave {
+  background: #ffedd5;
+  color: #ea580c;
+}
+
+/* Acting (loading) state */
+.shift-card--acting {
+  pointer-events: none;
+  opacity: 0.7;
+}

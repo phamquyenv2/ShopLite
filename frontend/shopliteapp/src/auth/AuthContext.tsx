@@ -12,6 +12,8 @@ import {
     storeAuthFromPayload,
 } from '../utils/Apis';
 import type { AuthUser, LoginResponse, OtpSendResponse, OtpVerifyResponse } from './types';
+import { getFcmRegistrationToken } from '../utils/fcmOtp';
+import { clearMeCache, getCurrentMe } from '../utils/meSession';
 
 export type AuthStatus = 'checking' | 'authenticated' | 'unauthenticated';
 
@@ -70,8 +72,15 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     const [user, setUser] = useState<AuthUser | null>(() => getStoredUser<AuthUser>());
     const refreshingRef = useRef(false);
 
+    const warmMeCache = useCallback((force = false) => {
+        void getCurrentMe({ force }).catch(() => {
+            // Protected pages still handle auth/API errors through their own requests.
+        });
+    }, []);
+
     useEffect(() => {
         const handler = () => {
+            clearMeCache();
             setUser(null);
             setStatus('unauthenticated');
         };
@@ -92,6 +101,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             if (storedUser) {
                 setUser(storedUser);
                 setStatus('authenticated');
+                warmMeCache();
                 return;
             }
         }
@@ -100,6 +110,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         const refreshToken = getStoredRefreshToken();
         if (!refreshToken) {
             clearStoredAuth();
+            clearMeCache();
             setUser(null);
             setStatus('unauthenticated');
             return;
@@ -116,6 +127,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
             if (!stored.accessToken || !stored.refreshToken) {
                 clearStoredAuth();
+                clearMeCache();
                 setUser(null);
                 setStatus('unauthenticated');
                 return;
@@ -123,14 +135,16 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
             setUser((stored.user as AuthUser | null) ?? getStoredUser<AuthUser>());
             setStatus('authenticated');
+            warmMeCache(true);
         } catch {
             clearStoredAuth();
+            clearMeCache();
             setUser(null);
             setStatus('unauthenticated');
         } finally {
             refreshingRef.current = false;
         }
-    }, []);
+    }, [warmMeCache]);
 
     useEffect(() => {
         void refreshSession();
@@ -157,6 +171,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
         if (!stored.accessToken || !stored.refreshToken) {
             clearStoredAuth();
+            clearMeCache();
             setUser(null);
             setStatus('unauthenticated');
             throw new ApiError('Login response missing tokens', {
@@ -166,9 +181,11 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             });
         }
 
+        clearMeCache();
         setUser((stored.user as AuthUser | null) ?? getStoredUser<AuthUser>());
         setStatus('authenticated');
-    }, []);
+        warmMeCache(true);
+    }, [warmMeCache]);
 
     const register = useCallback(async (username: string, phone: string, password: string) => {
         const client = createApiClient();
@@ -177,6 +194,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
         if (!stored.accessToken || !stored.refreshToken) {
             clearStoredAuth();
+            clearMeCache();
             setUser(null);
             setStatus('unauthenticated');
             throw new ApiError('Register response missing tokens', {
@@ -186,15 +204,21 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             });
         }
 
+        clearMeCache();
         setUser((stored.user as AuthUser | null) ?? getStoredUser<AuthUser>());
         setStatus('authenticated');
-    }, []);
+        warmMeCache(true);
+    }, [warmMeCache]);
 
     // ─── OTP Registration Flow ────────────────────────────────────────────────
 
     const sendOtp = useCallback(async (phone: string): Promise<OtpSendResponse> => {
         const client = createApiClient();
-        const res = await client.post<{ data: OtpSendResponse }>(endpoints['register-otp-send'], { phone });
+        const fcmToken = await getFcmRegistrationToken();
+        const res = await client.post<{ data: OtpSendResponse }>(endpoints['register-otp-send'], {
+            phone,
+            ...(fcmToken ? { fcmToken } : {}),
+        });
         const payload = res.data as unknown as { data?: OtpSendResponse } & OtpSendResponse;
         return payload?.data ?? payload;
     }, []);
@@ -224,6 +248,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
         if (!stored.accessToken || !stored.refreshToken) {
             clearStoredAuth();
+            clearMeCache();
             setUser(null);
             setStatus('unauthenticated');
             throw new ApiError('Register complete response missing tokens', {
@@ -233,9 +258,11 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             });
         }
 
+        clearMeCache();
         setUser((stored.user as AuthUser | null) ?? getStoredUser<AuthUser>());
         setStatus('authenticated');
-    }, []);
+        warmMeCache(true);
+    }, [warmMeCache]);
 
     const logout = useCallback(async () => {
         const refreshToken = getStoredRefreshToken();
@@ -248,6 +275,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             // ignore logout errors
         } finally {
             clearStoredAuth();
+            clearMeCache();
             setUser(null);
             setStatus('unauthenticated');
         }

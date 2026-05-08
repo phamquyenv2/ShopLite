@@ -82,6 +82,7 @@ public class EmployeeService {
 
         Employee employee = Employee.builder()
                 .storeMember(storeMember)
+                .store(store)
                 .office(office)
                 .salaryRate(req.getSalaryRate())
                 .qr(req.getQr() != null ? req.getQr().trim() : null)
@@ -99,7 +100,8 @@ public class EmployeeService {
 
     public List<ResEmployeeDTO> findAll() {
         Long storeId = currentStoreService.getCurrentStoreId();
-        return employeeRepository.findAllByStoreMember_Store_IdAndDeletedFalseOrderByIdAsc(storeId).stream()
+        ensureEmployeesForActiveMembers(storeId);
+        return employeeRepository.findAllByStoreMember_Store_IdOrderByIdAsc(storeId).stream()
                 .map(DTOMapper::toResEmployeeDTO)
                 .toList();
     }
@@ -134,6 +136,7 @@ public class EmployeeService {
                                 .build());
                     });
             employee.setStoreMember(newStoreMember);
+            employee.setStore(newStoreMember.getStore());
         }
 
         // 2. Validate & switch office if changed
@@ -193,5 +196,25 @@ public class EmployeeService {
         Long storeId = currentStoreService.getCurrentStoreId();
         return officeRepository.findByIdAndStoreId(officeId, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Office not found with id=" + officeId));
+    }
+
+    private void ensureEmployeesForActiveMembers(Long storeId) {
+        Office defaultOffice = officeRepository.findAllByStoreIdOrderByIdAsc(storeId).stream()
+                .findFirst()
+                .orElse(null);
+
+        storeMemberRepository.findAllByStore_IdAndStatus(storeId, StoreMemberStatus.ACTIVE)
+                .forEach(member -> employeeRepository.findByStoreMember_Id(member.getId())
+                        .ifPresentOrElse(employee -> {
+                            if (employee.isDeleted()) {
+                                employee.setDeleted(false);
+                                employeeRepository.save(employee);
+                            }
+                        }, () -> employeeRepository.save(Employee.builder()
+                                .storeMember(member)
+                                .store(member.getStore())
+                                .office(defaultOffice)
+                                .salaryRate(0.0)
+                                .build())));
     }
 }

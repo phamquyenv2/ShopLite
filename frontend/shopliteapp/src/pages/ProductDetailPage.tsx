@@ -24,6 +24,7 @@ import {
 import { useParams } from 'react-router-dom';
 import { productService } from '../services/product.service';
 import type { Product } from '../api/types';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './ProductDetailPage.css';
 
 const formatVnd = (amount: number): string => `${new Intl.NumberFormat('vi-VN').format(Math.max(0, Math.round(amount)))}`;
@@ -31,6 +32,9 @@ const formatVnd = (amount: number): string => `${new Intl.NumberFormat('vi-VN').
 const ProductDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const ionRouter = useIonRouter();
+    const { can } = useStorePermissions();
+    const canUpdateProduct = can('/api/v1/products/{id}', 'PUT');
+    const canViewImportOrders = can('/api/v1/import-orders', 'GET');
 
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
@@ -230,16 +234,22 @@ const ProductDetailPage: React.FC = () => {
 
             </IonContent>
 
-            <div className="pd-bottom-bar">
-                <button className="pd-btn pd-btn-outline" onClick={() => ionRouter.push(`/products/${id}/edit`)}>
-                    <IonIcon icon={pencilOutline} />
-                    Chỉnh sửa
-                </button>
-                <button className="pd-btn pd-btn-solid" onClick={() => ionRouter.push(`/import-orders`)}>
-                    <IonIcon icon={addCircleOutline} />
-                    Nhập hàng
-                </button>
-            </div>
+            {(canUpdateProduct || canViewImportOrders) && (
+                <div className="pd-bottom-bar">
+                    {canUpdateProduct && (
+                        <button className="pd-btn pd-btn-outline" onClick={() => ionRouter.push(`/products/${id}/edit`)}>
+                            <IonIcon icon={pencilOutline} />
+                            Chỉnh sửa
+                        </button>
+                    )}
+                    {canViewImportOrders && (
+                        <button className="pd-btn pd-btn-solid" onClick={() => ionRouter.push(`/import-orders`)}>
+                            <IonIcon icon={addCircleOutline} />
+                            Nhập hàng
+                        </button>
+                    )}
+                </div>
+            )}
         </IonPage>
     );
 };

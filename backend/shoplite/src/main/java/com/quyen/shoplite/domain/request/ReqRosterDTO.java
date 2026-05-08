@@ -29,6 +29,14 @@ public class ReqRosterDTO {
     /** Giờ kết thúc ca — bắt buộc khi type == WORKING */
     private LocalTime endTime;
 
+    private LocalTime checkInAllowedFrom;
+
+    private LocalTime checkInAllowedTo;
+
+    private LocalTime checkOutAllowedFrom;
+
+    private LocalTime checkOutAllowedTo;
+
     @NotNull(message = "type không được để trống")
     private RosterTypeEnum type;
 

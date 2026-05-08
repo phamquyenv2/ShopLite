@@ -3,6 +3,7 @@ import { IonContent, IonPage, IonIcon, IonToast } from '@ionic/react';
 import { arrowBack } from 'ionicons/icons';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
+import { FCM_OTP_EVENT, type FcmOtpEventDetail } from '../utils/fcmOtp';
 import './OtpPage.css';
 
 const OtpPage: React.FC = () => {
@@ -34,6 +35,39 @@ const OtpPage: React.FC = () => {
     }
     return () => clearInterval(timer);
   }, [countdown]);
+
+  useEffect(() => {
+    const fillOtp = (value: string) => {
+      const digits = value.replace(/\D/g, '').slice(0, 6).split('');
+      if (digits.length !== 6) return;
+      setOtp(digits);
+      setToast('Đã nhận OTP từ thông báo');
+      void handleVerify(digits.join(''));
+    };
+
+    const onFcmOtp = (event: Event) => {
+      const detail = (event as CustomEvent<FcmOtpEventDetail>).detail;
+      if (!detail?.otp) return;
+      fillOtp(detail.otp);
+    };
+
+    globalThis.addEventListener(FCM_OTP_EVENT, onFcmOtp);
+
+    try {
+      const raw = sessionStorage.getItem('shoplite:last-fcm-otp');
+      if (raw) {
+        sessionStorage.removeItem('shoplite:last-fcm-otp');
+        const detail = JSON.parse(raw) as FcmOtpEventDetail;
+        if (detail?.otp) fillOtp(detail.otp);
+      }
+    } catch {
+      // ignore
+    }
+
+    return () => globalThis.removeEventListener(FCM_OTP_EVENT, onFcmOtp);
+    // handleVerify intentionally stays outside dependencies to avoid re-subscription while typing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').slice(-1);

@@ -11,6 +11,7 @@ import {
 import { useParams } from 'react-router';
 import { authApis, endpoints } from '../utils/Apis';
 import type { Order } from '../api/types';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './OrderDetailPage.css';
 
 const fmt = (n?: number | null) => (n ?? 0).toLocaleString('vi-VN');
@@ -44,6 +45,9 @@ const STATUS_VI: Record<string, { label: string; cls: string }> = {
 const OrderDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const ionRouter = useIonRouter();
+    const { can } = useStorePermissions();
+    const canUpdateOrder = can('/api/v1/orders/{id}', 'PUT');
+    const canCancelOrder = can('/api/v1/orders/{id}', 'DELETE');
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
@@ -65,6 +69,10 @@ const OrderDetailPage: React.FC = () => {
     };
 
     const handleCancelOrder = async () => {
+        if (!canCancelOrder) {
+            setToast('Bạn không có quyền huỷ hoá đơn');
+            return;
+        }
         setShowCancelAlert(false);
         setLoading(true);
         try {
@@ -215,12 +223,14 @@ const OrderDetailPage: React.FC = () => {
                 </div>
             </IonContent>
 
-            <div className="ord-detail-footer">
-                <IonButton className="ord-btn-update" expand="block" fill="clear" onClick={() => setToast('Tính năng đang phát triển')}>
-                    <IonIcon icon={documentTextOutline} />
-                    Cập nhật
-                </IonButton>
-            </div>
+            {canUpdateOrder && (
+                <div className="ord-detail-footer">
+                    <IonButton className="ord-btn-update" expand="block" fill="clear" onClick={() => setToast('Tính năng đang phát triển')}>
+                        <IonIcon icon={documentTextOutline} />
+                        Cập nhật
+                    </IonButton>
+                </div>
+            )}
 
             <IonModal 
                 isOpen={showActionSheet} 
@@ -239,7 +249,7 @@ const OrderDetailPage: React.FC = () => {
                     <button className="ord-action-item" onClick={() => { setShowActionSheet(false); setToast('Tính năng đang phát triển'); }}>
                         <IonIcon icon={shareOutline} /> Chia sẻ
                     </button>
-                    {order.status !== 'CANCELLED' && order.status !== 'FAIL' && (
+                    {canCancelOrder && order.status !== 'CANCELLED' && order.status !== 'FAIL' && (
                         <button className="ord-action-item" onClick={() => { setShowActionSheet(false); setShowCancelAlert(true); }}>
                             <IonIcon icon={trashOutline} /> Huỷ hoá đơn
                         </button>

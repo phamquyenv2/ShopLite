@@ -32,6 +32,7 @@ import type { Category, Product } from '../api/types';
 import { CART_KEY } from '../constants/storage';
 import { ApiError } from '../utils/Apis';
 import { productService } from '../services/product.service';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './SalesPage.css';
 
 type CartLine = {
@@ -71,6 +72,8 @@ const pickPrice = (p: Product): number => {
 const SalesPage: React.FC = () => {
     const ionRouter = useIonRouter();
     const history = useHistory();
+    const { can } = useStorePermissions();
+    const canCreateOrder = can('/api/v1/orders', 'POST');
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -211,6 +214,10 @@ const SalesPage: React.FC = () => {
 
     const onContinue = async () => {
         if (submitting) return;
+        if (!canCreateOrder) {
+            setToast('Bạn không có quyền tạo đơn hàng');
+            return;
+        }
         if (cartLines.length === 0) {
             setToast('Chưa có sản phẩm');
             return;
@@ -448,7 +455,7 @@ const SalesPage: React.FC = () => {
                 ]}
             />
 
-            {showContinue && (
+            {showContinue && canCreateOrder && (
                 <button
                     type="button"
                     className="sales-continue-btn"

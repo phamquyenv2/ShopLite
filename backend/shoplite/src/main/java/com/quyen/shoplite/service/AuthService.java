@@ -250,7 +250,12 @@ public class AuthService {
                 .map(sm -> new ResLoginDTO.StoreInfo(
                         sm.getStore().getId(),
                         sm.getStore().getName(),
-                        sm.getRole() != null ? sm.getRole().getName() : "USER"))
+                        sm.getRole() != null ? sm.getRole().getName() : "USER",
+                        sm.getStatus().name(),
+                        sm.getRole() == null ? List.of() : sm.getRole().getPermissions().stream()
+                                .map(DTOMapper::toResPermissionDTO)
+                                .toList(),
+                        menuService.getVisibleMenus(sm.getRole())))
                 .orElse(null);
     }
 

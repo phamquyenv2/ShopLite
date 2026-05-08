@@ -42,6 +42,7 @@ public class RegistrationService {
     private final UserTokenRepository userTokenRepo;
 
     private final TwilioService      twilioService;
+    private final FcmService         fcmService;
     private final PasswordEncoder    passwordEncoder;
     private final SecurityUtil       securityUtil;
 
@@ -68,6 +69,11 @@ public class RegistrationService {
 
     @Transactional
     public ResOtpSendDTO sendOtp(String rawPhone) {
+        return sendOtp(rawPhone, null);
+    }
+
+    @Transactional
+    public ResOtpSendDTO sendOtp(String rawPhone, String fcmToken) {
         String phone = normalizeE164(rawPhone);
         String localPhone = toLocalPhone(phone);
 
@@ -114,7 +120,11 @@ public class RegistrationService {
         otpRepo.save(otpVerification);
 
         // 7. Gửi SMS
-        twilioService.sendOtp(phone, rawOtp);
+        if (fcmToken != null && !fcmToken.isBlank()) {
+            fcmService.sendRegistrationOtpToToken(fcmToken.trim(), phone, rawOtp, otpExpirySeconds);
+        } else {
+            twilioService.sendOtp(phone, rawOtp);
+        }
 
         return new ResOtpSendDTO("OTP sent", phone, otpExpirySeconds, resendCooldownSeconds);
     }

@@ -3,6 +3,7 @@ package com.quyen.shoplite.controller;
 import com.quyen.shoplite.domain.request.ReqAttendanceCheckInDTO;
 import com.quyen.shoplite.domain.request.ReqAttendanceCheckOutDTO;
 import com.quyen.shoplite.domain.response.ResAttendanceDTO;
+import com.quyen.shoplite.domain.response.ResRosterDTO;
 import com.quyen.shoplite.service.AttendanceService;
 import com.quyen.shoplite.util.annotation.ApiMessage;
 import jakarta.validation.Valid;
@@ -51,6 +52,12 @@ public class AttendanceController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(attendance);
+    }
+
+    @GetMapping("/me/rosters/today")
+    @ApiMessage("Get my roster today success")
+    public ResponseEntity<List<ResRosterDTO>> getMyTodayRosters() {
+        return ResponseEntity.ok(attendanceService.getTodayRostersForCurrentUser());
     }
 
     /**

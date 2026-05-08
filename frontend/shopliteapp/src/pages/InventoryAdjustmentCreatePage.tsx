@@ -12,6 +12,7 @@ import { useAuth } from '../auth/useAuth';
 import type { Category, Product, InventoryAdjustmentUpsert } from '../api/types';
 import { productService } from '../services/product.service';
 import { inventoryAdjustmentService } from '../services/inventoryAdjustment.service';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './InventoryAdjustmentCreatePage.css';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -44,6 +45,8 @@ const getDelta = (item: CheckItem) =>
 const InventoryAdjustmentCreatePage: React.FC = () => {
     const ionRouter = useIonRouter();
     const { user } = useAuth();
+    const { can } = useStorePermissions();
+    const canCreateAdjustment = can('/api/v1/inventory-adjustments', 'POST');
 
     // Cart
     const [cart, setCart] = useState<CheckItem[]>([]);
@@ -186,6 +189,7 @@ const InventoryAdjustmentCreatePage: React.FC = () => {
     });
 
     const handleSave = async (asDraft: boolean) => {
+        if (!canCreateAdjustment) return setToast('Bạn không có quyền tạo phiếu kiểm kho');
         if (cart.length === 0) return setToast('Chưa có sản phẩm trong phiếu');
         if (!asDraft && checkedItems.length === 0) return setToast('Chưa nhập số lượng thực tế');
         setSaving(true);
@@ -311,11 +315,11 @@ const InventoryAdjustmentCreatePage: React.FC = () => {
                 <IonFooter className="ioc-footer ion-no-border">
                     <div className="ioc-footer-actions">
                         <button className="ioc-btn-draft"
-                            onClick={() => handleSave(true)} disabled={saving}>
+                            onClick={() => handleSave(true)} disabled={saving || !canCreateAdjustment}>
                             Lưu tạm
                         </button>
                         <button className="ioc-btn-save"
-                            onClick={() => handleSave(false)} disabled={saving}>
+                            onClick={() => handleSave(false)} disabled={saving || !canCreateAdjustment}>
                             {saving ? <IonSpinner name="dots" /> : 'Hoàn thành'}
                         </button>
                     </div>
@@ -509,12 +513,12 @@ const InventoryAdjustmentCreatePage: React.FC = () => {
                 <div className="ioc-footer-actions">
                     <button className="ioc-btn-draft"
                         onClick={() => handleSave(true)}
-                        disabled={saving || cart.length === 0}>
+                        disabled={saving || cart.length === 0 || !canCreateAdjustment}>
                         Lưu tạm
                     </button>
                     <button className="ioc-btn-save"
                         onClick={() => setCheckoutMode(true)}
-                        disabled={cart.length === 0}>
+                        disabled={cart.length === 0 || !canCreateAdjustment}>
                         Tiếp tục
                     </button>
                 </div>

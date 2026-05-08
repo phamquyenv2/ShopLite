@@ -1,4 +1,4 @@
-package io.ionic.starter;
+package com.shoplite.app;
 
 import com.getcapacitor.BridgeActivity;
 

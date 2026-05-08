@@ -34,6 +34,8 @@ public class StoreInvitationService {
     private final StoreInvitationRepository storeInvitationRepository;
     private final NotificationRepository notificationRepository;
     private final MenuService menuService;
+    private final EmployeeRepository employeeRepository;
+    private final OfficeRepository officeRepository;
 
     @Transactional
     public ResStoreInvitationDTO create(ReqStoreInvitationDTO req) {
@@ -77,8 +79,8 @@ public class StoreInvitationService {
         notificationRepository.save(Notification.builder()
                 .user(invitedUser)
                 .type(NotificationType.STORE_INVITATION)
-                .title("Loi moi vao cua hang")
-                .message(invitedBy.getUsername() + " moi ban tham gia " + store.getName() + " voi vai tro " + role.getName())
+                .title("Lời mời vào cửa hàng")
+                .message(invitedBy.getUsername() + " mời bạn tham gia " + store.getName() + " với vai trò " + role.getName())
                 .referenceId(invitation.getId())
                 .read(false)
                 .actionTaken(false)
@@ -114,6 +116,7 @@ public class StoreInvitationService {
             member.setRole(invitation.getRole());
             member.setJoinedAt(LocalDateTime.now());
         }
+        ensureEmployee(member);
 
         invitation.setStatus(InvitationStatus.ACCEPTED);
         invitation.setRespondedAt(LocalDateTime.now());
@@ -173,6 +176,26 @@ public class StoreInvitationService {
                 .permissions(permissions)
                 .menus(menuService.getVisibleMenus(role))
                 .build();
+    }
+
+    private void ensureEmployee(StoreMember member) {
+        employeeRepository.findByStoreMember_Id(member.getId())
+                .ifPresentOrElse(employee -> {
+                    if (employee.isDeleted()) {
+                        employee.setDeleted(false);
+                        employeeRepository.save(employee);
+                    }
+                }, () -> {
+                    Office defaultOffice = officeRepository.findAllByStoreIdOrderByIdAsc(member.getStore().getId()).stream()
+                            .findFirst()
+                            .orElse(null);
+                    employeeRepository.save(Employee.builder()
+                            .storeMember(member)
+                            .store(member.getStore())
+                            .office(defaultOffice)
+                            .salaryRate(0.0)
+                            .build());
+                });
     }
 
     private ResStoreInvitationDTO toDto(StoreInvitation invitation) {

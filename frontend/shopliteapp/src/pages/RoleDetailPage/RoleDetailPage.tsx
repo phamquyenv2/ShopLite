@@ -18,11 +18,15 @@ import { useParams } from 'react-router';
 import { roleService } from '../../services/role.service';
 import { permissionService } from '../../services/permission.service';
 import type { Role, Permission } from '../../api/types';
+import { requestStorePermissionsRefresh, useStorePermissions } from '../../utils/useStorePermissions';
 import './RoleDetailPage.css';
 
 const RoleDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const ionRouter = useIonRouter();
+    const { can } = useStorePermissions();
+    const canUpdateRole = can('/api/v1/roles/{id}', 'PUT');
+    const canDeleteRole = can('/api/v1/roles/{id}', 'DELETE');
     
     const [role, setRole] = useState<Role | null>(null);
     const [allPermissions, setAllPermissions] = useState<Permission[]>([]);
@@ -67,6 +71,7 @@ const RoleDetailPage: React.FC = () => {
     });
 
     const togglePermission = (permId: number) => {
+        if (!canUpdateRole) return;
         const next = new Set(selectedPermIds);
         if (next.has(permId)) {
             next.delete(permId);
@@ -100,6 +105,7 @@ const RoleDetailPage: React.FC = () => {
                 permissionIds: Array.from(selectedPermIds),
                 active: role?.active ?? true
             });
+            requestStorePermissionsRefresh();
             setToast('Cập nhật vai trò thành công');
             setTimeout(() => {
                 ionRouter.goBack();
@@ -185,13 +191,14 @@ const RoleDetailPage: React.FC = () => {
                                     type="text" 
                                     value={name} 
                                     onChange={e => setName(e.target.value)} 
+                                    disabled={!canUpdateRole}
                                     placeholder="Nhập tên vai trò"
                                 />
                                 {name && (
                                     <IonIcon 
                                         icon={closeCircle} 
                                         className="rd-clear-icon" 
-                                        onClick={() => setName('')} 
+                                        onClick={() => canUpdateRole && setName('')}
                                     />
                                 )}
                             </div>
@@ -202,6 +209,7 @@ const RoleDetailPage: React.FC = () => {
                             <textarea 
                                 value={description} 
                                 onChange={e => setDescription(e.target.value)} 
+                                disabled={!canUpdateRole}
                                 placeholder="Nhập mô tả vai trò..."
                                 rows={3}
                             />
@@ -233,7 +241,7 @@ const RoleDetailPage: React.FC = () => {
                                             <div className="rd-module-left">
                                                 <div 
                                                     className={`rd-checkbox-custom ${hasAll ? 'checked' : hasSome ? 'partial' : ''}`}
-                                                    onClick={toggleModule}
+                                                    onClick={canUpdateRole ? toggleModule : undefined}
                                                 >
                                                     {hasAll && <span className="rd-check-icon">✓</span>}
                                                     {!hasAll && hasSome && <span className="rd-partial-icon">−</span>}
@@ -271,12 +279,16 @@ const RoleDetailPage: React.FC = () => {
                 )}
             </IonContent>
 
-            {!loading && (
+            {!loading && (canDeleteRole || canUpdateRole) && (
                 <IonFooter className="rd-footer">
-                    <button className="rd-btn-delete" onClick={() => setToast('Tính năng xóa đang phát triển')}>Xóa</button>
-                    <button className="rd-btn-save" onClick={handleSave} disabled={saving}>
-                        {saving ? <IonSpinner name="dots" /> : 'Cập nhật'}
-                    </button>
+                    {canDeleteRole && (
+                        <button className="rd-btn-delete" onClick={() => setToast('Tính năng xóa đang phát triển')}>Xóa</button>
+                    )}
+                    {canUpdateRole && (
+                        <button className="rd-btn-save" onClick={handleSave} disabled={saving}>
+                            {saving ? <IonSpinner name="dots" /> : 'Cập nhật'}
+                        </button>
+                    )}
                 </IonFooter>
             )}
 

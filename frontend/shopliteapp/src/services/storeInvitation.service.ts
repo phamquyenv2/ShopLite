@@ -1,5 +1,6 @@
 import { authApis, endpoints, ApiError, STORAGE_KEYS } from '../utils/Apis';
 import type { AcceptInvitationResponse, StoreInvitation } from '../api/types';
+import { clearMeCache } from '../utils/meSession';
 
 const unwrap = <T>(payload: any): T => payload?.data ?? payload;
 
@@ -17,6 +18,7 @@ export const storeInvitationService = {
         try {
             const res = await authApis().post<any>(endpoints['store-invitation-accept'](id));
             const payload = unwrap<AcceptInvitationResponse>(res.data);
+            clearMeCache();
             if (payload?.currentStore) {
                 localStorage.setItem(STORAGE_KEYS.currentStore, JSON.stringify(payload.currentStore));
             }

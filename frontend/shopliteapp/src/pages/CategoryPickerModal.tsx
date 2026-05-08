@@ -10,6 +10,7 @@ import {
 import type { Category } from '../api/types';
 import { authApis, endpoints } from '../utils/Apis';
 import { productService } from '../services/product.service';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './CategoryPickerModal.css';
 
 interface CategoryPickerModalProps {
@@ -27,6 +28,8 @@ const CategoryPickerModal: React.FC<CategoryPickerModalProps> = ({
     onClose,
     onSelect,
 }) => {
+    const { can } = useStorePermissions();
+    const canCreateCategory = can('/api/v1/categories', 'POST');
     const [view, setView] = useState<SubView>('list');
     const [categories, setCategories] = useState<Category[]>([]);
     const [loadingList, setLoadingList] = useState(false);
@@ -63,6 +66,10 @@ const CategoryPickerModal: React.FC<CategoryPickerModalProps> = ({
     );
 
     const handleAddNew = async () => {
+        if (!canCreateCategory) {
+            setToast('Bạn không có quyền thêm nhóm hàng');
+            return;
+        }
         if (!newName.trim()) {
             setToast('Vui lòng nhập tên nhóm');
             return;
@@ -112,12 +119,14 @@ const CategoryPickerModal: React.FC<CategoryPickerModalProps> = ({
                                 <IonIcon icon={chevronBackOutline} />
                             </button>
                             <span className="cpm-title">Chọn nhóm hàng</span>
-                            <button
-                                className="cpm-add-btn"
-                                onClick={() => { setNewName(''); setView('add-new'); }}
-                            >
-                                <IonIcon icon={addOutline} />
-                            </button>
+                            {canCreateCategory && (
+                                <button
+                                    className="cpm-add-btn"
+                                    onClick={() => { setNewName(''); setView('add-new'); }}
+                                >
+                                    <IonIcon icon={addOutline} />
+                                </button>
+                            )}
                         </div>
 
                         <div className="cpm-search-bar">

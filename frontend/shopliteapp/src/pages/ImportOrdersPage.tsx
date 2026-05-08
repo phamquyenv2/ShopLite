@@ -9,6 +9,7 @@ import {
 } from 'ionicons/icons';
 import { importOrderService } from '../services/importOrder.service';
 import type { ImportOrder } from '../api/types';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './ImportOrdersPage.css';
 
 const statusLabel: Record<string, string> = {
@@ -21,6 +22,8 @@ const fmt = (n?: number) => (n ?? 0).toLocaleString('vi-VN');
 
 const ImportOrdersPage: React.FC = () => {
     const ionRouter = useIonRouter();
+    const { can } = useStorePermissions();
+    const canCreateImportOrder = can('/api/v1/import-orders', 'POST');
     const [orders, setOrders] = useState<ImportOrder[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -144,11 +147,13 @@ const ImportOrdersPage: React.FC = () => {
                 )}
             </IonContent>
 
-            <IonFab vertical="bottom" horizontal="end" slot="fixed" className="io-fab-wrap">
-                <IonFabButton className="io-fab" onClick={() => ionRouter.push('/import-order/new')}>
-                    <IonIcon icon={addOutline} />
-                </IonFabButton>
-            </IonFab>
+            {canCreateImportOrder && (
+                <IonFab vertical="bottom" horizontal="end" slot="fixed" className="io-fab-wrap">
+                    <IonFabButton className="io-fab" onClick={() => ionRouter.push('/import-order/new')}>
+                        <IonIcon icon={addOutline} />
+                    </IonFabButton>
+                </IonFab>
+            )}
         </IonPage>
     );
 };

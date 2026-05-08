@@ -15,6 +15,7 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Integer>
 
     Optional<Attendance> findByEmployee_IdAndCheckOutIsNull(Integer employeeId);
     Optional<Attendance> findByEmployee_StoreMember_Store_IdAndEmployee_IdAndCheckOutIsNull(Long storeId, Integer employeeId);
+    boolean existsByRoster_Id(Integer rosterId);
 
     List<Attendance> findByEmployee_IdAndWorkingDayOrderByCheckInDesc(Integer employeeId, LocalDate workingDay);
     List<Attendance> findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDayOrderByCheckInDesc(

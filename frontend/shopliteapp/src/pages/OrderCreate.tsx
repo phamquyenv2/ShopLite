@@ -26,6 +26,7 @@ import { useAuth } from '../auth/useAuth';
 import type { Customer, OrderUpsert, Product } from '../api/types';
 import { CART_KEY } from '../constants/storage';
 import { ApiError, authApis, endpoints } from '../utils/Apis';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './OrderCreate.css';
 
 const toNumber = (v: unknown): number => {
@@ -108,6 +109,11 @@ const OrderCreatePage: React.FC = () => {
     const history = useHistory();
     const location = useLocation<OrderCreateLocationState>();
     const { user } = useAuth();
+    const { can } = useStorePermissions();
+    const canCreateOrder = can('/api/v1/orders', 'POST');
+    const canUpdateOrder = can('/api/v1/orders/{id}', 'PUT');
+    const canConfirmOrder = can('/api/v1/orders/{id}/confirm', 'PATCH');
+    const canPayOrder = can('/api/v1/orders/{id}/payments', 'POST');
 
     const [busy, setBusy] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
@@ -137,6 +143,10 @@ const OrderCreatePage: React.FC = () => {
     // Trạng thái thực tế từ server — dùng để phân nhánh retry flow
     const [orderServerStatus, setOrderServerStatus] = useState<string | null>(null);
     const [qrData, setQrData] = useState<{ qrUrl?: string; transferContent?: string; amount?: number } | null>(null);
+    const canSaveDraftOrder = draftOrderId ? canUpdateOrder : canCreateOrder;
+    const canCompletePayment = orderServerStatus === 'PENDING_PAYMENT'
+        ? canPayOrder
+        : canUpdateOrder && canConfirmOrder && canPayOrder;
 
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
@@ -264,6 +274,9 @@ const OrderCreatePage: React.FC = () => {
     });
 
     const createDraftOrder = async (): Promise<number> => {
+        if (!canCreateOrder) {
+            throw new ApiError('Bạn không có quyền tạo đơn hàng', { status: 403, data: null, headers: new Headers() });
+        }
         if (!user?.id) {
             throw new ApiError('Missing userId', { status: 400, data: null, headers: new Headers() });
         }
@@ -286,6 +299,9 @@ const OrderCreatePage: React.FC = () => {
     };
 
     const updateDraftOrder = async (orderId: number): Promise<void> => {
+        if (!canUpdateOrder) {
+            throw new ApiError('Bạn không có quyền cập nhật đơn hàng', { status: 403, data: null, headers: new Headers() });
+        }
         const payload = buildOrderPayload();
         await authApis().put<any>(endpoints['order-detail'](orderId), payload);
     };
@@ -299,6 +315,10 @@ const OrderCreatePage: React.FC = () => {
     };
 
     const onSaveDraft = async () => {
+        if (!canSaveDraftOrder) {
+            setToast('Bạn không có quyền lưu đơn hàng');
+            return;
+        }
         if (isConfirmed) {
             setToast('Đơn hàng đã xác nhận, không thể lưu tạm');
             return;
@@ -317,6 +337,10 @@ const OrderCreatePage: React.FC = () => {
     };
 
     const onPlaceOrder = async () => {
+        if (!canSaveDraftOrder) {
+            setToast('Bạn không có quyền lưu đơn hàng');
+            return;
+        }
         setBusy(true);
         try {
             await ensureDraftOrder();
@@ -329,6 +353,10 @@ const OrderCreatePage: React.FC = () => {
     };
 
     const onCompletePayment = async () => {
+        if (!canCompletePayment) {
+            setToast('Bạn không có quyền chốt hoặc thanh toán đơn hàng');
+            return;
+        }
         if (!draftOrderId) {
             setToast('Đơn hàng chưa được tạo');
             return;
@@ -549,10 +577,10 @@ const OrderCreatePage: React.FC = () => {
                             <strong>{formatVnd(total)}</strong>
                         </div>
                         <div className="order-action-buttons">
-                            <button className="order-btn-secondary" type="button" disabled={busy || !hasItems || isConfirmed} onClick={() => void onSaveDraft()}>
+                            <button className="order-btn-secondary" type="button" disabled={busy || !hasItems || isConfirmed || !canSaveDraftOrder} onClick={() => void onSaveDraft()}>
                                 Lưu tạm
                             </button>
-                            <button className="order-btn-primary" type="button" disabled={busy || !hasItems} onClick={() => void onPlaceOrder()}>
+                            <button className="order-btn-primary" type="button" disabled={busy || !hasItems || !canSaveDraftOrder} onClick={() => void onPlaceOrder()}>
                                 Đặt hàng
                             </button>
                         </div>
@@ -638,7 +666,7 @@ const OrderCreatePage: React.FC = () => {
                     </IonContent>
 
                     <div className="order-action-bar payment-footer">
-                        <button className="order-btn-primary payment-complete" type="button" disabled={busy || !draftOrderId} onClick={() => void onCompletePayment()}>
+                        <button className="order-btn-primary payment-complete" type="button" disabled={busy || !draftOrderId || !canCompletePayment} onClick={() => void onCompletePayment()}>
                             {paymentMethod === 'sepay_qr' || paymentMethod === 'momo' ? 'Tạo QR thanh toán' : 'Hoàn thành'}
                         </button>
                     </div>

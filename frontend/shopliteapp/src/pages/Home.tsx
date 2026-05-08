@@ -27,15 +27,15 @@ import {
   storefront
 } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useIonViewWillEnter } from '@ionic/react';
 import { authApis, endpoints } from '../utils/Apis';
+import { getCurrentMe, ME_SESSION_UPDATED_EVENT, readStoredCurrentStore } from '../utils/meSession';
 import { notificationService } from '../services/notification.service';
 import { storeInvitationService } from '../services/storeInvitation.service';
 import { hasPermission } from '../utils/permissions';
 import { getMenuIcon, getMenusByType, getMenuTitle, hasMenuPayload } from '../utils/menuAccess';
 import type { Menu, Notification, Order, Permission } from '../api/types';
-import type { MeResponse } from '../auth/types';
 import './Home.css';
 
 const fmt = (n?: number | null) => (n ?? 0).toLocaleString('vi-VN');
@@ -47,22 +47,49 @@ const shortcutColors: Record<string, string> = {
   SHORTCUT_IMPORT_ORDERS: 'red',
 };
 
+const getInitialStore = () => readStoredCurrentStore();
+const nowMs = () => Math.round(performance.now());
+
 const Home: React.FC = () => {
   const history = useHistory();
+  const pageStartRef = useState(() => nowMs())[0];
+  const initialStore = getInitialStore();
 
   const [todayRevenue, setTodayRevenue] = useState(0);
   const [todayOrdersCount, setTodayOrdersCount] = useState(0);
   const [todayProfit, setTodayProfit] = useState(0);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
-  const [storeName, setStoreName] = useState('');
-  const [memberRole, setMemberRole] = useState('');
-  const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [menus, setMenus] = useState<Menu[]>([]);
+  const [storeName, setStoreName] = useState(initialStore?.name ?? '');
+  const [memberRole, setMemberRole] = useState(initialStore?.memberRole ?? '');
+  const [permissions, setPermissions] = useState<Permission[]>(() => (initialStore?.permissions || []) as Permission[]);
+  const [menus, setMenus] = useState<Menu[]>(() => (initialStore?.menus || []) as Menu[]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const logPerf = (message: string) => {
+    console.info(`[Home perf] +${nowMs() - pageStartRef}ms ${message}`);
+  };
+
+  useEffect(() => {
+    logPerf('mounted');
+    const hydrateFromStoredStore = () => {
+      const store = readStoredCurrentStore();
+      if (!store) return;
+      setStoreName(store.name || 'Chua co cua hang');
+      setMemberRole(store.memberRole || '');
+      setPermissions((store.permissions || []) as Permission[]);
+      setMenus((store.menus || []) as Menu[]);
+      logPerf(`hydrated from cache: menus=${store.menus?.length ?? 0}, permissions=${store.permissions?.length ?? 0}`);
+    };
+
+    globalThis.addEventListener(ME_SESSION_UPDATED_EVENT, hydrateFromStoredStore);
+    return () => {
+      globalThis.removeEventListener(ME_SESSION_UPDATED_EVENT, hydrateFromStoredStore);
+    };
+  }, []);
 
   const loadNotifications = async (): Promise<Notification[]> => {
     try {
@@ -117,57 +144,82 @@ const Home: React.FC = () => {
   };
 
   useIonViewWillEnter(() => {
+    logPerf('ion view will enter');
+    const loadTodayOrders = async (currentPermissions: Permission[]) => {
+      const ordersStart = nowMs();
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const params = new URLSearchParams();
+      params.set('from', startOfDay.toISOString());
+      params.set('to', now.toISOString());
+
+      if (!hasPermission(currentPermissions, '/api/v1/orders', 'GET')) {
+        setTodayRevenue(0);
+        setTodayOrdersCount(0);
+        setTodayProfit(0);
+        setRecentOrders([]);
+        return;
+      }
+
+      const res = await authApis().get<any>(`${endpoints.orders}?${params.toString()}`);
+
+      let orders: Order[] = [];
+      if (Array.isArray(res.data?.data)) orders = res.data.data;
+      else if (Array.isArray(res.data)) orders = res.data;
+
+      const validOrders = orders.filter(o => {
+        const isStatusValid = o.status === 'COMPLETED' || o.status === 'PENDING_PAYMENT';
+        if (!isStatusValid || !o.createdAt) return false;
+        const orderDate = new Date(o.createdAt);
+        return orderDate >= startOfDay && orderDate <= now;
+      });
+
+      const todayOrdersForRecent = orders.filter(o => {
+        if (!o.createdAt) return false;
+        const orderDate = new Date(o.createdAt);
+        return orderDate >= startOfDay && orderDate <= now;
+      });
+
+      setTodayRevenue(validOrders.reduce((sum, o) => sum + (o.totalAmount ?? 0), 0));
+      setTodayOrdersCount(validOrders.length);
+      setTodayProfit(validOrders.reduce((sum, o) => sum + ((o as any).profit ?? ((o.totalAmount ?? 0) * 0.3)), 0));
+
+      const sorted = [...todayOrdersForRecent].sort((a, b) =>
+        new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      setRecentOrders(sorted.slice(0, 3));
+      logPerf(`orders loaded in ${nowMs() - ordersStart}ms: count=${orders.length}`);
+    };
+
     const loadData = async () => {
       try {
-        const meRes = await authApis().get<any>(endpoints.me);
-        const mePayload = (meRes.data?.data ?? meRes.data) as MeResponse;
+        const storedStore = readStoredCurrentStore();
+        const storedPermissions = (storedStore?.permissions || []) as Permission[];
+        if (storedStore) {
+          setStoreName(storedStore.name || 'Chưa có cửa hàng');
+          setMemberRole(storedStore.memberRole || '');
+          setPermissions(storedPermissions);
+          setMenus((storedStore.menus || []) as Menu[]);
+          logPerf(`initial cache ready: menus=${storedStore.menus?.length ?? 0}, permissions=${storedPermissions.length}`);
+        }
+
+        const canUseStoredPermissions = storedPermissions.length > 0;
+        if (canUseStoredPermissions) {
+          void loadTodayOrders(storedPermissions).catch(console.error);
+        }
+
+        const meStart = nowMs();
+        const mePayload = await getCurrentMe();
         const currentStore = mePayload?.currentStore ?? null;
-        setStoreName(currentStore?.name || 'Chua co cua hang');
+        setStoreName(currentStore?.name || 'Chưa có cửa hàng');
         setMemberRole(currentStore?.memberRole || '');
         const currentPermissions = (currentStore?.permissions || []) as Permission[];
         setPermissions(currentPermissions);
         setMenus((currentStore?.menus || []) as Menu[]);
+        logPerf(`me loaded in ${nowMs() - meStart}ms: menus=${currentStore?.menus?.length ?? 0}, permissions=${currentPermissions.length}`);
 
-        const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const params = new URLSearchParams();
-        params.set('from', startOfDay.toISOString());
-        params.set('to', now.toISOString());
-
-        if (!hasPermission(currentPermissions, '/api/v1/orders', 'GET')) {
-          setTodayRevenue(0);
-          setTodayOrdersCount(0);
-          setTodayProfit(0);
-          setRecentOrders([]);
-          return;
+        if (!canUseStoredPermissions) {
+          await loadTodayOrders(currentPermissions);
         }
-
-        const res = await authApis().get<any>(`${endpoints.orders}?${params.toString()}`);
-
-        let orders: Order[] = [];
-        if (Array.isArray(res.data?.data)) orders = res.data.data;
-        else if (Array.isArray(res.data)) orders = res.data;
-
-        const validOrders = orders.filter(o => {
-          const isStatusValid = o.status === 'COMPLETED' || o.status === 'PENDING_PAYMENT';
-          if (!isStatusValid || !o.createdAt) return false;
-          const orderDate = new Date(o.createdAt);
-          return orderDate >= startOfDay && orderDate <= now;
-        });
-
-        const todayOrdersForRecent = orders.filter(o => {
-          if (!o.createdAt) return false;
-          const orderDate = new Date(o.createdAt);
-          return orderDate >= startOfDay && orderDate <= now;
-        });
-
-        setTodayRevenue(validOrders.reduce((sum, o) => sum + (o.totalAmount ?? 0), 0));
-        setTodayOrdersCount(validOrders.length);
-        setTodayProfit(validOrders.reduce((sum, o) => sum + ((o as any).profit ?? ((o.totalAmount ?? 0) * 0.3)), 0));
-
-        const sorted = [...todayOrdersForRecent].sort((a, b) =>
-          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-        setRecentOrders(sorted.slice(0, 3));
       } catch (err) {
         console.error(err);
       }
@@ -192,7 +244,7 @@ const Home: React.FC = () => {
         { label: 'Nhập hàng', icon: logInOutline, color: 'red', route: '/import-orders', show: hasPermission(permissions, '/api/v1/import-orders', 'GET') },
       ].filter(item => item.show);
 
-  const tabs = hasMenuPayload(menus)
+  const tabs = hasMenuPayload(menus) && getMenusByType(menus, 'TAB').filter(item => item.route).length >= 4
     ? getMenusByType(menus, 'TAB')
         .filter(item => item.route)
         .map(item => ({
@@ -219,7 +271,6 @@ const Home: React.FC = () => {
                 <IonIcon icon={storefront} />
               </div>
               <span className="brand-name">{storeName || 'ShopLite'}</span>
-              {memberRole ? <span className="sub-label">{memberRole}</span> : null}
             </div>
             <div className="header-right">
               <IonIcon icon={callOutline} className="header-action-icon" />

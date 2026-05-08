@@ -135,7 +135,7 @@ class AttendanceServiceTest {
     }
 
     @Test
-    void checkIn_SuccessOutOfZone() {
+    void checkIn_RejectsOutOfZone_StillSavesToDb() {
         try (MockedStatic<SecurityUtil> sec = mockStatic(SecurityUtil.class)) {
             sec.when(SecurityUtil::requireCurrentUserLogin).thenReturn(currentUsername);
 
@@ -153,11 +153,11 @@ class AttendanceServiceTest {
             when(rosterRepository.findMatchingRoster(any(), any(), any(), any())).thenReturn(Collections.emptyList());
             when(attendanceRepository.save(any(Attendance.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            service.checkIn(req);
+            BadRequestException ex = assertThrows(BadRequestException.class, () -> service.checkIn(req));
+            assertTrue(ex.getMessage().contains("OUT_OF_ZONE"));
 
             verify(attendanceRepository).save(attendanceCaptor.capture());
             Attendance saved = attendanceCaptor.getValue();
-
             assertEquals(AttendanceStatusEnum.OUT_OF_ZONE, saved.getStatus());
             assertTrue(saved.getDistance() > office.getRadius());
         }

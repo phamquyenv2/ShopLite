@@ -23,12 +23,15 @@ import type { Category, ProductUpsert, Unit } from '../api/types';
 import { productService } from '../services/product.service';
 import { ApiError, authApis, endpoints } from '../utils/Apis';
 import { uploadToCloudinary } from '../utils/cloudinary';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import CategoryPickerModal from './CategoryPickerModal';
 import UnitPickerModal from './UnitPickerModal';
 import './ProductAddPage.css';
 
 const ProductAddPage: React.FC = () => {
     const ionRouter = useIonRouter();
+    const { can } = useStorePermissions();
+    const canCreateProduct = can('/api/v1/products', 'POST');
 
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -76,6 +79,10 @@ const ProductAddPage: React.FC = () => {
     });
 
     const handleSave = async () => {
+        if (!canCreateProduct) {
+            setToast('Bạn không có quyền thêm hàng hóa');
+            return;
+        }
         if (!name.trim()) {
             setToast('Vui long nhap ten hang');
             return;
@@ -127,11 +134,13 @@ const ProductAddPage: React.FC = () => {
                         </button>
                         <div className="pa-title">Thêm hàng hóa</div>
                     </div>
-                    <div slot="end">
-                        <button className="pa-save-btn" onClick={handleSave} disabled={saving || loading}>
-                            {saving ? <IonSpinner name="dots" /> : 'Lưu'}
-                        </button>
-                    </div>
+                    {canCreateProduct && (
+                        <div slot="end">
+                            <button className="pa-save-btn" onClick={handleSave} disabled={saving || loading}>
+                                {saving ? <IonSpinner name="dots" /> : 'Lưu'}
+                            </button>
+                        </div>
+                    )}
                 </IonToolbar>
             </IonHeader>
 

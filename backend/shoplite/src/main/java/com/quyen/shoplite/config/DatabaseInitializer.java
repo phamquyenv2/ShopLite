@@ -32,9 +32,11 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import com.quyen.shoplite.util.constant.MenuType;
 
@@ -61,6 +63,7 @@ public class DatabaseInitializer implements CommandLineRunner {
     public void run(String... args) {
         jdbcTemplate_safeUpdateRoles();
         cleanUpRedundantColumns();
+        ensureSeedJoinTables();
         seedPermissionsAndRoles();
         seedMenus();
         seedAdminUser();
@@ -80,12 +83,99 @@ public class DatabaseInitializer implements CommandLineRunner {
     }
 
     private void cleanUpRedundantColumns() {
+        dropOldRosterEmployeeDayConstraint();
+    }
+
+    private void ensureSeedJoinTables() {
+        jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS permission_role (
+                    role_id BIGINT NOT NULL,
+                    permission_id BIGINT NOT NULL,
+                    PRIMARY KEY (role_id, permission_id),
+                    CONSTRAINT fk_permission_role_role
+                        FOREIGN KEY (role_id) REFERENCES roles(id),
+                    CONSTRAINT fk_permission_role_permission
+                        FOREIGN KEY (permission_id) REFERENCES permissions(id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """);
+
+        jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS menu_permissions (
+                    menu_id BIGINT NOT NULL,
+                    permission_id BIGINT NOT NULL,
+                    PRIMARY KEY (menu_id, permission_id),
+                    CONSTRAINT fk_menu_permissions_menu
+                        FOREIGN KEY (menu_id) REFERENCES menus(id),
+                    CONSTRAINT fk_menu_permissions_permission
+                        FOREIGN KEY (permission_id) REFERENCES permissions(id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """);
+    }
+
+    private void dropOldRosterEmployeeDayConstraint() {
+        ensureRosterEmployeeIndex();
+
         try {
-            jdbcTemplate.execute("ALTER TABLE employees DROP COLUMN store_id");
-            log.info("Successfully dropped redundant store_id column from employees table.");
+            List<String> matchingUniqueIndexes = jdbcTemplate.queryForList(
+                    """
+                    SELECT s.INDEX_NAME
+                    FROM information_schema.STATISTICS s
+                    WHERE s.TABLE_SCHEMA = DATABASE()
+                      AND s.TABLE_NAME = 'rosters'
+                      AND s.NON_UNIQUE = 0
+                      AND s.COLUMN_NAME IN ('employee_id', 'working_day')
+                    GROUP BY s.INDEX_NAME
+                    HAVING COUNT(DISTINCT s.COLUMN_NAME) = 2
+                    """,
+                    String.class
+            );
+            for (String indexName : matchingUniqueIndexes) {
+                try {
+                    jdbcTemplate.execute("ALTER TABLE rosters DROP INDEX `" + indexName + "`");
+                    log.info("Dropped old roster employee/day unique index from information_schema: {}", indexName);
+                } catch (Exception e) {
+                    log.warn("Could not drop roster unique index {}: {}", indexName, e.getMessage());
+                }
+            }
         } catch (Exception e) {
-            // Ignore if column doesn't exist or other SQL error
-            log.debug("Could not drop store_id from employees (might not exist): {}", e.getMessage());
+            log.debug("Could not inspect roster indexes from information_schema: {}", e.getMessage());
+        }
+
+        List<String> statements = List.of(
+                "ALTER TABLE rosters DROP CONSTRAINT uk_roster_employee_day",
+                "ALTER TABLE rosters DROP INDEX uk_roster_employee_day",
+                "DROP INDEX uk_roster_employee_day ON rosters",
+                "DROP INDEX IF EXISTS uk_roster_employee_day"
+        );
+
+        for (String statement : statements) {
+            try {
+                jdbcTemplate.execute(statement);
+                log.info("Dropped old roster employee/day uniqueness with: {}", statement);
+            } catch (Exception e) {
+                log.debug("Could not execute '{}': {}", statement, e.getMessage());
+            }
+        }
+    }
+
+    private void ensureRosterEmployeeIndex() {
+        try {
+            Integer count = jdbcTemplate.queryForObject(
+                    """
+                    SELECT COUNT(*)
+                    FROM information_schema.STATISTICS s
+                    WHERE s.TABLE_SCHEMA = DATABASE()
+                      AND s.TABLE_NAME = 'rosters'
+                      AND s.INDEX_NAME = 'idx_rosters_employee_id'
+                    """,
+                    Integer.class
+            );
+            if (count == null || count == 0) {
+                jdbcTemplate.execute("CREATE INDEX idx_rosters_employee_id ON rosters (employee_id)");
+                log.info("Created non-unique roster employee index before dropping old uniqueness.");
+            }
+        } catch (Exception e) {
+            log.debug("Could not ensure roster employee index: {}", e.getMessage());
         }
     }
 
@@ -160,6 +250,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                 perm("Check in", "/api/v1/attendance/check-in", "POST", "ATTENDANCE"),
                 perm("Check out", "/api/v1/attendance/check-out", "POST", "ATTENDANCE"),
                 perm("View my today attendance", "/api/v1/attendance/me/today", "GET", "ATTENDANCE"),
+                perm("View my today roster", "/api/v1/attendance/me/rosters/today", "GET", "ATTENDANCE"),
                 perm("View attendances", "/api/v1/attendance", "GET", "ATTENDANCE"),
                 perm("View attendance by id", "/api/v1/attendance/{id}", "GET", "ATTENDANCE"),
                 // ROSTER
@@ -167,11 +258,13 @@ public class DatabaseInitializer implements CommandLineRunner {
                 perm("View roster by id", "/api/v1/roster/{id}", "GET", "ROSTER"),
                 perm("View roster by employee", "/api/v1/roster/employee/{employeeId}", "GET", "ROSTER"),
                 perm("View roster by day", "/api/v1/roster/day", "GET", "ROSTER"),
+                perm("View roster by month", "/api/v1/roster/month", "GET", "ROSTER"),
                 perm("Update roster", "/api/v1/roster/{id}", "PUT", "ROSTER"),
                 perm("Delete roster", "/api/v1/roster/{id}", "DELETE", "ROSTER"),
                 // PAYROLLS
                 perm("Sync payroll monthly", "/api/v1/payrolls/sync-monthly", "POST", "PAYROLLS"),
                 perm("View payrolls", "/api/v1/payrolls", "GET", "PAYROLLS"),
+                perm("View my payrolls", "/api/v1/payrolls/me", "GET", "PAYROLLS"),
                 perm("View payroll by id", "/api/v1/payrolls/{id}", "GET", "PAYROLLS"),
                 perm("View payroll by employee", "/api/v1/payrolls/employee/{employeeId}", "GET", "PAYROLLS"),
                 // EMPLOYEES
@@ -192,6 +285,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                 perm("View import order by id", "/api/v1/import-orders/{id}", "GET", "IMPORT_ORDERS"),
                 perm("Update import order", "/api/v1/import-orders/{id}", "PUT", "IMPORT_ORDERS"),
                 perm("Update import order status", "/api/v1/import-orders/{id}/status", "PUT", "IMPORT_ORDERS"),
+                perm("Pay import order", "/api/v1/import-orders/{id}/pay", "POST", "IMPORT_ORDERS"),
                 // IMPORT RETURN ORDERS
                 perm("Create import return", "/api/v1/import-return-orders", "POST", "IMPORT_RETURN_ORDERS"),
                 perm("View import returns", "/api/v1/import-return-orders", "GET", "IMPORT_RETURN_ORDERS"),
@@ -253,7 +347,10 @@ public class DatabaseInitializer implements CommandLineRunner {
                         || ("GET".equals(p.getMethod()) && (p.getApiPath().startsWith("/api/v1/products") || p.getApiPath().startsWith("/api/v1/categories") || p.getApiPath().startsWith("/api/v1/units")))
                         || (p.getApiPath().startsWith("/api/v1/orders") && ("GET".equals(p.getMethod()) || "POST".equals(p.getMethod())))
                         || ("GET".equals(p.getMethod()) && p.getApiPath().startsWith("/api/v1/customers"))
-                        || p.getApiPath().contains("/attendance/check-"))
+                        || ("GET".equals(p.getMethod()) && (p.getApiPath().equals("/api/v1/roster/day") || p.getApiPath().equals("/api/v1/roster/month")))
+                        || ("GET".equals(p.getMethod()) && p.getApiPath().equals("/api/v1/payrolls/me"))
+                        || p.getApiPath().contains("/attendance/check-")
+                        || p.getApiPath().startsWith("/api/v1/attendance/me"))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         ensureRole("ORDER_STAFF", "Nhan vien ghi don - tao don, xem san pham", orderStaff);
 
@@ -265,7 +362,10 @@ public class DatabaseInitializer implements CommandLineRunner {
                         || p.getApiPath().startsWith("/api/v1/payment")
                         || p.getApiPath().startsWith("/api/v1/transactions")
                         || (p.getApiPath().startsWith("/api/v1/customers") && ("GET".equals(p.getMethod()) || "POST".equals(p.getMethod())))
-                        || p.getApiPath().contains("/attendance/check-"))
+                        || ("GET".equals(p.getMethod()) && (p.getApiPath().equals("/api/v1/roster/day") || p.getApiPath().equals("/api/v1/roster/month")))
+                        || ("GET".equals(p.getMethod()) && p.getApiPath().equals("/api/v1/payrolls/me"))
+                        || p.getApiPath().contains("/attendance/check-")
+                        || p.getApiPath().startsWith("/api/v1/attendance/me"))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         ensureRole("CASHIER", "Nhan vien thu ngan - thanh toan, quan ly quy", cashier);
 
@@ -278,7 +378,10 @@ public class DatabaseInitializer implements CommandLineRunner {
                         || p.getApiPath().startsWith("/api/v1/import-return-orders")
                         || p.getApiPath().startsWith("/api/v1/inventory")
                         || p.getApiPath().startsWith("/api/v1/suppliers")
-                        || p.getApiPath().contains("/attendance/check-"))
+                        || ("GET".equals(p.getMethod()) && (p.getApiPath().equals("/api/v1/roster/day") || p.getApiPath().equals("/api/v1/roster/month")))
+                        || ("GET".equals(p.getMethod()) && p.getApiPath().equals("/api/v1/payrolls/me"))
+                        || p.getApiPath().contains("/attendance/check-")
+                        || p.getApiPath().startsWith("/api/v1/attendance/me"))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         ensureRole("WAREHOUSE", "Nhan vien kho - kiem kho, nhap xuat hang", warehouse);
 
@@ -387,6 +490,7 @@ public class DatabaseInitializer implements CommandLineRunner {
 
             Employee employee = Employee.builder()
                     .storeMember(storeMember)
+                    .store(defaultStore)
                     .office(office)
                     .salaryRate(0.0)
                     .build();
@@ -473,7 +577,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         Menu partnerGroup = ensureMenu("GROUP_PARTNERS", "Doi tac", null, "peopleOutline", MenuType.GROUP, more, 230);
         ensureMenu("ITEM_CUSTOMERS", "Khach hang", "/customers", "personOutline", MenuType.ITEM, partnerGroup, 231,
                 permission("/api/v1/customers", "GET"));
-        ensureMenu("ITEM_SUPPLIERS", "Nha cung cap", null, "storefrontOutline", MenuType.ITEM, partnerGroup, 232,
+        ensureMenu("ITEM_SUPPLIERS", "Nha cung cap", "/suppliers", "storefrontOutline", MenuType.ITEM, partnerGroup, 232,
                 permission("/api/v1/suppliers", "GET"));
 
         Menu employeeGroup = ensureMenu("GROUP_EMPLOYEES", "Nhan vien", null, "peopleOutline", MenuType.GROUP, more, 240);
@@ -484,7 +588,8 @@ public class DatabaseInitializer implements CommandLineRunner {
         ensureMenu("ITEM_ATTENDANCE", "Cham cong", null, "calendarOutline", MenuType.ITEM, employeeGroup, 243,
                 permission("/api/v1/attendance", "GET"));
         ensureMenu("ITEM_PAYROLLS", "Bang luong", null, "documentTextOutline", MenuType.ITEM, employeeGroup, 244,
-                permission("/api/v1/payrolls", "GET"));
+                permission("/api/v1/payrolls", "GET"),
+                permission("/api/v1/payrolls/me", "GET"));
 
         Menu settingsGroup = ensureMenu("GROUP_SETTINGS", "Cai dat chung", null, "settingsOutline", MenuType.GROUP, more, 250);
         ensureMenu("ITEM_ROLE_MANAGEMENT", "Quan ly nguoi dung", "/employees", "personOutline", MenuType.ITEM, settingsGroup, 251,
@@ -569,12 +674,18 @@ public class DatabaseInitializer implements CommandLineRunner {
             roleRepository.save(role);
             log.info("Created role: {}", name);
         } else {
-            List<Permission> merged = mergePermissions(role.getPermissions(), desired);
-            if (merged.size() != role.getPermissions().size()) {
+            Set<String> existingKeys = role.getPermissions().stream()
+                    .map(p -> p.getApiPath() + "#" + p.getMethod())
+                    .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+            Set<String> desiredKeys = desired.stream()
+                    .map(p -> p.getApiPath() + "#" + p.getMethod())
+                    .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+
+            if (!existingKeys.equals(desiredKeys)) {
                 role.getPermissions().clear();
-                role.getPermissions().addAll(merged);
+                role.getPermissions().addAll(desired);
                 roleRepository.save(role);
-                log.info("Updated permissions for role: {}", name);
+                log.info("Synced permissions for role: {}", name);
             }
         }
     }

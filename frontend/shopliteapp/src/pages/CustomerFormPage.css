@@ -1,0 +1,407 @@
+/* ════════════════════════════════════════════════════════════
+   CustomerFormPage  –  Thêm / Sửa khách hàng
+   ════════════════════════════════════════════════════════════ */
+
+/* ─── Page ──────────────────────────────────────────────── */
+.cf-page {
+    --background: #eef0f4;
+}
+
+/* ─── Header (native div, not IonHeader) ─────────────────── */
+.cf-header {
+    display: flex;
+    align-items: center;
+    height: 56px;
+    padding: 0 4px 0 0;
+    background: #eef0f4;
+    /* safe-area top on mobile */
+    padding-top: env(safe-area-inset-top, 0);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+}
+
+.cf-btn-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #1a1a1a;
+    font-size: 26px;
+    flex-shrink: 0;
+    border-radius: 50%;
+}
+
+.cf-btn-close:active { background: rgba(0,0,0,.07); }
+
+.cf-header-title {
+    flex: 1;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111;
+    /* not centered – sits right after the × button */
+}
+
+.cf-btn-save {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    color: #b0bac5;
+    padding: 0 14px;
+    height: 48px;
+    white-space: nowrap;
+    border-radius: 8px;
+    transition: color 0.15s;
+}
+
+.cf-btn-save.active {
+    color: #1976d2;
+}
+
+.cf-btn-save:active { opacity: 0.75; }
+
+/* ─── Content ────────────────────────────────────────────── */
+.cf-content {
+    --background: #eef0f4;
+}
+
+.cf-body {
+    padding-bottom: 40px;
+}
+
+.cf-loading {
+    display: flex;
+    justify-content: center;
+    padding: 80px 0;
+}
+
+/* ─── Avatar section ─────────────────────────────────────── */
+.cf-avatar-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 28px 0 24px;
+    position: relative;
+}
+
+/* Blue circle */
+.cf-avatar-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #cce0f7;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+
+.cf-person-icon {
+    font-size: 60px;
+    color: #1976d2; /* Solid blue */
+    margin-bottom: -10px;
+}
+
+/* Camera badge */
+.cf-cam-badge {
+    position: absolute;
+    left: calc(50% + 22px);
+    top: calc(28px + 80px - 16px);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #fff; /* White bg for camera badge */
+    border: 1px solid #eef0f4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.cf-cam-icon {
+    font-size: 15px;
+    color: #333;
+}
+
+/* ─── Input card  (each field = own white rounded card) ──── */
+.cf-card {
+    background: #fff;
+    border-radius: 8px; /* Changed to 8px to match image better */
+    margin: 0 16px 12px;
+    border: 1px solid #e2e8f0; /* Slightly more visible gray border */
+    position: relative;
+    overflow: visible; 
+}
+
+.cf-card.cf-card-err {
+    border-color: #e53e3e;
+}
+
+/* ─── Input element ──────────────────────────────────────── */
+.cf-inp {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 15px 16px;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 15px;
+    color: #111;
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 8px;
+}
+
+/* native placeholder (for phone fields) */
+.cf-inp::placeholder {
+    color: #b8bfc9;
+}
+
+/* muted (customer code) */
+.cf-inp-muted::placeholder {
+    color: #b8bfc9;
+}
+.cf-inp-muted { color: #b8bfc9; }
+
+/* ─── Custom placeholder overlay (Họ và tên *) ──────────── */
+/* We layer a span on top so we can style the star red */
+.cf-ph {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px;
+    color: #b8bfc9;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* when inside date-wrap */
+.cf-ph-abs {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.cf-star {
+    color: #e53e3e;
+    margin-left: 2px;
+}
+
+/* ─── Error message ──────────────────────────────────────── */
+.cf-err-msg {
+    margin: 0;
+    padding: 2px 16px 8px;
+    font-size: 12px;
+    color: #e53e3e;
+}
+
+/* ─── Row card: Ngày sinh & Giới tính ───────────────────── */
+.cf-row-cards {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    margin: 0 16px 12px;
+}
+
+.cf-row-cards .cf-card {
+    margin: 0; /* Remove default margin because flex parent handles it */
+}
+
+.cf-flex-1 {
+    flex: 1;
+    min-width: 0;
+}
+
+/* ─── Date input ─────────────────────────────────────────── */
+.cf-date-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.cf-date-inp {
+    /* hide native chrome when no value */
+    color: transparent;
+    padding-right: 40px;
+}
+
+.cf-date-inp.filled {
+    color: #111;
+}
+
+/* ─── Select ─────────────────────────────────────────────── */
+.cf-sel-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.cf-sel {
+    color: #b8bfc9;
+    padding-right: 36px;
+    cursor: pointer;
+}
+
+.cf-sel.filled {
+    color: #111;
+}
+
+/* ─── Trailing icons (calendar, chevron) ─────────────────── */
+.cf-trail-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: #b8bfc9;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* ─── Sections & Additional Fields ───────────────────────── */
+
+.cf-sec-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+    margin: 24px 16px 8px;
+}
+
+.cf-mt-24 {
+    margin-top: 24px !important;
+}
+
+.cf-label-top {
+    display: block;
+    font-size: 12px;
+    color: #4b5563;
+    padding: 12px 16px 0;
+    font-weight: 500;
+}
+
+.cf-card .cf-label-top + .cf-inp,
+.cf-card .cf-label-top + .cf-sel-wrap .cf-inp {
+    padding-top: 4px;
+}
+
+.cf-input-with-action {
+    display: flex;
+    align-items: center;
+}
+
+.cf-input-with-action .cf-inp {
+    flex: 1;
+}
+
+.cf-btn-action {
+    background: none;
+    border: none;
+    color: #b8bfc9;
+    font-size: 14px;
+    padding: 0 16px;
+    height: 100%;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.cf-textarea {
+    resize: none;
+    line-height: 1.5;
+}
+
+/* ─── Modal Styles ────────────────────────────────────────── */
+.cf-select-modal {
+    --border-radius: 16px 16px 0 0;
+}
+
+.cf-modal-content {
+    background: #fff;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.cf-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 12px;
+}
+
+.cf-modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111;
+}
+
+.cf-modal-done {
+    background: none;
+    border: none;
+    color: #1976d2;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 0;
+    cursor: pointer;
+}
+
+.cf-modal-search-wrap {
+    margin: 0 16px 12px;
+    background: #f2f2f5;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    height: 36px;
+}
+
+.cf-search-icon {
+    color: #8e8e93;
+    font-size: 18px;
+    margin-right: 8px;
+}
+
+.cf-modal-search {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    color: #111;
+}
+
+.cf-modal-search::placeholder {
+    color: #8e8e93;
+}
+
+.cf-modal-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.cf-modal-item {
+    padding: 14px 16px;
+    font-size: 16px;
+    color: #111;
+    border-bottom: 1px solid #f2f2f5;
+    cursor: pointer;
+}
+
+.cf-modal-item:active {
+    background: #f9f9f9;
+}
+
+.cf-modal-empty {
+    padding: 24px;
+    text-align: center;
+    color: #8e8e93;
+    font-size: 15px;
+}

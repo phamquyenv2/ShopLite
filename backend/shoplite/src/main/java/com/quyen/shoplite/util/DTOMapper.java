@@ -462,6 +462,10 @@ public class DTOMapper {
         dto.setWorkingDay(roster.getWorkingDay());
         dto.setStartTime(roster.getStartTime());
         dto.setEndTime(roster.getEndTime());
+        dto.setCheckInAllowedFrom(roster.getCheckInAllowedFrom());
+        dto.setCheckInAllowedTo(roster.getCheckInAllowedTo());
+        dto.setCheckOutAllowedFrom(roster.getCheckOutAllowedFrom());
+        dto.setCheckOutAllowedTo(roster.getCheckOutAllowedTo());
         dto.setExpectedHours(roster.getExpectedHours());
         dto.setType(roster.getType());
         dto.setNote(roster.getNote());

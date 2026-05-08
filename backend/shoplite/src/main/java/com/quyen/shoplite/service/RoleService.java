@@ -2,6 +2,7 @@ package com.quyen.shoplite.service;
 
 import com.quyen.shoplite.domain.Permission;
 import com.quyen.shoplite.domain.Role;
+import com.quyen.shoplite.domain.RolePermissionsChangedEvent;
 import com.quyen.shoplite.domain.request.ReqRoleDTO;
 import com.quyen.shoplite.domain.response.ResRoleDTO;
 import com.quyen.shoplite.repository.RoleRepository;
@@ -9,6 +10,7 @@ import com.quyen.shoplite.util.DTOMapper;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ public class RoleService {
 
     private final RoleRepository roleRepository;
     private final PermissionService permissionService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public ResRoleDTO create(ReqRoleDTO req) {
@@ -39,7 +42,9 @@ public class RoleService {
                 .permissions(permissions)
                 .createdAt(LocalDateTime.now())
                 .build();
-        return DTOMapper.toResRoleDTO(roleRepository.save(role));
+        Role savedRole = roleRepository.save(role);
+        eventPublisher.publishEvent(new RolePermissionsChangedEvent(savedRole.getId(), savedRole.getName()));
+        return DTOMapper.toResRoleDTO(savedRole);
     }
 
     public ResRoleDTO findById(Long id) {
@@ -75,7 +80,9 @@ public class RoleService {
             role.setPermissions(resolvePermissions(req.getPermissionIds()));
         }
 
-        return DTOMapper.toResRoleDTO(roleRepository.save(role));
+        Role savedRole = roleRepository.save(role);
+        eventPublisher.publishEvent(new RolePermissionsChangedEvent(savedRole.getId(), savedRole.getName()));
+        return DTOMapper.toResRoleDTO(savedRole);
     }
 
     public void delete(Long id) {

@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface RosterRepository extends JpaRepository<Roster, Integer> {
@@ -20,8 +19,8 @@ public interface RosterRepository extends JpaRepository<Roster, Integer> {
     List<Roster> findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDayBetweenOrderByWorkingDayAsc(
             Long storeId, Integer employeeId, LocalDate from, LocalDate to);
 
-    Optional<Roster> findByEmployee_IdAndWorkingDay(Integer employeeId, LocalDate workingDay);
-    Optional<Roster> findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDay(Long storeId, Integer employeeId, LocalDate workingDay);
+    List<Roster> findByEmployee_IdAndWorkingDay(Integer employeeId, LocalDate workingDay);
+    List<Roster> findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDay(Long storeId, Integer employeeId, LocalDate workingDay);
 
     boolean existsByEmployee_IdAndWorkingDay(Integer employeeId, LocalDate workingDay);
     boolean existsByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDay(Long storeId, Integer employeeId, LocalDate workingDay);
@@ -31,6 +30,15 @@ public interface RosterRepository extends JpaRepository<Roster, Integer> {
 
     List<Roster> findByWorkingDayOrderByEmployee_IdAsc(LocalDate workingDay);
     List<Roster> findByEmployee_StoreMember_Store_IdAndWorkingDayOrderByEmployee_IdAsc(Long storeId, LocalDate workingDay);
+
+    @Query("SELECT r FROM Roster r " +
+           "WHERE r.employee.storeMember.store.id = :storeId " +
+           "AND r.workingDay BETWEEN :from AND :to " +
+           "ORDER BY r.workingDay ASC, r.employee.id ASC")
+    List<Roster> findByStoreAndWorkingDayBetween(
+            @Param("storeId") Long storeId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to);
 
     @Query("SELECT r FROM Roster r WHERE r.employee.id = :eid " +
            "AND r.workingDay = :day " +

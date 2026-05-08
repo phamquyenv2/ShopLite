@@ -121,6 +121,7 @@ export const endpoints = {
     'attendance-check-in': '/api/v1/attendance/check-in',
     'attendance-check-out': '/api/v1/attendance/check-out',
     'attendance-me-today': '/api/v1/attendance/me/today',
+    'attendance-me-rosters-today': '/api/v1/attendance/me/rosters/today',
     'attendance-detail': (id: number | string) => `/api/v1/attendance/${id}`,
 
     // roster
@@ -128,9 +129,11 @@ export const endpoints = {
     'roster-detail': (id: number | string) => `/api/v1/roster/${id}`,
     'roster-by-employee': (employeeId: number | string) => `/api/v1/roster/employee/${employeeId}`,
     'roster-by-day': '/api/v1/roster/day',
+    'roster-by-month': '/api/v1/roster/month',
 
     // payrolls
     payrolls: '/api/v1/payrolls',
+    'payrolls-me': '/api/v1/payrolls/me',
     'payroll-detail': (id: number | string) => `/api/v1/payrolls/${id}`,
     'payroll-by-employee': (employeeId: number | string) => `/api/v1/payrolls/employee/${employeeId}`,
     'payroll-sync-monthly': '/api/v1/payrolls/sync-monthly',
@@ -166,7 +169,7 @@ export const endpoints = {
 const DEFAULT_BASE_URL = 'http://localhost:8080';
 
 const getBaseUrl = (): string => {
-    const envBase = (import.meta as unknown as { env?: Record<string, unknown> })?.env?.VITE_API_BASE_URL;
+    const envBase = import.meta.env.VITE_API_BASE_URL;
     return typeof envBase === 'string' && envBase.trim() ? envBase.trim() : DEFAULT_BASE_URL;
 };
 

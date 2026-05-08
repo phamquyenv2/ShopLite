@@ -1,0 +1,558 @@
+/* ── EmployeeDetailPage.css ── */
+
+.emp-detail-page {
+    --background: #f0f2f5;
+}
+
+.ed-header {
+    background: transparent;
+    box-shadow: none !important;
+}
+
+.ed-header::after {
+    display: none !important;
+}
+
+.ed-toolbar {
+    --background: #f0f2f5;
+    --border-width: 0;
+    --padding-top: 8px;
+    --padding-bottom: 4px;
+}
+
+.ed-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111;
+    margin-left: -4px;
+}
+
+.ed-content {
+    --background: #f0f2f5;
+}
+
+.ed-loading,
+.ed-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60vh;
+    color: #8a94a6;
+    font-size: 15px;
+}
+
+/* ── Cards ── */
+.ed-card {
+    background: #fff;
+    margin: 10px 0 0;
+    padding: 14px 16px;
+    border-top: 1px solid #eef0f3;
+    border-bottom: 1px solid #eef0f3;
+}
+
+/* ── Profile card ── */
+.ed-profile-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+}
+
+.ed-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #d0defe;
+    color: #2a52be;
+    font-size: 22px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ed-profile-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.ed-profile-name {
+    font-size: 17px;
+    font-weight: 400;
+    color: #111;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ed-profile-code {
+    margin-top: 2px;
+    font-size: 12px;
+    color: #adb5bd;
+    font-weight: 400;
+}
+
+.ed-edit-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: 0;
+    background: transparent;
+    color: #0066ff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.ed-edit-btn ion-icon {
+    font-size: 17px;
+}
+
+/* ── Info rows ── */
+.ed-info-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+}
+
+.ed-info-label {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 3px;
+}
+
+.ed-info-value {
+    font-size: 15px;
+    font-weight: 500;
+    color: #111;
+}
+
+.ed-call-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1.5px solid #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #374151;
+    font-size: 20px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.ed-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 12px 0;
+}
+
+/* ── Salary link row ── */
+.ed-salary-link {
+    padding: 0;
+}
+
+.ed-salary-btn {
+    width: 100%;
+    padding: 14px 16px;
+    border: 0;
+    background: transparent;
+    color: #0066ff;
+    font-size: 15px;
+    font-weight: 400;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ed-salary-btn ion-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+/* ── Section headers ── */
+.ed-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.ed-section-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+    text-transform: uppercase;
+}
+
+.ed-section-action {
+    width: 30px;
+    height: 30px;
+    border: 0;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* ── Week navigation ── */
+.ed-week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.ed-week-nav-btn {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 8px;
+    background: #f1f5f9;
+    color: #374151;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.ed-week-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.ed-week-main {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.ed-week-sub {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* ── Roster grid ── */
+.ed-roster-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(7, 1fr);
+    gap: 0;
+    font-size: 12px;
+}
+
+.ed-roster-col-header {
+    /* empty top-left cell */
+}
+
+.ed-roster-day-head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 2px 10px;
+}
+
+.ed-roster-day-head.today .ed-roster-weekday {
+    color: #0066ff;
+    font-weight: 700;
+}
+
+.ed-roster-weekday {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.ed-roster-date {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ed-roster-date.today-circle {
+    background: #0066ff;
+    color: #fff;
+    border-radius: 50%;
+}
+
+.ed-roster-shift-label {
+    padding: 10px 0 10px 2px;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.ed-roster-shift-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    display: block;
+}
+
+.ed-roster-shift-time {
+    font-size: 11px;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.ed-roster-cell {
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ed-roster-check {
+    font-size: 15px;
+    color: #0066ff;
+}
+
+.ed-roster-empty {
+    padding: 20px 0;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+/* ── Attendance stats ── */
+.ed-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 0;
+    margin-top: 10px;
+}
+
+.ed-stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.ed-stat-label {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.ed-stat-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111;
+}
+
+.ed-overtime-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+}
+
+/* ── Payroll rows ── */
+.ed-payroll-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+}
+
+.ed-payroll-row:last-child {
+    border-bottom: 0;
+}
+
+.ed-payroll-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.ed-payroll-code {
+    margin-top: 3px;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.ed-payroll-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.ed-payroll-amount {
+    font-size: 15px;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.ed-payroll-arrow {
+    font-size: 16px;
+    color: #94a3b8;
+}
+
+.ed-empty-text {
+    font-size: 14px;
+    color: #94a3b8;
+    text-align: center;
+    padding: 16px 0 4px;
+}
+
+/* ── Roster card ── */
+.ed-roster-card {
+    overflow-x: auto;
+}
+
+/* today weekday label */
+.ed-roster-weekday.today {
+    color: #0066ff;
+    font-weight: 700;
+}
+
+/* roster grid: loading + empty spans all columns */
+.ed-roster-loading,
+.ed-roster-empty {
+    grid-column: 1 / -1;
+    padding: 20px 0;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* info value muted variant */
+.ed-info-value--muted {
+    font-weight: 400;
+    color: #6b7280;
+}
+
+/* placeholder text inside info value */
+.ed-info-placeholder {
+    color: #c0c6d0;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 14px;
+}
+
+/* smaller stat value for overtime */
+.ed-stat-value-sm {
+    font-size: 17px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* ── Salary setup card ── */
+.ed-salary-card {
+    padding: 16px;
+}
+
+.ed-salary-card-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+
+.ed-salary-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ed-salary-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.ed-salary-field label {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 400;
+}
+
+.ed-salary-input-wrap {
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+}
+
+.ed-salary-input-wrap:focus-within {
+    border-color: #0066ff;
+    background: #fff;
+}
+
+.ed-salary-input-wrap input {
+    flex: 1;
+    border: 0;
+    background: transparent;
+    padding: 10px 12px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #1f2937;
+    outline: none;
+    min-width: 0;
+}
+
+.ed-salary-unit {
+    padding: 0 12px;
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+.ed-salary-save-btn {
+    margin-top: 14px;
+    width: 100%;
+    padding: 12px;
+    border: 0;
+    border-radius: 10px;
+    background: #0066ff;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.ed-salary-save-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.ed-salary-save-btn:active:not(:disabled) {
+    opacity: 0.85;
+}
+

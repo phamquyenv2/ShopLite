@@ -24,12 +24,15 @@ import {
 import { useMemo, useState, useEffect } from 'react';
 import { productService } from '../services/product.service';
 import type { Product, Category } from '../api/types';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './ProductsPage.css';
 
 const formatVnd = (amount: number): string => `${new Intl.NumberFormat('vi-VN').format(Math.max(0, Math.round(amount)))}`;
 
 const ProductsPage: React.FC = () => {
     const ionRouter = useIonRouter();
+    const { can } = useStorePermissions();
+    const canCreateProduct = can('/api/v1/products', 'POST');
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -184,11 +187,13 @@ const ProductsPage: React.FC = () => {
                     })}
                 </div>
 
-                <IonFab vertical="bottom" horizontal="end" slot="fixed" style={{ marginBottom: '20px', marginRight: '8px' }}>
-                    <IonFabButton className="products-fab" onClick={() => ionRouter.push('/product/new')}>
-                        <IonIcon icon={addOutline} />
-                    </IonFabButton>
-                </IonFab>
+                {canCreateProduct && (
+                    <IonFab vertical="bottom" horizontal="end" slot="fixed" style={{ marginBottom: '20px', marginRight: '8px' }}>
+                        <IonFabButton className="products-fab" onClick={() => ionRouter.push('/product/new')}>
+                            <IonIcon icon={addOutline} />
+                        </IonFabButton>
+                    </IonFab>
+                )}
 
             </IonContent>
 

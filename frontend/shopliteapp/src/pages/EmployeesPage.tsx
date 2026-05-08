@@ -27,12 +27,16 @@ import {
     searchOutline,
     shieldCheckmarkOutline,
     chevronDownOutline,
-    arrowBackOutline
+    arrowBackOutline,
+    saveOutline,
+    businessOutline,
+    callOutline
 } from 'ionicons/icons';
 import { employeeService } from '../services/employee.service';
 import { roleService } from '../services/role.service';
 import { storeInvitationService } from '../services/storeInvitation.service';
 import type { Employee, Role } from '../api/types';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './EmployeesPage.css';
 
 const avatarColors = [
@@ -83,6 +87,10 @@ const getRoleTitle = (desc: string, name: string) => {
 
 const EmployeesPage: React.FC = () => {
     const ionRouter = useIonRouter();
+    const { can } = useStorePermissions();
+    const canInviteEmployee = can('/api/v1/store-invitations', 'POST');
+    const canViewRoleDetail = can('/api/v1/roles/{id}', 'GET');
+    const canUpdateEmployee = can('/api/v1/employees/{id}', 'PUT');
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState(false);
@@ -95,6 +103,10 @@ const EmployeesPage: React.FC = () => {
     const [invitePhone, setInvitePhone] = useState('');
     const [inviteRoleId, setInviteRoleId] = useState<string>('');
     const [inviting, setInviting] = useState(false);
+    const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+    const [salaryRate, setSalaryRate] = useState('');
+    const [employeeNote, setEmployeeNote] = useState('');
+    const [savingEmployee, setSavingEmployee] = useState(false);
 
     const loadData = async () => {
         setLoading(true);
@@ -145,6 +157,10 @@ const EmployeesPage: React.FC = () => {
     }, [roles, debouncedSearch]);
 
     const submitInvitation = async () => {
+        if (!canInviteEmployee) {
+            setToast('Bạn không có quyền thêm nhân viên');
+            return;
+        }
         const phone = invitePhone.trim();
         if (!phone) {
             setToast('Vui lòng nhâp số điện thoại');
@@ -164,6 +180,41 @@ const EmployeesPage: React.FC = () => {
             setToast(err.message || 'Không thể gửi lời mời');
         } finally {
             setInviting(false);
+        }
+    };
+
+    const openEmployeeDetail = (emp: Employee) => {
+        ionRouter.push(`/employees/${emp.id}`);
+    };
+
+    const saveEmployeeSalary = async () => {
+        if (!selectedEmployee || !canUpdateEmployee) return;
+        const nextSalary = Number(salaryRate);
+        if (!Number.isFinite(nextSalary) || nextSalary < 0) {
+            setToast('Luong phai lon hon hoac bang 0');
+            return;
+        }
+        if (!selectedEmployee.officeId) {
+            setToast('Nhan vien chua co chi nhanh/van phong');
+            return;
+        }
+
+        setSavingEmployee(true);
+        try {
+            const updated = await employeeService.updateEmployee(selectedEmployee.id, {
+                userId: selectedEmployee.userId,
+                officeId: selectedEmployee.officeId,
+                salaryRate: nextSalary,
+                qr: selectedEmployee.qr || null,
+                note: employeeNote,
+            });
+            setEmployees(prev => prev.map(emp => emp.id === updated.id ? updated : emp));
+            setSelectedEmployee(updated);
+            setToast('Da cap nhat luong nhan vien');
+        } catch (err: any) {
+            setToast(err.message || 'Khong the cap nhat luong');
+        } finally {
+            setSavingEmployee(false);
         }
     };
 
@@ -222,7 +273,7 @@ const EmployeesPage: React.FC = () => {
                                     const roleBadgeClass = isManager ? 'badge-blue' : 'badge-gray';
 
                                     return (
-                                        <div key={emp.id} className="ep-card">
+                                        <div key={emp.id} className="ep-card" onClick={() => openEmployeeDetail(emp)} role="button" tabIndex={0}>
                                             <div className="ep-card-avatar" style={{ background: style.bg, color: style.color }}>
                                                 {getInitials(name)}
                                                 <div className={`ep-avatar-status ${emp.deleted ? 'status-inactive' : 'status-active'}`}></div>
@@ -263,8 +314,8 @@ const EmployeesPage: React.FC = () => {
                                         <div
                                             key={role.id}
                                             className="role-card"
-                                            onClick={() => ionRouter.push(`/roles/${role.id}`)}
-                                            style={{ cursor: 'pointer' }}
+                                            onClick={() => canViewRoleDetail && ionRouter.push(`/roles/${role.id}`)}
+                                            style={{ cursor: canViewRoleDetail ? 'pointer' : 'default' }}
                                         >
                                             <div className={`role-card-icon-wrap ${colorClass}`}>
                                                 <IonIcon icon={icon} />
@@ -288,11 +339,13 @@ const EmployeesPage: React.FC = () => {
                     </>
                 )}
 
-                <IonFab vertical="bottom" horizontal="end" slot="fixed" style={{ marginBottom: '20px', marginRight: '8px' }}>
-                    <IonFabButton className="ep-fab ep-fab-btn" onClick={() => setInviteOpen(true)}>
-                        <IonIcon icon={addOutline} style={{ fontSize: '28px' }} />
-                    </IonFabButton>
-                </IonFab>
+                {canInviteEmployee && (
+                    <IonFab vertical="bottom" horizontal="end" slot="fixed" style={{ marginBottom: '20px', marginRight: '8px' }}>
+                        <IonFabButton className="ep-fab ep-fab-btn" onClick={() => setInviteOpen(true)}>
+                            <IonIcon icon={addOutline} style={{ fontSize: '28px' }} />
+                        </IonFabButton>
+                    </IonFab>
+                )}
             </IonContent>
 
             <IonModal isOpen={inviteOpen} onDidDismiss={() => setInviteOpen(false)} className="ep-invite-modal">
@@ -349,6 +402,85 @@ const EmployeesPage: React.FC = () => {
                         {inviting ? 'Đang gửi...' : 'Tạo và gửi lời mời'}
                     </button>
                 </div>
+            </IonModal>
+
+            <IonModal isOpen={selectedEmployee !== null} onDidDismiss={() => setSelectedEmployee(null)} className="ep-invite-modal">
+                <div className="ep-invite-header">
+                    <button className="ep-invite-back" onClick={() => setSelectedEmployee(null)}>
+                        <IonIcon icon={chevronBackOutline} />
+                    </button>
+                    <span className="ep-invite-title">Thông tin nhân viên</span>
+                </div>
+                <IonContent style={{ '--background': '#f4f6f9' }}>
+                    {selectedEmployee && (
+                        <div className="ep-detail">
+                            <div className="ep-detail-card ep-detail-profile">
+                                <div className="ep-detail-avatar">
+                                    {getInitials(selectedEmployee.username || 'N')}
+                                </div>
+                                <div>
+                                    <div className="ep-detail-name">{selectedEmployee.username || 'Nhan vien'}</div>
+                                    <div className="ep-detail-role">{selectedEmployee.roleName || 'Nhan vien'}</div>
+                                </div>
+                            </div>
+
+                            <div className="ep-detail-card">
+                                <div className="ep-detail-row">
+                                    <IonIcon icon={callOutline} />
+                                    <div>
+                                        <span>Số điện thoại</span>
+                                        <strong>{selectedEmployee.phone || '--'}</strong>
+                                    </div>
+                                </div>
+                                <div className="ep-detail-row">
+                                    <IonIcon icon={businessOutline} />
+                                    <div>
+                                        <span>Chi nhánh / văn phòng</span>
+                                        <strong>{selectedEmployee.officeName || '--'}</strong>
+                                    </div>
+                                </div>
+                                <div className="ep-detail-row">
+                                    <IonIcon icon={cashOutline} />
+                                    <div>
+                                        <span>Lương hiện tại</span>
+                                        <strong>{new Intl.NumberFormat('vi-VN').format(selectedEmployee.salaryRate || 0)} đ/giờ</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="ep-detail-card">
+                                <div className="ep-invite-field">
+                                    <label>Lương theo giờ</label>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        inputMode="decimal"
+                                        value={salaryRate}
+                                        disabled={!canUpdateEmployee}
+                                        onChange={e => setSalaryRate(e.target.value)}
+                                    />
+                                </div>
+                                <div className="ep-invite-field">
+                                    <label>Ghi chú</label>
+                                    <input
+                                        type="text"
+                                        value={employeeNote}
+                                        disabled={!canUpdateEmployee}
+                                        onChange={e => setEmployeeNote(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </IonContent>
+                {canUpdateEmployee && (
+                    <div className="ep-invite-footer">
+                        <button className="ep-invite-submit" disabled={savingEmployee || !selectedEmployee} onClick={saveEmployeeSalary}>
+                            <IonIcon icon={saveOutline} />
+                            {savingEmployee ? 'Đang lưu...' : 'Lưu thiết lập lương'}
+                        </button>
+                    </div>
+                )}
             </IonModal>
 
             <IonToast isOpen={toast !== null} message={toast ?? ''} duration={2000} onDidDismiss={() => setToast(null)} />

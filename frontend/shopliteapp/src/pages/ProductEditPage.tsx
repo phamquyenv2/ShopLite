@@ -25,11 +25,15 @@ import { productService } from '../services/product.service';
 import type { Product, Category, ProductUpsert } from '../api/types';
 import { authApis, endpoints } from '../utils/Apis';
 import { uploadToCloudinary } from '../utils/cloudinary';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './ProductEditPage.css';
 
 const ProductEditPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const ionRouter = useIonRouter();
+    const { can } = useStorePermissions();
+    const canUpdateProduct = can('/api/v1/products/{id}', 'PUT');
+    const canDeleteProduct = can('/api/v1/products/{id}', 'DELETE');
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -86,6 +90,10 @@ const ProductEditPage: React.FC = () => {
 
     const handleSave = async () => {
         if (!product) return;
+        if (!canUpdateProduct) {
+            setToast('Bạn không có quyền sửa hàng hóa');
+            return;
+        }
         if (!name.trim()) {
             setToast('Vui lòng nhập tên hàng');
             return;
@@ -123,6 +131,10 @@ const ProductEditPage: React.FC = () => {
 
     const handleDelete = async () => {
         if (!product) return;
+        if (!canDeleteProduct) {
+            setToast('Bạn không có quyền xóa hàng hóa');
+            return;
+        }
         setSaving(true);
         try {
             await authApis().delete<any>(endpoints['product-detail'](product.id));
@@ -189,11 +201,13 @@ const ProductEditPage: React.FC = () => {
                         </button>
                         <div className="pe-title">Sửa sản phẩm</div>
                     </div>
-                    <div slot="end">
-                        <button className="pe-save-btn" onClick={handleSave} disabled={saving}>
-                            {saving ? <IonSpinner name="dots" /> : 'Lưu'}
-                        </button>
-                    </div>
+                    {canUpdateProduct && (
+                        <div slot="end">
+                            <button className="pe-save-btn" onClick={handleSave} disabled={saving}>
+                                {saving ? <IonSpinner name="dots" /> : 'Lưu'}
+                            </button>
+                        </div>
+                    )}
                 </IonToolbar>
             </IonHeader>
 
@@ -346,10 +360,12 @@ const ProductEditPage: React.FC = () => {
                         </div>
                     </div>
 
-                    <button className="pe-delete-btn" onClick={() => setDeleteAlert(true)}>
-                        <IonIcon icon={trashOutline} />
-                        Xóa hàng hóa này
-                    </button>
+                    {canDeleteProduct && (
+                        <button className="pe-delete-btn" onClick={() => setDeleteAlert(true)}>
+                            <IonIcon icon={trashOutline} />
+                            Xóa hàng hóa này
+                        </button>
+                    )}
 
                 </div>
             </IonContent>

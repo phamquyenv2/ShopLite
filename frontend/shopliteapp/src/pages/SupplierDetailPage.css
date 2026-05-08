@@ -1,0 +1,32 @@
+.sd-page { --background: #f4f6f9; }
+
+.sd-header { background: #fff; }
+.sd-toolbar { --background: #fff; --border-width: 0; --min-height: 56px; }
+.sd-title { font-size: 18px; font-weight: 600; color: #111; position: absolute; left: 48px; top: 50%; transform: translateY(-50%); }
+
+.sd-content { --background: #f4f6f9; }
+.sd-loading { display: flex; justify-content: center; padding: 80px; }
+
+/* Section */
+.sd-section { background: #fff; margin-bottom: 8px; padding: 0; }
+.sd-section-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px; }
+.sd-section-label { font-size: 12px; font-weight: 600; color: #8e8e93; letter-spacing: 0.5px; }
+.sd-edit-btn { background: none; border: none; color: #1976d2; font-size: 14px; font-weight: 500; cursor: pointer; padding: 0; }
+
+/* Name row */
+.sd-name-row { display: flex; align-items: center; gap: 14px; padding: 8px 16px 16px; }
+.sd-avatar { width: 52px; height: 52px; border-radius: 50%; background: #e0ebff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 22px; font-weight: 700; color: #1976d2; }
+.sd-name { font-size: 18px; font-weight: 600; color: #111; }
+
+/* Contact items */
+.sd-contact-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid #f5f5f5; }
+.sd-contact-icon { font-size: 20px; color: #6b7280; flex-shrink: 0; }
+.sd-contact-item span { font-size: 15px; color: #111; }
+
+/* Row items */
+.sd-section-rows { background: #fff; margin-bottom: 8px; }
+.sd-row-item { display: flex; align-items: center; justify-content: space-between; padding: 16px; cursor: pointer; border-top: 1px solid #f5f5f5; }
+.sd-row-item:first-child { border-top: none; }
+.sd-row-item:active { background: #f8faff; }
+.sd-row-label { font-size: 15px; color: #111; font-weight: 500; }
+.sd-row-arrow { font-size: 18px; color: #c0c5cc; }

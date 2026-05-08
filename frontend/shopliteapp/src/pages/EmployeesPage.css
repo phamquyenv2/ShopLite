@@ -506,3 +506,83 @@
 .ep-invite-submit:not(:disabled):active {
     background: #0b5ed7;
 }
+
+.ep-detail {
+    padding: 16px;
+}
+
+.ep-detail-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.ep-detail-profile {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.ep-detail-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: #dbeafe;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.ep-detail-name {
+    font-size: 17px;
+    font-weight: 800;
+    color: #111827;
+}
+
+.ep-detail-role {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.ep-detail-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.ep-detail-row:last-child {
+    border-bottom: none;
+}
+
+.ep-detail-row ion-icon {
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+    border-radius: 10px;
+    background: #eff6ff;
+    color: #0d6efd;
+}
+
+.ep-detail-row span {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 3px;
+}
+
+.ep-detail-row strong {
+    font-size: 14px;
+    color: #111827;
+}
+
+.ep-invite-submit ion-icon {
+    margin-right: 8px;
+}

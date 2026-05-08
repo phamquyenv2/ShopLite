@@ -7,6 +7,7 @@ import {
 import { addOutline, chevronBackOutline, chevronDownOutline, searchOutline } from 'ionicons/icons';
 import type { InventoryAdjustment } from '../api/types';
 import { inventoryAdjustmentService } from '../services/inventoryAdjustment.service';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './InventoryAdjustmentsPage.css';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -65,6 +66,8 @@ const buildItemNames = (adj: InventoryAdjustment): string =>
 
 const InventoryAdjustmentsPage: React.FC = () => {
     const ionRouter = useIonRouter();
+    const { can } = useStorePermissions();
+    const canCreateAdjustment = can('/api/v1/inventory-adjustments', 'POST');
     const [adjustments, setAdjustments] = useState<InventoryAdjustment[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -208,11 +211,13 @@ const InventoryAdjustmentsPage: React.FC = () => {
             </IonContent>
 
             {/* ── FAB ── */}
-            <IonFab vertical="bottom" horizontal="end" slot="fixed" className="ia-fab-wrap">
-                <IonFabButton className="ia-fab" onClick={() => ionRouter.push('/inventory-adjustment/new')}>
-                    <IonIcon icon={addOutline} />
-                </IonFabButton>
-            </IonFab>
+            {canCreateAdjustment && (
+                <IonFab vertical="bottom" horizontal="end" slot="fixed" className="ia-fab-wrap">
+                    <IonFabButton className="ia-fab" onClick={() => ionRouter.push('/inventory-adjustment/new')}>
+                        <IonIcon icon={addOutline} />
+                    </IonFabButton>
+                </IonFab>
+            )}
         </IonPage>
     );
 };

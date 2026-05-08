@@ -29,12 +29,11 @@ import {
   timeOutline,
   walletOutline,
 } from 'ionicons/icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import type { Menu, Permission } from '../api/types';
-import type { MeResponse } from '../auth/types';
 import { useAuth } from '../auth/useAuth';
-import { authApis, endpoints } from '../utils/Apis';
+import { getCurrentMe, ME_SESSION_UPDATED_EVENT, readStoredCurrentStore } from '../utils/meSession';
 import { canShowMenu, getMenuIcon, getMenusByType, getMenuTitle, hasMenuPayload } from '../utils/menuAccess';
 import './MorePage.css';
 
@@ -57,6 +56,23 @@ const iconClassByCode: Record<string, string> = {
   ITEM_CUSTOMERS: 'icon-green',
   ITEM_FUND_LEDGER: 'icon-blue',
   ITEM_PRODUCTS: 'icon-blue',
+};
+
+const routeByCode: Record<string, string> = {
+  ITEM_SALES: '/sales',
+  ITEM_ORDERS: '/orders',
+  ITEM_ORDER_CREATE: '/orders/new',
+  ITEM_FUND_LEDGER: '/fund-ledger',
+  ITEM_PRODUCTS: '/products',
+  ITEM_INVENTORY_ADJUSTMENTS: '/inventory-adjustments',
+  ITEM_IMPORT_ORDERS: '/import-orders',
+  ITEM_IMPORT_RETURN_ORDERS: '/import-return-orders',
+  ITEM_CUSTOMERS: '/customers',
+  ITEM_SUPPLIERS: '/suppliers',
+  ITEM_EMPLOYEES: '/employees',
+  ITEM_ROSTER: '/roster',
+  ITEM_ATTENDANCE: '/attendance',
+  ITEM_PAYROLLS: '/payrolls',
 };
 
 const fallbackTabs = (permissions: Permission[], menus: Menu[]) => [
@@ -90,37 +106,67 @@ const fallbackGroups: StaticGroup[] = [
     title: 'Đối tác',
     items: [
       { code: 'ITEM_CUSTOMERS', label: 'Khách hàng', route: '/customers', icon: personOutline, iconClass: 'icon-green', apiPath: '/api/v1/customers' },
+      { code: 'ITEM_SUPPLIERS', label: 'Nhà cung cấp', route: '/suppliers', icon: storefrontOutline, iconClass: 'icon-blue', apiPath: '/api/v1/suppliers' },
     ],
   },
   {
     title: 'Nhân viên',
     items: [
       { code: 'ITEM_EMPLOYEES', label: 'Nhân viên', route: '/employees', icon: peopleOutline, iconClass: 'icon-blue', apiPath: '/api/v1/employees' },
-      { code: 'ITEM_ROSTER', label: 'Lịch làm việc', icon: timeOutline, iconClass: 'icon-blue', apiPath: '/api/v1/roster/day' },
-      { code: 'ITEM_ATTENDANCE', label: 'Chấm công', icon: calendarOutline, iconClass: 'icon-blue', apiPath: '/api/v1/attendance' },
-      { code: 'ITEM_PAYROLLS', label: 'Bảng lương', icon: documentTextOutline, iconClass: 'icon-blue', apiPath: '/api/v1/payrolls' },
+      { code: 'ITEM_ROSTER', label: 'Lịch làm việc', route: '/roster', icon: timeOutline, iconClass: 'icon-blue', apiPath: '/api/v1/roster/day' },
+      { code: 'ITEM_ATTENDANCE', label: 'Chấm công', route: '/attendance', icon: calendarOutline, iconClass: 'icon-blue', apiPath: '/api/v1/attendance' },
+      { code: 'ITEM_PAYROLLS', label: 'Bảng lương', route: '/payrolls', icon: documentTextOutline, iconClass: 'icon-blue', apiPath: '/api/v1/payrolls' },
     ],
   },
 ];
 
+const getInitialStore = () => readStoredCurrentStore();
+const nowMs = () => Math.round(performance.now());
+
 const MorePage: React.FC = () => {
   const history = useHistory();
   const { logout } = useAuth();
-  const [storeName, setStoreName] = useState('ShopLite');
-  const [memberRole, setMemberRole] = useState('');
-  const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [menus, setMenus] = useState<Menu[]>([]);
+  const pageStartRef = useState(() => nowMs())[0];
+  const initialStore = getInitialStore();
+  const [storeName, setStoreName] = useState(initialStore?.name ?? 'ShopLite');
+  const [memberRole, setMemberRole] = useState(initialStore?.memberRole ?? '');
+  const [permissions, setPermissions] = useState<Permission[]>(() => (initialStore?.permissions || []) as Permission[]);
+  const [menus, setMenus] = useState<Menu[]>(() => (initialStore?.menus || []) as Menu[]);
+
+  const logPerf = (message: string) => {
+    console.info(`[More perf] +${nowMs() - pageStartRef}ms ${message}`);
+  };
+
+  useEffect(() => {
+    logPerf('mounted');
+    const hydrateFromStoredStore = () => {
+      const store = readStoredCurrentStore();
+      if (!store) return;
+      setStoreName(store.name || 'ShopLite');
+      setMemberRole(store.memberRole || '');
+      setPermissions((store.permissions || []) as Permission[]);
+      setMenus((store.menus || []) as Menu[]);
+      logPerf(`hydrated from cache: menus=${store.menus?.length ?? 0}, permissions=${store.permissions?.length ?? 0}`);
+    };
+
+    globalThis.addEventListener(ME_SESSION_UPDATED_EVENT, hydrateFromStoredStore);
+    return () => {
+      globalThis.removeEventListener(ME_SESSION_UPDATED_EVENT, hydrateFromStoredStore);
+    };
+  }, []);
 
   useIonViewWillEnter(() => {
+    logPerf('ion view will enter');
     const loadMe = async () => {
       try {
-        const meRes = await authApis().get<any>(endpoints.me);
-        const mePayload = (meRes.data?.data ?? meRes.data) as MeResponse;
+        const meStart = nowMs();
+        const mePayload = await getCurrentMe();
         const currentStore = mePayload?.currentStore ?? null;
         setStoreName(currentStore?.name || 'ShopLite');
         setMemberRole(currentStore?.memberRole || '');
         setPermissions((currentStore?.permissions || []) as Permission[]);
         setMenus((currentStore?.menus || []) as Menu[]);
+        logPerf(`me loaded in ${nowMs() - meStart}ms: menus=${currentStore?.menus?.length ?? 0}, permissions=${currentStore?.permissions?.length ?? 0}`);
       } catch (err) {
         console.error(err);
       }
@@ -142,7 +188,7 @@ const MorePage: React.FC = () => {
             .map(item => ({
               code: item.code,
               label: getMenuTitle(item),
-              route: item.route || undefined,
+              route: item.route || routeByCode[item.code] || undefined,
               icon: getMenuIcon(item.icon, archiveOutline),
               iconClass: iconClassByCode[item.code] || 'icon-blue',
               apiPath: '',
@@ -156,7 +202,7 @@ const MorePage: React.FC = () => {
         }))
         .filter(group => group.items.length > 0);
 
-  const tabs = hasMenuPayload(menus)
+  const tabs = hasMenuPayload(menus) && getMenusByType(menus, 'TAB').filter(item => item.route).length >= 4
     ? getMenusByType(menus, 'TAB')
         .filter(item => item.route)
         .map(item => ({

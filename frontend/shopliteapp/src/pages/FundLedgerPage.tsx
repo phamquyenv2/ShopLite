@@ -11,6 +11,7 @@ import { useHistory } from 'react-router-dom';
 import { fundAccountService } from '../services/fundAccount.service';
 import { transactionService } from '../services/transaction.service';
 import type { FundAccount, Transaction } from '../api/types';
+import { useStorePermissions } from '../utils/useStorePermissions';
 import './FundLedgerPage.css';
 
 /* ---------- helpers ---------- */
@@ -47,6 +48,8 @@ const TABS: { key: TabKey; label: string }[] = [
 /* ============================= */
 const FundLedgerPage: React.FC = () => {
     const history = useHistory();
+    const { can } = useStorePermissions();
+    const canCreateTransaction = can('/api/v1/transactions', 'POST');
     const [activeTab, setActiveTab] = useState<TabKey>('CASH');
     const [fundAccounts, setFundAccounts] = useState<FundAccount[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -262,11 +265,13 @@ const FundLedgerPage: React.FC = () => {
                 )}
 
                 {/* ── FAB ── */}
-                <IonFab vertical="bottom" horizontal="end" slot="fixed">
-                    <IonFabButton className="flp-fab">
-                        <IonIcon icon={addOutline} />
-                    </IonFabButton>
-                </IonFab>
+                {canCreateTransaction && (
+                    <IonFab vertical="bottom" horizontal="end" slot="fixed">
+                        <IonFabButton className="flp-fab">
+                            <IonIcon icon={addOutline} />
+                        </IonFabButton>
+                    </IonFab>
+                )}
             </IonContent>
         </IonPage>
     );

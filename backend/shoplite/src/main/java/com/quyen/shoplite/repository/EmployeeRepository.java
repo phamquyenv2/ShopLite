@@ -46,6 +46,10 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
 
     List<Employee> findAllByStoreMember_Store_IdAndDeletedFalseOrderByIdAsc(Long storeId);
 
+    List<Employee> findAllByStoreMember_Store_IdOrderByIdAsc(Long storeId);
+
+    Optional<Employee> findByStoreMember_Id(Long storeMemberId);
+
     Optional<Employee> findByIdAndStoreMember_Store_IdAndDeletedFalse(Integer id, Long storeId);
 
     Optional<Employee> findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(Long storeId, Integer userId);

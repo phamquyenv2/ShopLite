@@ -25,11 +25,16 @@ replay_pid*
 
 node_modules/
 
+# Local agent/skill cache
+.agents/
+**/.agents/
+
 # Gradle
 .gradle/
 build/
 **/build/
 **/.gradle-user-home/
+**/.gradle-user-home*/
 
 # Cache
 *.bin

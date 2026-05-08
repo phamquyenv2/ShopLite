@@ -1,0 +1,49 @@
+{
+    "project_info": {
+        "project_number": "1082377852931",
+        "firebase_url": "https://shoplite-36f6c-default-rtdb.firebaseio.com",
+        "project_id": "shoplite-36f6c",
+        "storage_bucket": "shoplite-36f6c.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:1082377852931:android:b447999d015fd10dcf9636",
+                "android_client_info": {
+                    "package_name": "com.shoplite.app"
+                }
+            },
+            "oauth_client": [],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyAncrAIgtM9BuCs_zEo6sMGTojzxgfozCE"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": []
+                }
+            }
+        },
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:1082377852931:android:250c4896d04b1263cf9636",
+                "android_client_info": {
+                    "package_name": "io.ionic.starter"
+                }
+            },
+            "oauth_client": [],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyAncrAIgtM9BuCs_zEo6sMGTojzxgfozCE"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": []
+                }
+            }
+        }
+    ],
+    "configuration_version": "1"
+}
