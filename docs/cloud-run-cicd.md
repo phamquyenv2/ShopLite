@@ -36,7 +36,6 @@ Required:
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_FROM_NUMBER`
 - `FIREBASE_CREDENTIALS_JSON`
-- `FIREBASE_SERVICE_ACCOUNT_SHOPLITE_36F6C`: Firebase Hosting deploy service account JSON.
 
 ## Google Service Account Permissions
 
@@ -45,6 +44,7 @@ The service account used by `GCP_SA_KEY` needs:
 - Artifact Registry Writer
 - Cloud Run Admin
 - Service Account User
+- Firebase Hosting Admin
 
 ## Trigger
 
