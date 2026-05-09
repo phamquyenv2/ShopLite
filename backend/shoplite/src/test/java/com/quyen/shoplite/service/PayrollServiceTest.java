@@ -4,6 +4,7 @@ import com.quyen.shoplite.domain.Attendance;
 import com.quyen.shoplite.domain.Employee;
 import com.quyen.shoplite.domain.Payroll;
 import com.quyen.shoplite.domain.Store;
+import com.quyen.shoplite.domain.StoreMember;
 import com.quyen.shoplite.domain.User;
 import com.quyen.shoplite.domain.request.ReqPayrollSyncDTO;
 import com.quyen.shoplite.domain.response.ResPayrollDTO;
@@ -12,6 +13,7 @@ import com.quyen.shoplite.repository.EmployeeRepository;
 import com.quyen.shoplite.repository.PayrollRepository;
 import com.quyen.shoplite.repository.RosterRepository;
 import com.quyen.shoplite.repository.PaymentRepository;
+import com.quyen.shoplite.repository.UserRepository;
 
 
 import org.junit.jupiter.api.BeforeEach;
@@ -39,19 +41,21 @@ class PayrollServiceTest {
     @Mock private RosterRepository     rosterRepository;
     @Mock private PaymentRepository paymentRepository;
     @Mock private CurrentStoreService currentStoreService;
+    @Mock private UserRepository userRepository;
 
     private PayrollService payrollService;
     private Employee       employee;
 
     @BeforeEach
     void setUp() {
-        payrollService = new PayrollService(payrollRepository, employeeRepository, attendanceRepository, rosterRepository, paymentRepository, currentStoreService);
+        payrollService = new PayrollService(payrollRepository, employeeRepository, attendanceRepository, rosterRepository, paymentRepository, currentStoreService, userRepository);
         User user = User.builder().id(1).username("emp1").build();
         Store store = Store.builder().id(1L).name("Test Store").owner(user).build();
+        StoreMember storeMember = StoreMember.builder().id(1L).store(store).user(user).build();
         employee = Employee.builder()
                 .id(1).salaryRate(100.0)
                 .store(store)
-                .user(user)
+                .storeMember(storeMember)
                 .build();
         lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(store.getId());
     }
@@ -66,7 +70,7 @@ class PayrollServiceTest {
         req.setBonus(50.0);
         req.setPenalty(10.0);
 
-        when(employeeRepository.findById(1)).thenReturn(Optional.of(employee));
+        when(employeeRepository.findByIdAndStoreMember_Store_IdAndDeletedFalse(1, 1L)).thenReturn(Optional.of(employee));
 
         when(attendanceRepository.findCompletedByEmployeeAndPeriod(
                 1,
@@ -84,11 +88,11 @@ class PayrollServiceTest {
                 ));
 
         // No roster entries → no absent penalties
-        when(rosterRepository.findByEmployee_IdAndWorkingDayBetweenOrderByWorkingDayAsc(
-                1, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)))
+        when(rosterRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDayBetweenOrderByWorkingDayAsc(
+                1L, 1, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31)))
                 .thenReturn(Collections.emptyList());
 
-        when(payrollRepository.findByEmployee_IdAndPeriod(1, LocalDate.of(2025, 1, 1)))
+        when(payrollRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndPeriod(1L, 1, LocalDate.of(2025, 1, 1)))
                 .thenReturn(Optional.empty());
         when(payrollRepository.save(any(Payroll.class))).thenAnswer(inv -> {
             Payroll p = inv.getArgument(0);
@@ -116,7 +120,7 @@ class PayrollServiceTest {
         req.setEmployeeId(1);
         req.setPeriod(LocalDate.of(2025, 1, 18));
 
-        when(employeeRepository.findById(1)).thenReturn(Optional.of(employee));
+        when(employeeRepository.findByIdAndStoreMember_Store_IdAndDeletedFalse(1, 1L)).thenReturn(Optional.of(employee));
 
         com.quyen.shoplite.util.error.BadRequestException ex = assertThrows(
                 com.quyen.shoplite.util.error.BadRequestException.class,
@@ -132,10 +136,10 @@ class PayrollServiceTest {
         req.setPeriod(LocalDate.of(2025, 1, 18));
         req.setPenalty(2000.0); // Make total salary negative
 
-        when(employeeRepository.findById(1)).thenReturn(Optional.of(employee));
+        when(employeeRepository.findByIdAndStoreMember_Store_IdAndDeletedFalse(1, 1L)).thenReturn(Optional.of(employee));
         when(attendanceRepository.findCompletedByEmployeeAndPeriod(any(), any(), any()))
                 .thenReturn(Collections.emptyList());
-        when(rosterRepository.findByEmployee_IdAndWorkingDayBetweenOrderByWorkingDayAsc(any(), any(), any()))
+        when(rosterRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDayBetweenOrderByWorkingDayAsc(any(), any(), any(), any()))
                 .thenReturn(Collections.emptyList());
 
         com.quyen.shoplite.util.error.BadRequestException ex = assertThrows(
@@ -151,7 +155,7 @@ class PayrollServiceTest {
         req.setEmployeeId(1);
         req.setPeriod(LocalDate.of(2025, 1, 1));
 
-        when(employeeRepository.findById(1)).thenReturn(Optional.of(employee));
+        when(employeeRepository.findByIdAndStoreMember_Store_IdAndDeletedFalse(1, 1L)).thenReturn(Optional.of(employee));
         when(attendanceRepository.findCompletedByEmployeeAndPeriod(any(), any(), any()))
                 .thenReturn(Collections.emptyList());
 
@@ -161,10 +165,10 @@ class PayrollServiceTest {
                 .expectedHours(8.0)
                 .build();
 
-        when(rosterRepository.findByEmployee_IdAndWorkingDayBetweenOrderByWorkingDayAsc(any(), any(), any()))
+        when(rosterRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDayBetweenOrderByWorkingDayAsc(any(), any(), any(), any()))
                 .thenReturn(List.of(roster));
 
-        when(payrollRepository.findByEmployee_IdAndPeriod(any(), any())).thenReturn(Optional.empty());
+        when(payrollRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndPeriod(any(), any(), any())).thenReturn(Optional.empty());
         when(payrollRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         List<ResPayrollDTO> result = payrollService.syncMonthlyPayroll(req);

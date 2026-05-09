@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 public interface OrderRepository extends JpaRepository<Order, Integer> {
 
@@ -37,4 +38,15 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     boolean existsByStoreIdAndCode(Long storeId, String code);
     List<Order> findAllByStoreId(Long storeId, org.springframework.data.domain.Sort sort);
     List<Order> findByStoreIdAndStatusIn(Long storeId, List<StatusEnum> statuses, org.springframework.data.domain.Sort sort);
+    List<Order> findAllByStoreIdAndCreatedAtBetween(
+            Long storeId,
+            LocalDateTime from,
+            LocalDateTime to,
+            org.springframework.data.domain.Sort sort);
+    List<Order> findByStoreIdAndStatusInAndCreatedAtBetween(
+            Long storeId,
+            List<StatusEnum> statuses,
+            LocalDateTime from,
+            LocalDateTime to,
+            org.springframework.data.domain.Sort sort);
 }

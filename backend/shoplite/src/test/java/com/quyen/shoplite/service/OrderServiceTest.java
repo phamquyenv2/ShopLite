@@ -48,6 +48,8 @@ class OrderServiceTest {
     private PaymentRepository paymentRepository;
     @Mock
     private FcmService fcmService;
+    @Mock
+    private CurrentStoreService currentStoreService;
 
     @InjectMocks
     private OrderService orderService;
@@ -59,8 +61,17 @@ class OrderServiceTest {
         validator = Validation.buildDefaultValidatorFactory().getValidator();
     }
 
+    private Store testStore() {
+        Store store = new Store();
+        store.setId(1L);
+        return store;
+    }
+
     @Test
     void createOrder_Success() {
+        Store store = testStore();
+        when(currentStoreService.getCurrentStore()).thenReturn(store);
+
         // Arrange
         ReqOrderDTO req = new ReqOrderDTO();
         req.setUserId(1);
@@ -85,12 +96,13 @@ class OrderServiceTest {
         product.setStock(5);
 
         when(userRepository.findById(1)).thenReturn(Optional.of(user));
-        when(customerRepository.findById(1)).thenReturn(Optional.of(customer));
-        when(productRepository.findById(1)).thenReturn(Optional.of(product));
+        when(customerRepository.findByIdAndStoreId(1, 1L)).thenReturn(Optional.of(customer));
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(1, 1L)).thenReturn(Optional.of(product));
         
         Order savedOrder = new Order();
         savedOrder.setId(100);
         savedOrder.setCode("ORD-TEST");
+        savedOrder.setStore(store);
         when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
 
         // Act
@@ -109,13 +121,15 @@ class OrderServiceTest {
 
     @Test
     void createOrder_CustomerNotFound_ThrowsException() {
+        when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+
         ReqOrderDTO req = new ReqOrderDTO();
         req.setUserId(1);
         req.setCustomerId(999);
         req.setItems(new ArrayList<>());
         
         when(userRepository.findById(1)).thenReturn(Optional.of(new User()));
-        when(customerRepository.findById(999)).thenReturn(Optional.empty());
+        when(customerRepository.findByIdAndStoreId(999, 1L)).thenReturn(Optional.empty());
 
         IdInvalidException ex = assertThrows(IdInvalidException.class, () -> orderService.create(req).order());
         assertTrue(ex.getMessage().contains("Không tìm thấy Customer"));
@@ -123,6 +137,8 @@ class OrderServiceTest {
 
     @Test
     void createOrder_ProductNotFound_ThrowsException() {
+        when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+
         ReqOrderDTO req = new ReqOrderDTO();
         req.setUserId(1);
         req.setCustomerId(1);
@@ -131,8 +147,8 @@ class OrderServiceTest {
         req.setItems(List.of(item));
 
         when(userRepository.findById(1)).thenReturn(Optional.of(new User()));
-        when(customerRepository.findById(1)).thenReturn(Optional.of(new Customer()));
-        when(productRepository.findById(999)).thenReturn(Optional.empty());
+        when(customerRepository.findByIdAndStoreId(1, 1L)).thenReturn(Optional.of(new Customer()));
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(999, 1L)).thenReturn(Optional.empty());
 
         IdInvalidException ex = assertThrows(IdInvalidException.class, () -> orderService.create(req).order());
         assertTrue(ex.getMessage().contains("Không tìm thấy Product"));
@@ -140,6 +156,8 @@ class OrderServiceTest {
 
     @Test
     void createOrder_InvalidNegativeTotal_ThrowsException() {
+        when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+
         ReqOrderDTO req = new ReqOrderDTO();
         req.setUserId(1);
         req.setCustomerId(1);
@@ -156,8 +174,8 @@ class OrderServiceTest {
         product.setStock(5);
 
         when(userRepository.findById(1)).thenReturn(Optional.of(new User()));
-        when(customerRepository.findById(1)).thenReturn(Optional.of(new Customer()));
-        when(productRepository.findById(1)).thenReturn(Optional.of(product));
+        when(customerRepository.findByIdAndStoreId(1, 1L)).thenReturn(Optional.of(new Customer()));
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(1, 1L)).thenReturn(Optional.of(product));
 
         IdInvalidException ex = assertThrows(IdInvalidException.class, () -> orderService.create(req).order());
         assertTrue(ex.getMessage().contains("không được âm"));
@@ -187,9 +205,12 @@ class OrderServiceTest {
 
     @Test
     void findById_Success() {
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+
         Order order = new Order();
         order.setId(1);
-        when(orderRepository.findById(1)).thenReturn(Optional.of(order));
+        order.setStore(testStore());
+        when(orderRepository.findByIdAndStoreId(1, 1L)).thenReturn(Optional.of(order));
 
         OrderItems item = new OrderItems();
         item.setId(10);
@@ -206,12 +227,15 @@ class OrderServiceTest {
 
     @Test
     void findAll_Success() {
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+
         Order order = new Order();
         order.setId(1);
-        when(orderRepository.findAll(any(org.springframework.data.domain.Sort.class))).thenReturn(List.of(order));
+        order.setStore(testStore());
+        when(orderRepository.findAllByStoreId(eq(1L), any(org.springframework.data.domain.Sort.class))).thenReturn(List.of(order));
         when(orderItemsRepository.findAllByOrderId(1)).thenReturn(List.of());
 
-        List<ResOrderDTO> result = orderService.findAll(null);
+        List<ResOrderDTO> result = orderService.findAll(null, null, null);
 
         assertEquals(1, result.size());
         assertEquals(1, result.get(0).getId());
@@ -219,12 +243,15 @@ class OrderServiceTest {
 
     @Test
     void cancelOrder_Success() {
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+
         Order order = new Order();
         order.setId(1);
+        order.setStore(testStore());
         order.setStatus(StatusEnum.PENDING);
         order.setConfirmedAt(java.time.LocalDateTime.now());
         
-        when(orderRepository.findByIdWithLock(1)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdAndStoreIdWithLock(1, 1L)).thenReturn(Optional.of(order));
 
         Product product = new Product();
         product.setId(2);
@@ -236,7 +263,7 @@ class OrderServiceTest {
         item.setQuantity(3L); // Restore 3
         
         when(orderItemsRepository.findAllByOrderId(1)).thenReturn(List.of(item));
-        when(productRepository.findByIdWithLock(2)).thenReturn(Optional.of(product));
+        when(productRepository.findByIdAndStoreIdWithLock(2, 1L)).thenReturn(Optional.of(product));
 
         orderService.cancel(1);
 
@@ -261,11 +288,13 @@ class OrderServiceTest {
 
     @Test
     void cancelOrder_AlreadyCancelled_ThrowsException() {
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+
         Order order = new Order();
         order.setId(1);
         order.setStatus(StatusEnum.CANCELLED);
         
-        when(orderRepository.findByIdWithLock(1)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdAndStoreIdWithLock(1, 1L)).thenReturn(Optional.of(order));
 
         IdInvalidException ex = assertThrows(IdInvalidException.class, () -> orderService.cancel(1));
         assertTrue(ex.getMessage().contains("đã được huỷ"));

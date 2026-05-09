@@ -16,6 +16,9 @@ public class CorsConfig {
     @Value("${shoplite.cors.allowed-origin-patterns:*}")
     private String allowedOriginPatterns;
 
+    @Value("${shoplite.cors.max-age:3600}")
+    private Long corsMaxAge;
+
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
@@ -24,6 +27,7 @@ public class CorsConfig {
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));
+        config.setMaxAge(corsMaxAge);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", config);

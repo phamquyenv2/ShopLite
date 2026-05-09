@@ -42,6 +42,8 @@ class PayrollControllerIntegrationTest {
     @Autowired private OfficeRepository officeRepository;
     @Autowired private PayrollRepository payrollRepository;
     @Autowired private TransactionRepository transactionRepository;
+    @Autowired private StoreRepository storeRepository;
+    @Autowired private StoreMemberRepository storeMemberRepository;
 
     private Office testOffice;
     private Employee testEmployee;
@@ -67,11 +69,22 @@ class PayrollControllerIntegrationTest {
         user.setUsername("payroll_test_user");
         user.setPassword("secret");
         user.setActive(true);
-        user.setRole(role);
         user = userRepository.save(user);
+        Store store = Store.builder()
+                .name("Payroll Store " + System.nanoTime())
+                .owner(user)
+                .build();
+        store = storeRepository.save(store);
+        StoreMember member = StoreMember.builder()
+                .store(store)
+                .user(user)
+                .role(role)
+                .build();
+        member = storeMemberRepository.save(member);
 
         // 4. Setup Office
         testOffice = new Office();
+        testOffice.setStore(store);
         testOffice.setName("HQ Test Office " + System.nanoTime());
         testOffice.setOfficeLat(new BigDecimal("10.77609800"));
         testOffice.setOfficeLng(new BigDecimal("106.70081500"));
@@ -81,7 +94,8 @@ class PayrollControllerIntegrationTest {
 
         // 5. Setup Employee mapped to User & Office
         testEmployee = new Employee();
-        testEmployee.setUser(user);
+        testEmployee.setStore(store);
+        testEmployee.setStoreMember(member);
         testEmployee.setOffice(testOffice);
         testEmployee.setSalaryRate(100.0);
         testEmployee.setQr("QR-PAYROLL_" + System.nanoTime());

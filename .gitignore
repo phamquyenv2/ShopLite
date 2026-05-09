@@ -35,6 +35,8 @@ build/
 **/build/
 **/.gradle-user-home/
 **/.gradle-user-home*/
+**/.gradle-home/
+**/.gradle-home*/
 
 # Cache
 *.bin
@@ -43,3 +45,10 @@ build/
 .env
 .env.*
 !.env.example
+
+.claude/
+**/.claude/
+
+# Firebase
+.firebase/
+**/.firebase/

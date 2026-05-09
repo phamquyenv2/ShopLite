@@ -5,6 +5,7 @@ import com.quyen.shoplite.domain.Employee;
 import com.quyen.shoplite.domain.Office;
 import com.quyen.shoplite.domain.Roster;
 import com.quyen.shoplite.domain.Store;
+import com.quyen.shoplite.domain.StoreMember;
 import com.quyen.shoplite.domain.User;
 import com.quyen.shoplite.domain.request.ReqAttendanceCheckInDTO;
 import com.quyen.shoplite.domain.request.ReqAttendanceCheckOutDTO;
@@ -71,6 +72,7 @@ class AttendanceServiceTest {
 
         user = User.builder().id(1).username(currentUsername).build();
         Store store = Store.builder().id(1L).name("Test Store").owner(user).build();
+        StoreMember storeMember = StoreMember.builder().id(1L).store(store).user(user).build();
         office = Office.builder()
                 .id(10)
                 .store(store)
@@ -84,7 +86,7 @@ class AttendanceServiceTest {
         employee = Employee.builder()
                 .id(100)
                 .store(store)
-                .user(user)
+                .storeMember(storeMember)
                 .office(office)
                 .build();
         lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(store.getId());
@@ -106,7 +108,7 @@ class AttendanceServiceTest {
             sec.when(SecurityUtil::requireCurrentUserLogin).thenReturn(currentUsername);
 
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
-            when(employeeRepository.findByUser_Id(user.getId())).thenReturn(Optional.of(employee));
+            when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
             when(attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId())).thenReturn(Optional.empty());
 
             LocalDateTime now = LocalDateTime.of(2026, 4, 13, 8, 0);
@@ -140,7 +142,7 @@ class AttendanceServiceTest {
             sec.when(SecurityUtil::requireCurrentUserLogin).thenReturn(currentUsername);
 
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
-            when(employeeRepository.findByUser_Id(user.getId())).thenReturn(Optional.of(employee));
+            when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
             when(attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId())).thenReturn(Optional.empty());
 
             LocalDateTime now = LocalDateTime.of(2026, 4, 13, 8, 0);
@@ -169,7 +171,7 @@ class AttendanceServiceTest {
             sec.when(SecurityUtil::requireCurrentUserLogin).thenReturn(currentUsername);
 
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
-            when(employeeRepository.findByUser_Id(user.getId())).thenReturn(Optional.of(employee));
+            when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
             when(attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId())).thenReturn(Optional.empty());
 
             LocalDateTime now = LocalDateTime.of(2026, 4, 13, 14, 0);
@@ -200,7 +202,7 @@ class AttendanceServiceTest {
         try (MockedStatic<SecurityUtil> sec = mockStatic(SecurityUtil.class)) {
             sec.when(SecurityUtil::requireCurrentUserLogin).thenReturn(currentUsername);
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
-            when(employeeRepository.findByUser_Id(user.getId())).thenReturn(Optional.of(employee));
+            when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
 
             LocalDateTime checkInTime = LocalDateTime.of(2026, 4, 13, 8, 0);
             Attendance openAttendance = Attendance.builder()
@@ -243,7 +245,7 @@ class AttendanceServiceTest {
         try (MockedStatic<SecurityUtil> sec = mockStatic(SecurityUtil.class)) {
             sec.when(SecurityUtil::requireCurrentUserLogin).thenReturn(currentUsername);
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
-            when(employeeRepository.findByUser_Id(user.getId())).thenReturn(Optional.of(employee));
+            when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
 
             Roster roster = new Roster();
             roster.setStartTime(LocalTime.of(9, 0));
@@ -295,7 +297,7 @@ class AttendanceServiceTest {
         try (MockedStatic<SecurityUtil> sec = mockStatic(SecurityUtil.class)) {
             sec.when(SecurityUtil::requireCurrentUserLogin).thenReturn(currentUsername);
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
-            when(employeeRepository.findByUser_Id(user.getId())).thenReturn(Optional.of(employee));
+            when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
 
             LocalDateTime checkInTime = LocalDateTime.of(2026, 4, 13, 8, 0);
             Attendance openAttendance = Attendance.builder()
@@ -337,7 +339,7 @@ class AttendanceServiceTest {
         try (MockedStatic<SecurityUtil> sec = mockStatic(SecurityUtil.class)) {
             sec.when(SecurityUtil::requireCurrentUserLogin).thenReturn(currentUsername);
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
-            when(employeeRepository.findByUser_Id(user.getId())).thenReturn(Optional.empty());
+            when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.empty());
 
             ReqAttendanceCheckInDTO req = new ReqAttendanceCheckInDTO();
 
@@ -365,7 +367,7 @@ class AttendanceServiceTest {
             sec.when(SecurityUtil::requireCurrentUserLogin).thenReturn(currentUsername);
             employee.setOffice(null);
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
-            when(employeeRepository.findByUser_Id(user.getId())).thenReturn(Optional.of(employee));
+            when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
 
             ReqAttendanceCheckInDTO req = new ReqAttendanceCheckInDTO();
 
@@ -379,7 +381,7 @@ class AttendanceServiceTest {
         try (MockedStatic<SecurityUtil> sec = mockStatic(SecurityUtil.class)) {
             sec.when(SecurityUtil::requireCurrentUserLogin).thenReturn(currentUsername);
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
-            when(employeeRepository.findByUser_Id(user.getId())).thenReturn(Optional.of(employee));
+            when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
 
             setClockTime(LocalDateTime.of(2026, 4, 13, 8, 0));
             when(attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId())).thenReturn(Optional.of(new Attendance()));
@@ -396,7 +398,7 @@ class AttendanceServiceTest {
         try (MockedStatic<SecurityUtil> sec = mockStatic(SecurityUtil.class)) {
             sec.when(SecurityUtil::requireCurrentUserLogin).thenReturn(currentUsername);
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
-            when(employeeRepository.findByUser_Id(user.getId())).thenReturn(Optional.of(employee));
+            when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
             when(attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId())).thenReturn(Optional.empty());
 
             ReqAttendanceCheckOutDTO req = new ReqAttendanceCheckOutDTO();
@@ -411,7 +413,7 @@ class AttendanceServiceTest {
         try (MockedStatic<SecurityUtil> sec = mockStatic(SecurityUtil.class)) {
             sec.when(SecurityUtil::requireCurrentUserLogin).thenReturn(currentUsername);
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
-            when(employeeRepository.findByUser_Id(user.getId())).thenReturn(Optional.of(employee));
+            when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
 
             LocalDateTime checkInTime = LocalDateTime.of(2026, 4, 13, 10, 0);
             Attendance openAttendance = Attendance.builder()

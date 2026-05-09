@@ -3,10 +3,14 @@ package com.quyen.shoplite.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quyen.shoplite.domain.Employee;
 import com.quyen.shoplite.domain.Office;
+import com.quyen.shoplite.domain.Store;
+import com.quyen.shoplite.domain.StoreMember;
 import com.quyen.shoplite.domain.User;
 import com.quyen.shoplite.domain.request.ReqEmployeeDTO;
 import com.quyen.shoplite.repository.EmployeeRepository;
 import com.quyen.shoplite.repository.OfficeRepository;
+import com.quyen.shoplite.repository.StoreMemberRepository;
+import com.quyen.shoplite.repository.StoreRepository;
 import com.quyen.shoplite.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,10 +43,13 @@ class EmployeeControllerIntegrationTest {
     @Autowired private EmployeeRepository employeeRepository;
     @Autowired private UserRepository     userRepository;
     @Autowired private OfficeRepository   officeRepository;
+    @Autowired private StoreRepository storeRepository;
+    @Autowired private StoreMemberRepository storeMemberRepository;
 
     // IDs shared across tests within the same @BeforeEach scope
     private Integer itUserId;
     private Integer itOfficeId;
+    private Long itStoreId;
 
     // ---------------------------------------------------------------- setup
 
@@ -54,8 +61,15 @@ class EmployeeControllerIntegrationTest {
         user.setActive(true);
         user = userRepository.save(user);
         itUserId = user.getId();
+        Store store = Store.builder()
+                .name("Employee IT Store " + System.nanoTime())
+                .owner(user)
+                .build();
+        store = storeRepository.save(store);
+        itStoreId = store.getId();
 
         Office office = new Office();
+        office.setStore(store);
         office.setName("IT Office " + System.nanoTime());
         office.setOfficeLat(new BigDecimal("10.77609800"));
         office.setOfficeLng(new BigDecimal("106.70081500"));
@@ -79,9 +93,16 @@ class EmployeeControllerIntegrationTest {
     private Employee savedEmployee(Integer userId, Integer officeId, double salary, String qr) {
         User user     = userRepository.findById(userId).orElseThrow();
         Office office = officeRepository.findById(officeId).orElseThrow();
+        Store store = storeRepository.findById(itStoreId).orElseThrow();
+        StoreMember member = storeMemberRepository.findByStoreIdAndUserId(store.getId(), user.getId())
+                .orElseGet(() -> storeMemberRepository.save(StoreMember.builder()
+                        .store(store)
+                        .user(user)
+                        .build()));
 
         Employee emp = new Employee();
-        emp.setUser(user);
+        emp.setStore(store);
+        emp.setStoreMember(member);
         emp.setOffice(office);
         emp.setSalaryRate(salary);
         emp.setQr(qr);
@@ -110,7 +131,7 @@ class EmployeeControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.id").isNumber());
 
         // Verify persisted in DB
-        assertThat(employeeRepository.existsByUser_Id(itUserId)).isTrue();
+        assertThat(employeeRepository.existsByStoreMember_User_Id(itUserId)).isTrue();
     }
 
     @Test

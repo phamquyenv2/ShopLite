@@ -86,7 +86,6 @@ class UserControllerIntegrationTest {
                 .username("findme")
                 .password("encoded_pass")
                 .isActive(true)
-                .createdAt(LocalDateTime.now())
                 .build();
         user = userRepository.save(user);
 

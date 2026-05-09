@@ -42,6 +42,9 @@ public class SecurityConfiguration {
     @Value("${shoplite.cors.allowed-origin-patterns:*}")
     private String allowedOriginPatterns;
 
+    @Value("${shoplite.cors.max-age:3600}")
+    private Long corsMaxAge;
+
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final UserDetailsCustom userDetailsCustom;
 
@@ -145,6 +148,7 @@ public class SecurityConfiguration {
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization", "x-auth-token"));
+        configuration.setMaxAge(corsMaxAge);
         org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

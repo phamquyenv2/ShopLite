@@ -81,7 +81,6 @@ class OrderControllerIntegrationTest {
                 .username("ituser_" + System.nanoTime())
                 .password("pass")
                 .isActive(true)
-                .createdAt(LocalDateTime.now())
                 .build());
         userId = user.getId();
 
@@ -103,7 +102,6 @@ class OrderControllerIntegrationTest {
                 .sellingPrice(50.0)
                 .costPrice(0.0)
                 .isDeleted(false)
-                .createdAt(LocalDateTime.now())
                 .build());
         productId = product.getId();
 
@@ -116,7 +114,6 @@ class OrderControllerIntegrationTest {
                 .sellingPrice(100.0)
                 .costPrice(0.0)
                 .isDeleted(false)
-                .createdAt(LocalDateTime.now())
                 .build());
         lowStockProductId = lowStockProduct.getId();
     }
