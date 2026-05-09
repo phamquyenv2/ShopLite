@@ -174,15 +174,6 @@ jobs:
           service: ${{ env.CLOUD_RUN_SERVICE }}
           region: ${{ env.GCP_REGION }}
           image: ${{ steps.image.outputs.uri }}
-          flags: >-
-            --allow-unauthenticated
-            --memory=2Gi
-            --cpu=2
-            --timeout=300
-            --min-instances=1
-            --max-instances=10
-            --concurrency=40
-            --cpu-boost
           env_vars: |
             SERVER_PORT=8080
             SPRING_PROFILES_ACTIVE=prod
@@ -193,17 +184,28 @@ jobs:
             SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}
             SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}
             SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}
-            JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
-            SEPAY_WEBHOOK_SECRET=${{ secrets.SEPAY_WEBHOOK_SECRET }}
-            MOMO_PARTNER_CODE=${{ secrets.MOMO_PARTNER_CODE }}
-            MOMO_ACCESS_KEY=${{ secrets.MOMO_ACCESS_KEY }}
-            MOMO_SECRET_KEY=${{ secrets.MOMO_SECRET_KEY }}
-            CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
-            CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
-            CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
-            TWILIO_ACCOUNT_SID=${{ secrets.TWILIO_ACCOUNT_SID }}
-            TWILIO_AUTH_TOKEN=${{ secrets.TWILIO_AUTH_TOKEN }}
-            TWILIO_FROM_NUMBER=${{ secrets.TWILIO_FROM_NUMBER }}
+          secrets: |
+            JWT_SECRET_KEY=jwt-secret:latest
+            SEPAY_WEBHOOK_SECRET=sepay-secret:latest
+            MOMO_PARTNER_CODE=momo-partner:latest
+            MOMO_ACCESS_KEY=momo-access:latest
+            MOMO_SECRET_KEY=momo-secret:latest
+            CLOUDINARY_CLOUD_NAME=cloudinary-name:latest
+            CLOUDINARY_API_KEY=cloudinary-key:latest
+            CLOUDINARY_API_SECRET=cloudinary-secret:latest
+            TWILIO_ACCOUNT_SID=twilio-sid:latest
+            TWILIO_AUTH_TOKEN=twilio-token:latest
+            TWILIO_FROM_NUMBER=twilio-number:latest
+            FIREBASE_CREDENTIALS_JSON=firebase-creds:latest
+          flags: >-
+              --allow-unauthenticated
+              --memory=2Gi
+              --cpu=2
+              --timeout=300
+              --min-instances=1
+              --max-instances=10
+              --concurrency=40
+              --cpu-boost
 
   # ──────────────────────────────────────────────
   # 5. Deploy Frontend to Firebase Hosting
