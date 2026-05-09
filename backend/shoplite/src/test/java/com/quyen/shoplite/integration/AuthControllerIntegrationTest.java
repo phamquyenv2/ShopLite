@@ -63,7 +63,6 @@ class AuthControllerIntegrationTest {
                     .phone(TEST_PHONE)
                     .password(passwordEncoder.encode("Password123!"))
                     .isActive(true)
-                    .createdAt(LocalDateTime.now())
                     .build();
             userRepository.save(user);
         });

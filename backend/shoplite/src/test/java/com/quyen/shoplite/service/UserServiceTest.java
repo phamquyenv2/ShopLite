@@ -1,10 +1,8 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.Role;
 import com.quyen.shoplite.domain.User;
 import com.quyen.shoplite.domain.request.ReqUserDTO;
 import com.quyen.shoplite.domain.response.ResUserDTO;
-import com.quyen.shoplite.repository.RoleRepository;
 import com.quyen.shoplite.repository.UserRepository;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
@@ -35,9 +33,6 @@ class UserServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private RoleRepository roleRepository;
-
-    @Mock
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
@@ -48,22 +43,15 @@ class UserServiceTest {
         ReqUserDTO req = new ReqUserDTO();
         req.setUsername("johndoe");
         req.setPassword("Password123!");
-        req.setRoleId(1L);
-
-        Role userRole = new Role();
-        userRole.setId(1L);
-        userRole.setName("USER");
 
         User savedUser = User.builder()
                 .id(100)
                 .username("johndoe")
                 .password("encoded_password")
-                .role(userRole)
                 .isActive(true)
                 .build();
 
         when(userRepository.existsByUsername("johndoe")).thenReturn(false);
-        when(roleRepository.findById(1L)).thenReturn(Optional.of(userRole));
         when(passwordEncoder.encode("Password123!")).thenReturn("encoded_password");
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
@@ -115,7 +103,6 @@ class UserServiceTest {
     @Test
     void updateUser_success() {
         ReqUserDTO req = new ReqUserDTO();
-        req.setRoleId(2L);
         req.setPassword("NewPassword!");
         req.setActive(false);
 
@@ -123,12 +110,7 @@ class UserServiceTest {
         existingUser.setId(1);
         existingUser.setUsername("johndoe");
 
-        Role newRole = new Role();
-        newRole.setId(2L);
-        newRole.setName("ADMIN");
-
         when(userRepository.findById(1)).thenReturn(Optional.of(existingUser));
-        when(roleRepository.findById(2L)).thenReturn(Optional.of(newRole));
         when(passwordEncoder.encode("NewPassword!")).thenReturn("encoded_new_pass");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -138,7 +120,6 @@ class UserServiceTest {
         verify(passwordEncoder, times(1)).encode("NewPassword!");
         verify(userRepository, times(1)).save(existingUser);
         assertFalse(existingUser.isActive());
-        assertEquals(newRole, existingUser.getRole());
         assertEquals("encoded_new_pass", existingUser.getPassword());
     }
 }

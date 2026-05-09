@@ -70,7 +70,6 @@ class ImportOrderControllerIntegrationTest {
         Supplier supplier = supplierRepository.save(Supplier.builder()
                 .name("Test Supplier " + System.nanoTime())
                 .phone("0901234567")
-                .createdAt(LocalDateTime.now())
                 .build());
         supplierId = supplier.getId();
 
@@ -87,7 +86,6 @@ class ImportOrderControllerIntegrationTest {
                 .sellingPrice(50.0)
                 .costPrice(0.0)
                 .isDeleted(false)
-                .createdAt(LocalDateTime.now())
                 .build());
         productId = p1.getId();
 
@@ -99,7 +97,6 @@ class ImportOrderControllerIntegrationTest {
                 .sellingPrice(30.0)
                 .costPrice(0.0)
                 .isDeleted(false)
-                .createdAt(LocalDateTime.now())
                 .build());
         product2Id = p2.getId();
     }

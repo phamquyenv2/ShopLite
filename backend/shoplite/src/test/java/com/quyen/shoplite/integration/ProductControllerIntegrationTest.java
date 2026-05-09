@@ -138,7 +138,6 @@ class ProductControllerIntegrationTest {
                 .stock(10)
                 .sellingPrice(10.0)
                 .costPrice(0.0)
-                .createdAt(LocalDateTime.now())
                 .build());
 
         ReqProductUpsertDTO req = new ReqProductUpsertDTO();
@@ -171,7 +170,6 @@ class ProductControllerIntegrationTest {
                 .stock(10)
                 .sellingPrice(10.0)
                 .costPrice(0.0)
-                .createdAt(LocalDateTime.now())
                 .build());
 
         ReqProductUpsertDTO req = new ReqProductUpsertDTO();
@@ -245,7 +243,6 @@ class ProductControllerIntegrationTest {
                 .stock(10)
                 .sellingPrice(10.0)
                 .costPrice(0.0)
-                .createdAt(LocalDateTime.now())
                 .isDeleted(false)
                 .build());
 
@@ -275,7 +272,6 @@ class ProductControllerIntegrationTest {
                 .stock(10)
                 .sellingPrice(10.0)
                 .costPrice(0.0)
-                .createdAt(LocalDateTime.now())
                 .isDeleted(false)
                 .build());
 
@@ -313,7 +309,6 @@ class ProductControllerIntegrationTest {
                 .stock(10)
                 .sellingPrice(10.0)
                 .costPrice(0.0)
-                .createdAt(LocalDateTime.now())
                 .isDeleted(false)
                 .build());
 

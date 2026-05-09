@@ -103,8 +103,10 @@ public class OrderController {
     @GetMapping
     @ApiMessage("Get orders success")
     public ResponseEntity<List<ResOrderDTO>> findAll(
-            @RequestParam(value = "statuses", required = false) List<StatusEnum> statuses) {
-        return ResponseEntity.ok(orderService.findAll(statuses));
+            @RequestParam(value = "statuses", required = false) List<StatusEnum> statuses,
+            @RequestParam(value = "from", required = false) String from,
+            @RequestParam(value = "to", required = false) String to) {
+        return ResponseEntity.ok(orderService.findAll(statuses, from, to));
     }
 
     // ==================== PAYMENT ====================
@@ -147,4 +149,3 @@ public class OrderController {
         return ResponseEntity.ok(transactionService.findByPaymentId(payment.getId()));
     }
 }
-

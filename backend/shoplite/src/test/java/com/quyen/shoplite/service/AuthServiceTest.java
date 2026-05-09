@@ -1,12 +1,17 @@
 package com.quyen.shoplite.service;
 
 import com.quyen.shoplite.domain.Role;
+import com.quyen.shoplite.domain.Store;
+import com.quyen.shoplite.domain.StoreMember;
 import com.quyen.shoplite.domain.User;
 import com.quyen.shoplite.domain.UserToken;
 import com.quyen.shoplite.domain.response.ResLoginDTO;
+import com.quyen.shoplite.repository.RoleRepository;
+import com.quyen.shoplite.repository.StoreMemberRepository;
 import com.quyen.shoplite.repository.UserRepository;
 import com.quyen.shoplite.repository.UserTokenRepository;
 import com.quyen.shoplite.util.SecurityUtil;
+import com.quyen.shoplite.util.constant.StoreMemberStatus;
 import com.quyen.shoplite.util.error.UnauthorizedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,10 +25,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,6 +48,18 @@ class AuthServiceTest {
     @Mock
     private UserTokenRepository userTokenRepository;
 
+    @Mock
+    private RoleRepository roleRepository;
+
+    @Mock
+    private StoreMemberRepository storeMemberRepository;
+
+    @Mock
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
+    @Mock
+    private MenuService menuService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -56,11 +75,21 @@ class AuthServiceTest {
         User user = new User();
         user.setId(1);
         user.setUsername(username);
-        user.setRole(role);
+        Store store = Store.builder().id(1L).name("Main Store").owner(user).build();
+        StoreMember member = StoreMember.builder()
+                .id(1L)
+                .store(store)
+                .user(user)
+                .role(role)
+                .status(StoreMemberStatus.ACTIVE)
+                .build();
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(new UsernamePasswordAuthenticationToken(username, password));
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+        when(storeMemberRepository.findAllByUserIdAndStatusFetchStore(user.getId(), StoreMemberStatus.ACTIVE))
+                .thenReturn(List.of(member));
+        when(userTokenRepository.findValidTokensByUserId(eq(user.getId()), any())).thenReturn(List.of());
 
         when(securityUtil.generateAccessToken(username, "ADMIN")).thenReturn("access_token");
         when(securityUtil.generateRefreshToken(username)).thenReturn("refresh_token");
@@ -129,6 +158,8 @@ class AuthServiceTest {
 
         when(userTokenRepository.findByRefreshTokenAndRevokedFalse("old_refresh_token")).thenReturn(Optional.of(oldToken));
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(storeMemberRepository.findAllByUserIdAndStatusFetchStore(user.getId(), StoreMemberStatus.ACTIVE))
+                .thenReturn(List.of());
 
         when(securityUtil.generateAccessToken("testuser", "USER")).thenReturn("new_access");
         when(securityUtil.generateRefreshToken("testuser")).thenReturn("new_refresh");

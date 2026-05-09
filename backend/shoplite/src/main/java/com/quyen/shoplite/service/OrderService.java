@@ -17,7 +17,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -337,14 +339,22 @@ public class OrderService {
         return dto;
     }
 
-    public List<ResOrderDTO> findAll(List<StatusEnum> statuses) {
+    public List<ResOrderDTO> findAll(List<StatusEnum> statuses, String from, String to) {
         org.springframework.data.domain.Sort sort = org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt");
         List<Order> orders;
         Long storeId = currentStoreService.getCurrentStoreId();
+        LocalDateTime fromDate = parseDateTime(from);
+        LocalDateTime toDate = parseDateTime(to);
+        boolean hasDateRange = fromDate != null && toDate != null;
+
         if (statuses == null || statuses.isEmpty()) {
-            orders = orderRepository.findAllByStoreId(storeId, sort);
+            orders = hasDateRange
+                    ? orderRepository.findAllByStoreIdAndCreatedAtBetween(storeId, fromDate, toDate, sort)
+                    : orderRepository.findAllByStoreId(storeId, sort);
         } else {
-            orders = orderRepository.findByStoreIdAndStatusIn(storeId, statuses, sort);
+            orders = hasDateRange
+                    ? orderRepository.findByStoreIdAndStatusInAndCreatedAtBetween(storeId, statuses, fromDate, toDate, sort)
+                    : orderRepository.findByStoreIdAndStatusIn(storeId, statuses, sort);
         }
         return orders.stream()
                 .map(order -> {
@@ -353,5 +363,22 @@ public class OrderService {
                             .map(DTOMapper::toResOrderItemDTO).toList());
                     return dto;
                 }).toList();
+    }
+
+    private LocalDateTime parseDateTime(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+
+        String value = raw.trim();
+        try {
+            return OffsetDateTime.parse(value).toLocalDateTime();
+        } catch (DateTimeParseException ignored) {
+            try {
+                return LocalDateTime.parse(value);
+            } catch (DateTimeParseException ex) {
+                throw new IdInvalidException("Ngay gio khong hop le: " + value);
+            }
+        }
     }
 }
