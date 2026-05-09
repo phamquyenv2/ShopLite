@@ -184,19 +184,19 @@ jobs:
             SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}
             SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}
             SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+            MOMO_PARTNER_CODE=${{ secrets.MOMO_PARTNER_CODE }}
+            CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
+            TWILIO_ACCOUNT_SID=${{ secrets.TWILIO_ACCOUNT_SID }}
+            TWILIO_FROM_NUMBER=${{ secrets.TWILIO_FROM_NUMBER }}
           secrets: |
-            JWT_SECRET_KEY=jwt-secret:latest
-            SEPAY_WEBHOOK_SECRET=sepay-secret:latest
-            MOMO_PARTNER_CODE=momo-partner:latest
-            MOMO_ACCESS_KEY=momo-access:latest
-            MOMO_SECRET_KEY=momo-secret:latest
-            CLOUDINARY_CLOUD_NAME=cloudinary-name:latest
-            CLOUDINARY_API_KEY=cloudinary-key:latest
-            CLOUDINARY_API_SECRET=cloudinary-secret:latest
-            TWILIO_ACCOUNT_SID=twilio-sid:latest
-            TWILIO_AUTH_TOKEN=twilio-token:latest
-            TWILIO_FROM_NUMBER=twilio-number:latest
-            FIREBASE_CREDENTIALS_JSON=firebase-creds:latest
+            JWT_SECRET_KEY=jwt-secret-key:latest
+            SEPAY_WEBHOOK_SECRET=sepay-webhook-secret:latest
+            MOMO_ACCESS_KEY=momo-access-key:latest
+            MOMO_SECRET_KEY=momo-secret-key:latest
+            CLOUDINARY_API_KEY=cloudinary-api-key:latest
+            CLOUDINARY_API_SECRET=cloudinary-api-secret:latest
+            TWILIO_AUTH_TOKEN=twilio-auth-token:latest
+            FIREBASE_CREDENTIALS_JSON=firebase-credentials-json:latest
           flags: >-
               --allow-unauthenticated
               --memory=2Gi
@@ -206,6 +206,10 @@ jobs:
               --max-instances=10
               --concurrency=40
               --cpu-boost
+              --startup-probe-initial-delay=30
+              --startup-probe-period=10
+              --startup-probe-timeout=5
+              --startup-probe-failure-threshold=30
 
   # ──────────────────────────────────────────────
   # 5. Deploy Frontend to Firebase Hosting
