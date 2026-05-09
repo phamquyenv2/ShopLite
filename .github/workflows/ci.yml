@@ -207,9 +207,6 @@ jobs:
               --concurrency=40
               --cpu-boost
 
-  # ──────────────────────────────────────────────
-  # 5. Deploy Frontend to Firebase Hosting
-  # ──────────────────────────────────────────────
   deploy-frontend:
     name: Deploy Frontend to Firebase
     runs-on: ubuntu-latest
