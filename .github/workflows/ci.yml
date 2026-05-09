@@ -80,9 +80,6 @@ jobs:
       - name: Build
         run: npm run build
 
-  # ──────────────────────────────────────────────
-  # 3. Preview Frontend (PR only)
-  # ──────────────────────────────────────────────
   preview-frontend:
     name: Preview Frontend
     runs-on: ubuntu-latest
