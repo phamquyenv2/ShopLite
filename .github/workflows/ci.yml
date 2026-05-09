@@ -206,10 +206,6 @@ jobs:
               --max-instances=10
               --concurrency=40
               --cpu-boost
-              --startup-probe-initial-delay=30
-              --startup-probe-period=10
-              --startup-probe-timeout=5
-              --startup-probe-failure-threshold=30
 
   # ──────────────────────────────────────────────
   # 5. Deploy Frontend to Firebase Hosting
