@@ -9,13 +9,9 @@ import com.quyen.shoplite.domain.request.ReqRoleDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -23,14 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional
-class RoleControllerIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class RoleControllerIntegrationTest extends IntegrationTestBase {
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -39,7 +28,7 @@ class RoleControllerIntegrationTest {
     private RoleRepository roleRepository;
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = IntegrationTestBase.TEST_USERNAME)
     @DisplayName("create role success")
     void createRole_Success() throws Exception {
         ReqRoleDTO req = new ReqRoleDTO();
@@ -48,9 +37,9 @@ class RoleControllerIntegrationTest {
         req.setActive(true);
         req.setPermissionIds(List.of());
 
-        mockMvc.perform(post("/api/v1/roles")
+        mockMvc.perform(withStore(post("/api/v1/roles")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("EDITOR"));
 
@@ -58,7 +47,7 @@ class RoleControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = IntegrationTestBase.TEST_USERNAME)
     @DisplayName("get role by id success")
     void getRole_Success() throws Exception {
         Role role = Role.builder()
@@ -68,14 +57,14 @@ class RoleControllerIntegrationTest {
                 .build();
         role = roleRepository.save(role);
 
-        mockMvc.perform(get("/api/v1/roles/" + role.getId()))
+        mockMvc.perform(withStore(get("/api/v1/roles/" + role.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(role.getId()))
                 .andExpect(jsonPath("$.data.name").value("VIEWER"));
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = IntegrationTestBase.TEST_USERNAME)
     @DisplayName("update role success")
     void updateRole_Success() throws Exception {
         Role role = Role.builder()
@@ -88,9 +77,9 @@ class RoleControllerIntegrationTest {
         req.setName("NEW_ROLE");
         req.setActive(false);
 
-        mockMvc.perform(put("/api/v1/roles/" + role.getId())
+        mockMvc.perform(withStore(put("/api/v1/roles/" + role.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("NEW_ROLE"))
                 .andExpect(jsonPath("$.data.active").value(false));
@@ -101,7 +90,7 @@ class RoleControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = IntegrationTestBase.TEST_USERNAME)
     @DisplayName("delete role success")
     void deleteRole_Success() throws Exception {
         Role role = Role.builder()
@@ -110,7 +99,7 @@ class RoleControllerIntegrationTest {
                 .build();
         role = roleRepository.save(role);
 
-        mockMvc.perform(delete("/api/v1/roles/" + role.getId()))
+        mockMvc.perform(withStore(delete("/api/v1/roles/" + role.getId())))
                 .andExpect(status().isNoContent());
 
         assertThat(roleRepository.existsById(role.getId())).isFalse();

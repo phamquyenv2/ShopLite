@@ -124,7 +124,7 @@ class AuthServiceTest {
         UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> {
             authService.login("testuser", "wrongpass");
         });
-        assertTrue(ex.getMessage().contains("khong dung"));
+        assertTrue(ex.getMessage().contains("không đúng"));
     }
 
     @Test

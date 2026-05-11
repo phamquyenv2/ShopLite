@@ -53,7 +53,7 @@ public class AuthService {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(username, password));
         } catch (AuthenticationException ex) {
-            throw new UnauthorizedException("Ten dang nhap hoac mat khau khong dung");
+            throw new UnauthorizedException("Tên đăng nhập hoặc mật khẩu không đúng");
         }
         SecurityContextHolder.getContext().setAuthentication(authentication);
 

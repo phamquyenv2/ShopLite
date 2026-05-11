@@ -3,6 +3,7 @@ package com.quyen.shoplite.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quyen.shoplite.repository.*;
 import com.quyen.shoplite.util.constant.AttendanceStatusEnum;
+import com.quyen.shoplite.util.constant.RosterTypeEnum;
 
 import com.quyen.shoplite.domain.*;
 import com.quyen.shoplite.domain.request.ReqAttendanceCheckInDTO;
@@ -12,16 +13,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -32,14 +30,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional
 @WithMockUser(username = "attendance_test_user")
-class AttendanceControllerIntegrationTest {
+class AttendanceControllerIntegrationTest extends IntegrationTestBase {
 
-    @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
 
     @Autowired private UserRepository userRepository;
@@ -50,6 +43,7 @@ class AttendanceControllerIntegrationTest {
     @Autowired private AttendanceRepository attendanceRepository;
     @Autowired private StoreRepository storeRepository;
     @Autowired private StoreMemberRepository storeMemberRepository;
+    @Autowired private RosterRepository rosterRepository;
 
     private Office testOffice;
     private Employee testEmployee;
@@ -81,6 +75,7 @@ class AttendanceControllerIntegrationTest {
                 .owner(user)
                 .build();
         store = storeRepository.save(store);
+        this.testStore = store;
         StoreMember member = StoreMember.builder()
                 .store(store)
                 .user(user)
@@ -106,6 +101,18 @@ class AttendanceControllerIntegrationTest {
         testEmployee.setSalaryRate(90.0);
         testEmployee.setQr("QR-ATT_" + System.nanoTime());
         testEmployee = employeeRepository.save(testEmployee);
+
+        // Create a roster for today so check-in has a valid shift
+        Roster roster = Roster.builder()
+                .employee(testEmployee)
+                .workingDay(LocalDate.now())
+                .type(RosterTypeEnum.WORKING)
+                .startTime(LocalTime.of(8, 0))
+                .endTime(LocalTime.of(17, 0))
+                .checkInAllowedFrom(LocalTime.of(0, 0))
+                .checkInAllowedTo(LocalTime.of(23, 59))
+                .build();
+        rosterRepository.save(roster);
     }
 
     private Permission createPermission(String name, String apiPath, String method) {
@@ -122,40 +129,38 @@ class AttendanceControllerIntegrationTest {
     // =====================================================================================
 
     @Test
-    @DisplayName("1 & 8) POST /check-in - Success within radius (Walk-in)")
+    @DisplayName("1 & 8) POST /check-in - Success within radius")
     void checkIn_Success_WithinRadius() throws Exception {
         ReqAttendanceCheckInDTO req = new ReqAttendanceCheckInDTO();
         req.setLatitude(10.776100); // Gần văn phòng
         req.setLongitude(106.700820);
         req.setDeviceId("TEST-DEVICE-01");
 
-        mockMvc.perform(post("/api/v1/attendance/check-in")
+        mockMvc.perform(withStore(post("/api/v1/attendance/check-in")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.statusCode").value(201))
                 .andExpect(jsonPath("$.message").value("Check-in success"))
                 .andExpect(jsonPath("$.data.status").value("VALID"))
-                .andExpect(jsonPath("$.data.walkIn").value(true))
+                .andExpect(jsonPath("$.data.walkIn").value(false))
                 .andExpect(jsonPath("$.data.distance").value(org.hamcrest.Matchers.lessThanOrEqualTo(200.0)))
-                .andExpect(jsonPath("$.data.rosterId").isEmpty());
+                .andExpect(jsonPath("$.data.rosterId").isNotEmpty());
     }
 
     @Test
-    @DisplayName("2) POST /check-in - Success out of zone")
-    void checkIn_Success_OutOfZone() throws Exception {
+    @DisplayName("2) POST /check-in - Out of zone rejected")
+    void checkIn_OutOfZone_Rejected() throws Exception {
         ReqAttendanceCheckInDTO req = new ReqAttendanceCheckInDTO();
         req.setLatitude(21.028511); // Tọa độ xa lạc (Hà Nội)
         req.setLongitude(105.804817);
 
-        mockMvc.perform(post("/api/v1/attendance/check-in")
+        mockMvc.perform(withStore(post("/api/v1/attendance/check-in")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statusCode").value(201))
-                .andExpect(jsonPath("$.message").value("Check-in success"))
-                .andExpect(jsonPath("$.data.status").value("OUT_OF_ZONE"))
-                .andExpect(jsonPath("$.data.distance").value(org.hamcrest.Matchers.greaterThan(200.0)));
+                        .content(objectMapper.writeValueAsString(req))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("OUT_OF_ZONE")));
     }
 
     @Test
@@ -178,9 +183,9 @@ class AttendanceControllerIntegrationTest {
         req.setLatitude(10.776110);
         req.setLongitude(106.700810);
 
-        mockMvc.perform(post("/api/v1/attendance/check-in")
+        mockMvc.perform(withStore(post("/api/v1/attendance/check-in")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.statusCode").value(201))
                 .andExpect(jsonPath("$.message").value("Check-in success"));
@@ -204,9 +209,9 @@ class AttendanceControllerIntegrationTest {
         req.setLatitude(10.776100);
         req.setLongitude(106.700810);
 
-        mockMvc.perform(post("/api/v1/attendance/check-out")
+        mockMvc.perform(withStore(post("/api/v1/attendance/check-out")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("Check-out success"))
@@ -229,7 +234,7 @@ class AttendanceControllerIntegrationTest {
                 .build();
         attendanceRepository.save(attendance);
 
-        mockMvc.perform(get("/api/v1/attendance"))
+        mockMvc.perform(withStore(get("/api/v1/attendance")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("Get attendance list success"))
@@ -250,7 +255,7 @@ class AttendanceControllerIntegrationTest {
                 .build();
         attendance = attendanceRepository.save(attendance);
 
-        mockMvc.perform(get("/api/v1/attendance/" + attendance.getId()))
+        mockMvc.perform(withStore(get("/api/v1/attendance/" + attendance.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("Get attendance success"))
@@ -279,9 +284,9 @@ class AttendanceControllerIntegrationTest {
         req.setLatitude(10.776100);
         req.setLongitude(106.700810);
 
-        mockMvc.perform(post("/api/v1/attendance/check-in")
+        mockMvc.perform(withStore(post("/api/v1/attendance/check-in")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsStringIgnoringCase("open shift")))
@@ -296,9 +301,9 @@ class AttendanceControllerIntegrationTest {
         req.setLatitude(10.776100);
         req.setLongitude(106.700810);
 
-        mockMvc.perform(post("/api/v1/attendance/check-out")
+        mockMvc.perform(withStore(post("/api/v1/attendance/check-out")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsStringIgnoringCase("no open shift")))
@@ -308,7 +313,7 @@ class AttendanceControllerIntegrationTest {
     @Test
     @DisplayName("F2) GET /attendance/{id} - Not found handling")
     void getAttendanceById_NotFound_Failure() throws Exception {
-        mockMvc.perform(get("/api/v1/attendance/99999"))
+        mockMvc.perform(withStore(get("/api/v1/attendance/99999")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsStringIgnoringCase("not found")));
