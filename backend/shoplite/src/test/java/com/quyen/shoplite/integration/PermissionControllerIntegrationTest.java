@@ -1,32 +1,23 @@
 package com.quyen.shoplite.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quyen.shoplite.repository.PermissionRepository;
+
 import com.quyen.shoplite.domain.Permission;
 import com.quyen.shoplite.domain.request.ReqPermissionDTO;
-import com.quyen.shoplite.repository.PermissionRepository;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional
-class PermissionControllerIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class PermissionControllerIntegrationTest extends IntegrationTestBase {
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -35,7 +26,7 @@ class PermissionControllerIntegrationTest {
     private PermissionRepository permissionRepository;
 
     @Test
-    @WithMockUser(username = "admin", roles = "STORE_MANAGER")
+    @WithMockUser(username = IntegrationTestBase.TEST_USERNAME)
     @DisplayName("create permission success")
     void createPermission_Success() throws Exception {
         ReqPermissionDTO req = new ReqPermissionDTO();
@@ -44,9 +35,9 @@ class PermissionControllerIntegrationTest {
         req.setMethod("POST");
         req.setModule("TEST");
 
-        mockMvc.perform(post("/api/v1/permissions")
+        mockMvc.perform(withStore(post("/api/v1/permissions")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("Test Permission"))
                 .andExpect(jsonPath("$.data.apiPath").value("/api/test"));
@@ -55,7 +46,7 @@ class PermissionControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "STORE_MANAGER")
+    @WithMockUser(username = IntegrationTestBase.TEST_USERNAME)
     @DisplayName("get permission by id success")
     void getPermission_Success() throws Exception {
         Permission permission = Permission.builder()
@@ -66,14 +57,14 @@ class PermissionControllerIntegrationTest {
                 .build();
         permission = permissionRepository.save(permission);
 
-        mockMvc.perform(get("/api/v1/permissions/" + permission.getId()))
+        mockMvc.perform(withStore(get("/api/v1/permissions/" + permission.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(permission.getId()))
                 .andExpect(jsonPath("$.data.name").value("Get Test"));
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "STORE_MANAGER")
+    @WithMockUser(username = IntegrationTestBase.TEST_USERNAME)
     @DisplayName("update permission success")
     void updatePermission_Success() throws Exception {
         Permission permission = Permission.builder()
@@ -90,9 +81,9 @@ class PermissionControllerIntegrationTest {
         req.setMethod("PUT");
         req.setModule("PUT_TEST");
 
-        mockMvc.perform(put("/api/v1/permissions/" + permission.getId())
+        mockMvc.perform(withStore(put("/api/v1/permissions/" + permission.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("New Perm"));
 
@@ -101,7 +92,7 @@ class PermissionControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "STORE_MANAGER")
+    @WithMockUser(username = IntegrationTestBase.TEST_USERNAME)
     @DisplayName("delete permission success")
     void deletePermission_Success() throws Exception {
         Permission permission = Permission.builder()
@@ -112,7 +103,7 @@ class PermissionControllerIntegrationTest {
                 .build();
         permission = permissionRepository.save(permission);
 
-        mockMvc.perform(delete("/api/v1/permissions/" + permission.getId()))
+        mockMvc.perform(withStore(delete("/api/v1/permissions/" + permission.getId())))
                 .andExpect(status().isNoContent());
 
         assertThat(permissionRepository.existsById(permission.getId())).isFalse();

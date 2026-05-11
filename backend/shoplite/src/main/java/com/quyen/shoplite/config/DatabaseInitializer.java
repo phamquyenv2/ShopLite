@@ -1,14 +1,5 @@
 package com.quyen.shoplite.config;
 
-import com.quyen.shoplite.domain.Employee;
-import com.quyen.shoplite.domain.FundAccount;
-import com.quyen.shoplite.domain.Menu;
-import com.quyen.shoplite.domain.Office;
-import com.quyen.shoplite.domain.Permission;
-import com.quyen.shoplite.domain.Role;
-import com.quyen.shoplite.domain.Store;
-import com.quyen.shoplite.domain.StoreMember;
-import com.quyen.shoplite.domain.User;
 import com.quyen.shoplite.repository.EmployeeRepository;
 import com.quyen.shoplite.repository.FundAccountRepository;
 import com.quyen.shoplite.repository.MenuRepository;
@@ -39,6 +30,16 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.quyen.shoplite.util.constant.MenuType;
+
+import com.quyen.shoplite.domain.Employee;
+import com.quyen.shoplite.domain.FundAccount;
+import com.quyen.shoplite.domain.Menu;
+import com.quyen.shoplite.domain.Office;
+import com.quyen.shoplite.domain.Permission;
+import com.quyen.shoplite.domain.Role;
+import com.quyen.shoplite.domain.Store;
+import com.quyen.shoplite.domain.StoreMember;
+import com.quyen.shoplite.domain.User;
 
 @Component
 @Order(0)
@@ -222,6 +223,8 @@ public class DatabaseInitializer implements CommandLineRunner {
                 perm("Create unit", "/api/v1/units", "POST", "UNITS"),
                 perm("Update unit", "/api/v1/units/{id}", "PUT", "UNITS"),
                 perm("Delete unit", "/api/v1/units/{id}", "DELETE", "UNITS"),
+                // SALES INIT
+                perm("Get sales init data", "/api/v1/sales/init", "GET", "SALES"),
                 // ORDERS
                 perm("View orders", "/api/v1/orders", "GET", "ORDERS"),
                 perm("Confirm order", "/api/v1/orders/{id}/confirm", "PATCH", "ORDERS"),
@@ -242,6 +245,8 @@ public class DatabaseInitializer implements CommandLineRunner {
                 perm("View transactions by payment", "/api/v1/transactions/payment/{paymentId}", "GET", "TRANSACTIONS"),
                 // PAYMENT
                 perm("Create payment session", "/api/v1/payment/create", "POST", "PAYMENT"),
+                // DASHBOARD
+                perm("View dashboard today", "/api/v1/dashboard/today", "GET", "DASHBOARD"),
                 // DEVICE TOKENS
                 perm("Register device token", "/api/v1/device-tokens/register", "POST", "DEVICE_TOKENS"),
                 perm("Delete device token", "/api/v1/device-tokens", "DELETE", "DEVICE_TOKENS"),
@@ -273,6 +278,11 @@ public class DatabaseInitializer implements CommandLineRunner {
                 perm("View employee by id", "/api/v1/employees/{id}", "GET", "EMPLOYEES"),
                 perm("Update employee", "/api/v1/employees/{id}", "PUT", "EMPLOYEES"),
                 perm("Delete employee", "/api/v1/employees/{id}", "DELETE", "EMPLOYEES"),
+                perm("Create employee salary history", "/api/v1/employees/{employeeId}/salary-histories", "POST", "EMPLOYEE_SALARIES"),
+                perm("View employee salary histories", "/api/v1/employees/{employeeId}/salary-histories", "GET", "EMPLOYEE_SALARIES"),
+                perm("View current employee salary", "/api/v1/employees/{employeeId}/salary-histories/current", "GET", "EMPLOYEE_SALARIES"),
+                perm("View my current salary", "/api/v1/employee-salaries/me", "GET", "EMPLOYEE_SALARIES"),
+                perm("View my salary history", "/api/v1/employee-salaries/me/history", "GET", "EMPLOYEE_SALARIES"),
                 // OFFICES
                 perm("Create office", "/api/v1/offices", "POST", "OFFICES"),
                 perm("View offices", "/api/v1/offices", "GET", "OFFICES"),
@@ -345,12 +355,15 @@ public class DatabaseInitializer implements CommandLineRunner {
         List<Permission> orderStaff = allPermissions.stream()
                 .filter(p -> p.getApiPath().startsWith("/api/v1/auth")
                         || ("GET".equals(p.getMethod()) && (p.getApiPath().startsWith("/api/v1/products") || p.getApiPath().startsWith("/api/v1/categories") || p.getApiPath().startsWith("/api/v1/units")))
+                        || p.getApiPath().startsWith("/api/v1/sales/init")
                         || (p.getApiPath().startsWith("/api/v1/orders") && ("GET".equals(p.getMethod()) || "POST".equals(p.getMethod())))
                         || ("GET".equals(p.getMethod()) && p.getApiPath().startsWith("/api/v1/customers"))
                         || ("GET".equals(p.getMethod()) && (p.getApiPath().equals("/api/v1/roster/day") || p.getApiPath().equals("/api/v1/roster/month")))
                         || ("GET".equals(p.getMethod()) && p.getApiPath().equals("/api/v1/payrolls/me"))
+                        || ("GET".equals(p.getMethod()) && p.getApiPath().startsWith("/api/v1/employee-salaries/me"))
                         || p.getApiPath().contains("/attendance/check-")
-                        || p.getApiPath().startsWith("/api/v1/attendance/me"))
+                        || p.getApiPath().startsWith("/api/v1/attendance/me")
+                        || p.getApiPath().startsWith("/api/v1/dashboard"))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         ensureRole("ORDER_STAFF", "Nhan vien ghi don - tao don, xem san pham", orderStaff);
 
@@ -358,14 +371,17 @@ public class DatabaseInitializer implements CommandLineRunner {
         List<Permission> cashier = allPermissions.stream()
                 .filter(p -> p.getApiPath().startsWith("/api/v1/auth")
                         || ("GET".equals(p.getMethod()) && (p.getApiPath().startsWith("/api/v1/products") || p.getApiPath().startsWith("/api/v1/categories") || p.getApiPath().startsWith("/api/v1/units")))
+                        || p.getApiPath().startsWith("/api/v1/sales/init")
                         || p.getApiPath().startsWith("/api/v1/orders")
                         || p.getApiPath().startsWith("/api/v1/payment")
                         || p.getApiPath().startsWith("/api/v1/transactions")
                         || (p.getApiPath().startsWith("/api/v1/customers") && ("GET".equals(p.getMethod()) || "POST".equals(p.getMethod())))
                         || ("GET".equals(p.getMethod()) && (p.getApiPath().equals("/api/v1/roster/day") || p.getApiPath().equals("/api/v1/roster/month")))
                         || ("GET".equals(p.getMethod()) && p.getApiPath().equals("/api/v1/payrolls/me"))
+                        || ("GET".equals(p.getMethod()) && p.getApiPath().startsWith("/api/v1/employee-salaries/me"))
                         || p.getApiPath().contains("/attendance/check-")
-                        || p.getApiPath().startsWith("/api/v1/attendance/me"))
+                        || p.getApiPath().startsWith("/api/v1/attendance/me")
+                        || p.getApiPath().startsWith("/api/v1/dashboard"))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         ensureRole("CASHIER", "Nhan vien thu ngan - thanh toan, quan ly quy", cashier);
 
@@ -380,8 +396,10 @@ public class DatabaseInitializer implements CommandLineRunner {
                         || p.getApiPath().startsWith("/api/v1/suppliers")
                         || ("GET".equals(p.getMethod()) && (p.getApiPath().equals("/api/v1/roster/day") || p.getApiPath().equals("/api/v1/roster/month")))
                         || ("GET".equals(p.getMethod()) && p.getApiPath().equals("/api/v1/payrolls/me"))
+                        || ("GET".equals(p.getMethod()) && p.getApiPath().startsWith("/api/v1/employee-salaries/me"))
                         || p.getApiPath().contains("/attendance/check-")
-                        || p.getApiPath().startsWith("/api/v1/attendance/me"))
+                        || p.getApiPath().startsWith("/api/v1/attendance/me")
+                        || p.getApiPath().startsWith("/api/v1/dashboard"))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         ensureRole("WAREHOUSE", "Nhan vien kho - kiem kho, nhap xuat hang", warehouse);
 

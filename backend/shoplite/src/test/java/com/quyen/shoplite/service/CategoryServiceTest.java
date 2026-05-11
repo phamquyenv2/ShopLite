@@ -1,11 +1,14 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.Category;
-import com.quyen.shoplite.domain.request.ReqCategoryUpsertDTO;
-import com.quyen.shoplite.domain.response.ResCategoryDTO;
 import com.quyen.shoplite.repository.CategoryRepository;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
+
+import com.quyen.shoplite.domain.Category;
+import com.quyen.shoplite.domain.Store;
+import com.quyen.shoplite.domain.request.ReqCategoryUpsertDTO;
+import com.quyen.shoplite.domain.response.ResCategoryDTO;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,7 +19,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,17 +26,25 @@ class CategoryServiceTest {
 
     @Mock
     private CategoryRepository categoryRepository;
+    @Mock
+    private CurrentStoreService currentStoreService;
 
     @InjectMocks
     private CategoryService categoryService;
 
+    private Store testStore() {
+        Store store = new Store();
+        store.setId(1L);
+        return store;
+    }
+
     @Test
     void create_ShouldReturnCategory_WhenNameIsUnique() {
-        // Arrange
+        when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+        when(categoryRepository.existsByStoreIdAndName(1L, "New Category")).thenReturn(false);
+
         ReqCategoryUpsertDTO req = new ReqCategoryUpsertDTO();
         req.setName("  New Category  ");
-
-        when(categoryRepository.existsByName("New Category")).thenReturn(false);
 
         Category savedCategory = Category.builder()
                 .id(1)
@@ -42,10 +52,8 @@ class CategoryServiceTest {
                 .build();
         when(categoryRepository.save(any(Category.class))).thenReturn(savedCategory);
 
-        // Act
         ResCategoryDTO result = categoryService.create(req);
 
-        // Assert
         assertNotNull(result);
         assertEquals(1, result.getId());
         assertEquals("New Category", result.getName());
@@ -54,14 +62,13 @@ class CategoryServiceTest {
 
     @Test
     void create_ShouldThrowBadRequest_WhenNameExists() {
-        // Arrange
+        when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+        when(categoryRepository.existsByStoreIdAndName(1L, "Existing Category")).thenReturn(true);
+
         ReqCategoryUpsertDTO req = new ReqCategoryUpsertDTO();
         req.setName("Existing Category");
 
-        when(categoryRepository.existsByName("Existing Category")).thenReturn(true);
-
-        // Act & Assert
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> 
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->
             categoryService.create(req)
         );
         assertEquals("Category name already exists: Existing Category", exception.getMessage());
@@ -70,22 +77,21 @@ class CategoryServiceTest {
 
     @Test
     void update_ShouldReturnCategory_WhenIdExistsAndNameIsUnique() {
-        // Arrange
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+
         Integer id = 1;
         ReqCategoryUpsertDTO req = new ReqCategoryUpsertDTO();
         req.setName("Updated Category");
 
         Category existingCategory = Category.builder().id(id).name("Old Name").build();
-        when(categoryRepository.findById(id)).thenReturn(Optional.of(existingCategory));
-        when(categoryRepository.existsByNameAndIdNot("Updated Category", id)).thenReturn(false);
+        when(categoryRepository.findByIdAndStoreId(id, 1L)).thenReturn(Optional.of(existingCategory));
+        when(categoryRepository.existsByStoreIdAndNameAndIdNot(1L, "Updated Category", id)).thenReturn(false);
 
         Category savedCategory = Category.builder().id(id).name("Updated Category").build();
         when(categoryRepository.save(existingCategory)).thenReturn(savedCategory);
 
-        // Act
         ResCategoryDTO result = categoryService.update(id, req);
 
-        // Assert
         assertNotNull(result);
         assertEquals("Updated Category", result.getName());
         verify(categoryRepository).save(existingCategory);
@@ -93,15 +99,15 @@ class CategoryServiceTest {
 
     @Test
     void update_ShouldThrowResourceNotFound_WhenIdDoesNotExist() {
-        // Arrange
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+
         Integer id = 99;
         ReqCategoryUpsertDTO req = new ReqCategoryUpsertDTO();
         req.setName("Updated Category");
 
-        when(categoryRepository.findById(id)).thenReturn(Optional.empty());
+        when(categoryRepository.findByIdAndStoreId(id, 1L)).thenReturn(Optional.empty());
 
-        // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> 
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () ->
             categoryService.update(id, req)
         );
         assertEquals("Category not found with id=99", exception.getMessage());
@@ -110,17 +116,17 @@ class CategoryServiceTest {
 
     @Test
     void update_ShouldThrowBadRequest_WhenNameExistsForAnotherId() {
-        // Arrange
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+
         Integer id = 1;
         ReqCategoryUpsertDTO req = new ReqCategoryUpsertDTO();
         req.setName("Duplicate Name");
 
         Category existingCategory = Category.builder().id(id).name("Old Name").build();
-        when(categoryRepository.findById(id)).thenReturn(Optional.of(existingCategory));
-        when(categoryRepository.existsByNameAndIdNot("Duplicate Name", id)).thenReturn(true);
+        when(categoryRepository.findByIdAndStoreId(id, 1L)).thenReturn(Optional.of(existingCategory));
+        when(categoryRepository.existsByStoreIdAndNameAndIdNot(1L, "Duplicate Name", id)).thenReturn(true);
 
-        // Act & Assert
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> 
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->
             categoryService.update(id, req)
         );
         assertEquals("Category name already exists: Duplicate Name", exception.getMessage());
@@ -129,26 +135,25 @@ class CategoryServiceTest {
 
     @Test
     void delete_ShouldCallRepositoryDelete_WhenIdExists() {
-        // Arrange
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+
         Integer id = 1;
         Category existingCategory = Category.builder().id(id).name("Name").build();
-        when(categoryRepository.findById(id)).thenReturn(Optional.of(existingCategory));
+        when(categoryRepository.findByIdAndStoreId(id, 1L)).thenReturn(Optional.of(existingCategory));
 
-        // Act
         categoryService.delete(id);
 
-        // Assert
         verify(categoryRepository).delete(existingCategory);
     }
 
     @Test
     void delete_ShouldThrowResourceNotFound_WhenIdDoesNotExist() {
-        // Arrange
-        Integer id = 99;
-        when(categoryRepository.findById(id)).thenReturn(Optional.empty());
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
 
-        // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> 
+        Integer id = 99;
+        when(categoryRepository.findByIdAndStoreId(id, 1L)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () ->
             categoryService.delete(id)
         );
         assertEquals("Category not found with id=99", exception.getMessage());

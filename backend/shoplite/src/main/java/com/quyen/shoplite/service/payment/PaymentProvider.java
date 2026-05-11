@@ -1,7 +1,8 @@
 package com.quyen.shoplite.service.payment;
 
-import com.quyen.shoplite.domain.Order;
 import java.util.Map;
+
+import com.quyen.shoplite.domain.Order;
 
 public interface PaymentProvider {
     /**

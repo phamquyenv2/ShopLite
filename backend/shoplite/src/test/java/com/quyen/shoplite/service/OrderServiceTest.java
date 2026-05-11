@@ -1,14 +1,16 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.*;
-import com.quyen.shoplite.domain.request.ReqOrderDTO;
-import com.quyen.shoplite.domain.request.ReqOrderItemDTO;
-import com.quyen.shoplite.domain.response.ResOrderDTO;
 import com.quyen.shoplite.service.OrderService.CreateOrderResult;
 import com.quyen.shoplite.repository.*;
 import com.quyen.shoplite.util.constant.StatusEnum;
 import com.quyen.shoplite.util.constant.TypeInventoryEnum;
 import com.quyen.shoplite.util.error.IdInvalidException;
+
+import com.quyen.shoplite.domain.*;
+import com.quyen.shoplite.domain.request.ReqOrderDTO;
+import com.quyen.shoplite.domain.request.ReqOrderItemDTO;
+import com.quyen.shoplite.domain.response.ResOrderDTO;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,7 +72,7 @@ class OrderServiceTest {
     @Test
     void createOrder_Success() {
         Store store = testStore();
-        when(currentStoreService.getCurrentStore()).thenReturn(store);
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(store);
 
         // Arrange
         ReqOrderDTO req = new ReqOrderDTO();
@@ -121,7 +123,7 @@ class OrderServiceTest {
 
     @Test
     void createOrder_CustomerNotFound_ThrowsException() {
-        when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
 
         ReqOrderDTO req = new ReqOrderDTO();
         req.setUserId(1);
@@ -137,7 +139,7 @@ class OrderServiceTest {
 
     @Test
     void createOrder_ProductNotFound_ThrowsException() {
-        when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
 
         ReqOrderDTO req = new ReqOrderDTO();
         req.setUserId(1);
@@ -156,7 +158,7 @@ class OrderServiceTest {
 
     @Test
     void createOrder_InvalidNegativeTotal_ThrowsException() {
-        when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
 
         ReqOrderDTO req = new ReqOrderDTO();
         req.setUserId(1);
@@ -205,7 +207,7 @@ class OrderServiceTest {
 
     @Test
     void findById_Success() {
-        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
 
         Order order = new Order();
         order.setId(1);
@@ -233,7 +235,7 @@ class OrderServiceTest {
         order.setId(1);
         order.setStore(testStore());
         when(orderRepository.findAllByStoreId(eq(1L), any(org.springframework.data.domain.Sort.class))).thenReturn(List.of(order));
-        when(orderItemsRepository.findAllByOrderId(1)).thenReturn(List.of());
+        when(orderItemsRepository.findAllByOrderIdIn(any())).thenReturn(List.of());
 
         List<ResOrderDTO> result = orderService.findAll(null, null, null);
 
@@ -243,7 +245,7 @@ class OrderServiceTest {
 
     @Test
     void cancelOrder_Success() {
-        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
 
         Order order = new Order();
         order.setId(1);
@@ -288,7 +290,7 @@ class OrderServiceTest {
 
     @Test
     void cancelOrder_AlreadyCancelled_ThrowsException() {
-        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
 
         Order order = new Order();
         order.setId(1);

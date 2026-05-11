@@ -49,6 +49,7 @@ public class DatabaseMigration {
         addStoreColumnAndBackfill("inventory_logs", defaultStoreId);
         addStoreColumnAndBackfill("payments", defaultStoreId);
         addStoreColumnAndBackfill("transactions", defaultStoreId);
+        backfillEmployeeSalaryHistories(defaultStoreId);
     }
 
     private Long findDefaultStoreId() {
@@ -66,6 +67,31 @@ public class DatabaseMigration {
         executeIgnoringFailure("ALTER TABLE " + tableName
                 + " ADD CONSTRAINT fk_" + tableName + "_store FOREIGN KEY (store_id) REFERENCES stores(id)");
         executeIgnoringFailure("ALTER TABLE " + tableName + " MODIFY COLUMN store_id BIGINT NOT NULL");
+    }
+
+    private void backfillEmployeeSalaryHistories(Long defaultStoreId) {
+        executeIgnoringFailure("""
+                INSERT INTO employee_salary_histories
+                    (store_id, employee_id, salary_type, base_rate, allowance, commission,
+                     recurring_bonus, recurring_deduction, effective_from, created_by, created_at)
+                SELECT
+                    COALESCE(e.store_id, %d),
+                    e.id,
+                    'HOURLY',
+                    COALESCE(e.salary_rate, 0),
+                    0,
+                    0,
+                    0,
+                    0,
+                    CURRENT_DATE,
+                    'migration',
+                    CURRENT_TIMESTAMP
+                FROM employees e
+                LEFT JOIN employee_salary_histories h
+                    ON h.employee_id = e.id
+                    AND h.store_id = COALESCE(e.store_id, %d)
+                WHERE h.id IS NULL
+                """.formatted(defaultStoreId, defaultStoreId));
     }
 
     private void executeIgnoringFailure(String sql) {

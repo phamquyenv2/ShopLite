@@ -1,16 +1,19 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.Category;
-import com.quyen.shoplite.domain.Product;
-import com.quyen.shoplite.domain.Unit;
-import com.quyen.shoplite.domain.request.ReqProductUpsertDTO;
-import com.quyen.shoplite.domain.response.ResProductDTO;
-import com.quyen.shoplite.domain.response.ResProductPageDTO;
 import com.quyen.shoplite.repository.CategoryRepository;
 import com.quyen.shoplite.repository.ProductRepository;
 import com.quyen.shoplite.repository.UnitRepository;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
+
+import com.quyen.shoplite.domain.Category;
+import com.quyen.shoplite.domain.Product;
+import com.quyen.shoplite.domain.Store;
+import com.quyen.shoplite.domain.Unit;
+import com.quyen.shoplite.domain.request.ReqProductUpsertDTO;
+import com.quyen.shoplite.domain.response.ResProductDTO;
+import com.quyen.shoplite.domain.response.ResProductPageDTO;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -40,8 +43,17 @@ class ProductServiceTest {
     @Mock
     private UnitRepository unitRepository;
 
+    @Mock
+    private CurrentStoreService currentStoreService;
+
     @InjectMocks
     private ProductService productService;
+
+    private Store testStore() {
+        Store store = new Store();
+        store.setId(1L);
+        return store;
+    }
 
     // --- Success cases ---
     @Test
@@ -57,10 +69,11 @@ class ProductServiceTest {
         req.setSellingPrice(15.0);
         req.setCostPrice(10.0);
 
-        when(productRepository.existsBySku("SKU-123")).thenReturn(false);
-        when(productRepository.existsByBarcode("12345")).thenReturn(false);
-        when(categoryRepository.findById(1)).thenReturn(Optional.of(Category.builder().id(1).build()));
-        when(unitRepository.findById(2)).thenReturn(Optional.of(Unit.builder().id(2).build()));
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+        when(productRepository.existsByStoreIdAndSku(1L, "SKU-123")).thenReturn(false);
+        when(productRepository.existsByStoreIdAndBarcode(1L, "12345")).thenReturn(false);
+        when(categoryRepository.findByIdAndStoreId(1, 1L)).thenReturn(Optional.of(Category.builder().id(1).build()));
+        when(unitRepository.findByIdAndStoreId(2, 1L)).thenReturn(Optional.of(Unit.builder().id(2).build()));
 
         Product savedProduct = Product.builder()
                 .id(10)
@@ -97,8 +110,9 @@ class ProductServiceTest {
         req.setSellingPrice(5.0);
         req.setCostPrice(2.0);
 
-        when(categoryRepository.findById(1)).thenReturn(Optional.of(Category.builder().id(1).build()));
-        when(unitRepository.findById(2)).thenReturn(Optional.of(Unit.builder().id(2).build()));
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+        when(categoryRepository.findByIdAndStoreId(1, 1L)).thenReturn(Optional.of(Category.builder().id(1).build()));
+        when(unitRepository.findByIdAndStoreId(2, 1L)).thenReturn(Optional.of(Unit.builder().id(2).build()));
 
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> {
             Product p = invocation.getArgument(0);
@@ -133,11 +147,12 @@ class ProductServiceTest {
         Product existingProduct = Product.builder()
                 .id(id).version(1).isDeleted(false).stock(50).build();
 
-        when(productRepository.findById(id)).thenReturn(Optional.of(existingProduct));
-        when(productRepository.existsBySkuAndIdNot("SKU-999", id)).thenReturn(false);
-        when(productRepository.existsByBarcodeAndIdNot("9999", id)).thenReturn(false);
-        when(categoryRepository.findById(1)).thenReturn(Optional.of(Category.builder().id(1).build()));
-        when(unitRepository.findById(2)).thenReturn(Optional.of(Unit.builder().id(2).build()));
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(id, 1L)).thenReturn(Optional.of(existingProduct));
+        when(productRepository.existsByStoreIdAndSkuAndIdNot(1L, "SKU-999", id)).thenReturn(false);
+        when(productRepository.existsByStoreIdAndBarcodeAndIdNot(1L, "9999", id)).thenReturn(false);
+        when(categoryRepository.findByIdAndStoreId(1, 1L)).thenReturn(Optional.of(Category.builder().id(1).build()));
+        when(unitRepository.findByIdAndStoreId(2, 1L)).thenReturn(Optional.of(Unit.builder().id(2).build()));
 
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -158,7 +173,8 @@ class ProductServiceTest {
     void findById_ShouldReturnProduct_WhenProductExists() {
         Integer id = 10;
         Product existingProduct = Product.builder().id(id).isDeleted(false).build();
-        when(productRepository.findById(id)).thenReturn(Optional.of(existingProduct));
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(id, 1L)).thenReturn(Optional.of(existingProduct));
 
         ResProductDTO result = productService.findById(id);
 
@@ -169,6 +185,7 @@ class ProductServiceTest {
     @Test
     void getProducts_ShouldReturnPageDTO_WhenValidRequest() {
         Page<Product> page = new PageImpl<>(Collections.singletonList(Product.builder().id(1).build()));
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
         when(productRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
         ResProductPageDTO result = productService.getProducts("keyword", 1, 0.0, 100.0, 0, 10, "createdAt", "desc", 2);
@@ -183,7 +200,8 @@ class ProductServiceTest {
         // Arrange
         Integer id = 10;
         Product existingProduct = Product.builder().id(id).isDeleted(false).build();
-        when(productRepository.findById(id)).thenReturn(Optional.of(existingProduct));
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(id, 1L)).thenReturn(Optional.of(existingProduct));
 
         // Act
         productService.softDelete(id);
@@ -225,7 +243,8 @@ class ProductServiceTest {
         req.setStock(10);
         req.setSku("SKU-123");
 
-        when(productRepository.existsBySku("SKU-123")).thenReturn(true);
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+        when(productRepository.existsByStoreIdAndSku(1L, "SKU-123")).thenReturn(true);
 
         // Act & Assert
         BadRequestException ex = assertThrows(BadRequestException.class, () -> productService.create(req));
@@ -242,8 +261,9 @@ class ProductServiceTest {
         req.setSku("SKU-123");
         req.setBarcode("123");
 
-        when(productRepository.existsBySku("SKU-123")).thenReturn(false);
-        when(productRepository.existsByBarcode("123")).thenReturn(true);
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+        when(productRepository.existsByStoreIdAndSku(1L, "SKU-123")).thenReturn(false);
+        when(productRepository.existsByStoreIdAndBarcode(1L, "123")).thenReturn(true);
 
         // Act & Assert
         BadRequestException ex = assertThrows(BadRequestException.class, () -> productService.create(req));
@@ -259,7 +279,8 @@ class ProductServiceTest {
         req.setStock(10);
         req.setCategoryId(99);
 
-        when(categoryRepository.findById(99)).thenReturn(Optional.empty());
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+        when(categoryRepository.findByIdAndStoreId(99, 1L)).thenReturn(Optional.empty());
 
         // Act & Assert
         ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> productService.create(req));
@@ -276,8 +297,9 @@ class ProductServiceTest {
         req.setCategoryId(1);
         req.setUnitId(99);
 
-        when(categoryRepository.findById(1)).thenReturn(Optional.of(Category.builder().id(1).build()));
-        when(unitRepository.findById(99)).thenReturn(Optional.empty());
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+        when(categoryRepository.findByIdAndStoreId(1, 1L)).thenReturn(Optional.of(Category.builder().id(1).build()));
+        when(unitRepository.findByIdAndStoreId(99, 1L)).thenReturn(Optional.empty());
 
         // Act & Assert
         ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> productService.create(req));
@@ -288,7 +310,8 @@ class ProductServiceTest {
     void update_ShouldThrowNotFound_WhenProductNotFound() {
         // Arrange
         ReqProductUpsertDTO req = new ReqProductUpsertDTO();
-        when(productRepository.findById(99)).thenReturn(Optional.empty());
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(99, 1L)).thenReturn(Optional.empty());
 
         // Act & Assert
         ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> productService.update(99, req));
@@ -298,8 +321,9 @@ class ProductServiceTest {
     @Test
     void update_ShouldThrowNotFound_WhenProductIsDeleted() {
         ReqProductUpsertDTO req = new ReqProductUpsertDTO();
-        Product p = Product.builder().id(1).isDeleted(true).build();
-        when(productRepository.findById(1)).thenReturn(Optional.of(p));
+        // findByIdAndStoreIdAndIsDeletedFalse filters deleted products → returns empty
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(1, 1L)).thenReturn(Optional.empty());
 
         ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> productService.update(1, req));
         assertEquals("Product not found with id=1", ex.getMessage());
@@ -312,7 +336,8 @@ class ProductServiceTest {
         req.setSellingPrice(-10.0);
         req.setCostPrice(0.0);
         Product p = Product.builder().id(1).isDeleted(false).build();
-        when(productRepository.findById(1)).thenReturn(Optional.of(p));
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(1, 1L)).thenReturn(Optional.of(p));
 
         // Act & Assert
         BadRequestException ex = assertThrows(BadRequestException.class, () -> productService.update(1, req));
@@ -326,7 +351,8 @@ class ProductServiceTest {
         req.setCostPrice(0.0);
         req.setVersion(2);
         Product p = Product.builder().id(1).version(1).isDeleted(false).build();
-        when(productRepository.findById(1)).thenReturn(Optional.of(p));
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(1, 1L)).thenReturn(Optional.of(p));
 
         // Act & Assert
         BadRequestException ex = assertThrows(BadRequestException.class, () -> productService.update(1, req));
@@ -341,8 +367,9 @@ class ProductServiceTest {
         req.setCostPrice(0.0);
         req.setSku("DUP-SKU");
         Product p = Product.builder().id(1).isDeleted(false).build();
-        when(productRepository.findById(1)).thenReturn(Optional.of(p));
-        when(productRepository.existsBySkuAndIdNot("DUP-SKU", 1)).thenReturn(true);
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(1, 1L)).thenReturn(Optional.of(p));
+        when(productRepository.existsByStoreIdAndSkuAndIdNot(1L, "DUP-SKU", 1)).thenReturn(true);
 
         // Act & Assert
         BadRequestException ex = assertThrows(BadRequestException.class, () -> productService.update(1, req));
@@ -357,8 +384,9 @@ class ProductServiceTest {
         req.setCostPrice(0.0);
         req.setBarcode("111");
         Product p = Product.builder().id(1).isDeleted(false).build();
-        when(productRepository.findById(1)).thenReturn(Optional.of(p));
-        when(productRepository.existsByBarcodeAndIdNot("111", 1)).thenReturn(true);
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(1, 1L)).thenReturn(Optional.of(p));
+        when(productRepository.existsByStoreIdAndBarcodeAndIdNot(1L, "111", 1)).thenReturn(true);
 
         // Act & Assert
         BadRequestException ex = assertThrows(BadRequestException.class, () -> productService.update(1, req));
@@ -374,8 +402,9 @@ class ProductServiceTest {
         req.setCategoryId(99);
         Product p = Product.builder().id(1).isDeleted(false).build();
 
-        when(productRepository.findById(1)).thenReturn(Optional.of(p));
-        when(categoryRepository.findById(99)).thenReturn(Optional.empty());
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(1, 1L)).thenReturn(Optional.of(p));
+        when(categoryRepository.findByIdAndStoreId(99, 1L)).thenReturn(Optional.empty());
 
         // Act & Assert
         ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> productService.update(1, req));
@@ -385,7 +414,8 @@ class ProductServiceTest {
     @Test
     void findById_ShouldThrowNotFound_WhenProductNotFound() {
         // Arrange  
-        when(productRepository.findById(99)).thenReturn(Optional.empty());
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(99, 1L)).thenReturn(Optional.empty());
 
         // Act & Assert
         ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> productService.findById(99));
@@ -395,7 +425,8 @@ class ProductServiceTest {
     @Test
     void softDelete_ShouldThrowNotFound_WhenProductNotFound() {
         // Arrange
-        when(productRepository.findById(99)).thenReturn(Optional.empty());
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+        when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(99, 1L)).thenReturn(Optional.empty());
 
         // Act & Assert
         ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> productService.softDelete(99));

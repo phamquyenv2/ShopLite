@@ -3,6 +3,8 @@ import {
   IonHeader,
   IonIcon,
   IonPage,
+  IonRefresher,
+  IonRefresherContent,
   IonToast,
   IonToolbar,
   IonModal
@@ -27,8 +29,8 @@ import {
   storefront
 } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { useIonViewWillEnter } from '@ionic/react';
+import { useEffect, useRef, useState } from 'react';
+  import { useIonViewWillEnter } from '@ionic/react';
 import { authApis, endpoints } from '../utils/Apis';
 import { getCurrentMe, ME_SESSION_UPDATED_EVENT, readStoredCurrentStore } from '../utils/meSession';
 import { notificationService } from '../services/notification.service';
@@ -68,6 +70,8 @@ const Home: React.FC = () => {
   const [toast, setToast] = useState<string | null>(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const lastLoadedRef = useRef<number>(0);
+  const DATA_STALE_MS = 60_000; // re-fetch after 60 s
 
   const logPerf = (message: string) => {
     console.info(`[Home perf] +${nowMs() - pageStartRef}ms ${message}`);
@@ -91,7 +95,7 @@ const Home: React.FC = () => {
     };
   }, []);
 
-  const loadNotifications = async (): Promise<Notification[]> => {
+  const refreshNotifications = async () => {
     try {
       const items = await notificationService.getNotifications();
       setNotifications(items);
@@ -107,11 +111,11 @@ const Home: React.FC = () => {
     setNotificationOpen(nextOpen);
     if (!nextOpen) return;
 
-    const items = await loadNotifications();
+    const items = await refreshNotifications();
     const unread = items.filter(n => !n.read);
     if (unread.length > 0) {
       void Promise.all(unread.map(n => notificationService.markRead(n.id)))
-        .then(loadNotifications)
+        .then(refreshNotifications)
         .catch(console.error);
     }
   };
@@ -125,7 +129,7 @@ const Home: React.FC = () => {
       setPermissions(result.permissions || result.currentStore?.permissions || []);
       setMenus(result.currentStore?.menus || []);
       setToast('Đã tham gia cửa hàng');
-      await loadNotifications();
+      await refreshNotifications();
       history.replace('/home');
     } catch (err: any) {
       setToast(err.message || 'Không thể chấp nhận lời mời');
@@ -137,95 +141,51 @@ const Home: React.FC = () => {
     try {
       await storeInvitationService.decline(notification.referenceId);
       setToast('Đã từ chối lời mời');
-      await loadNotifications();
+      await refreshNotifications();
     } catch (err: any) {
       setToast(err.message || 'Không thể từ chối lời mời');
     }
   };
 
+  const loadData = async () => {
+    try {
+      const dashboardStart = nowMs();
+      const res = await authApis().get<any>(endpoints['dashboard-today']);
+      const data = res.data?.data ?? res.data;
+
+      if (data?.user) {
+        setStoreName(data.currentStore?.name || 'Chưa có cửa hàng');
+        setMemberRole(data.currentStore?.memberRole || '');
+        setPermissions((data.currentStore?.permissions || []) as Permission[]);
+        setMenus((data.currentStore?.menus || []) as Menu[]);
+      }
+
+      if (data?.todayStats) {
+        setTodayRevenue(data.todayStats.revenue ?? 0);
+        setTodayOrdersCount(data.todayStats.orderCount ?? 0);
+        setTodayProfit(data.todayStats.profit ?? 0);
+        setRecentOrders(data.todayStats.recentOrders ?? []);
+      }
+
+      if (Array.isArray(data?.notifications)) {
+        setNotifications(data.notifications);
+      }
+
+      lastLoadedRef.current = nowMs();
+      logPerf(`dashboard loaded in ${nowMs() - dashboardStart}ms`);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useIonViewWillEnter(() => {
     logPerf('ion view will enter');
-    const loadTodayOrders = async (currentPermissions: Permission[]) => {
-      const ordersStart = nowMs();
-      const now = new Date();
-      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const params = new URLSearchParams();
-      params.set('from', startOfDay.toISOString());
-      params.set('to', now.toISOString());
 
-      if (!hasPermission(currentPermissions, '/api/v1/orders', 'GET')) {
-        setTodayRevenue(0);
-        setTodayOrdersCount(0);
-        setTodayProfit(0);
-        setRecentOrders([]);
-        return;
-      }
+    const now = nowMs();
+    const isStale = now - lastLoadedRef.current > DATA_STALE_MS;
+    if (!isStale) return;
 
-      const res = await authApis().get<any>(`${endpoints.orders}?${params.toString()}`);
-
-      let orders: Order[] = [];
-      if (Array.isArray(res.data?.data)) orders = res.data.data;
-      else if (Array.isArray(res.data)) orders = res.data;
-
-      const validOrders = orders.filter(o => {
-        const isStatusValid = o.status === 'COMPLETED' || o.status === 'PENDING_PAYMENT';
-        if (!isStatusValid || !o.createdAt) return false;
-        const orderDate = new Date(o.createdAt);
-        return orderDate >= startOfDay && orderDate <= now;
-      });
-
-      const todayOrdersForRecent = orders.filter(o => {
-        if (!o.createdAt) return false;
-        const orderDate = new Date(o.createdAt);
-        return orderDate >= startOfDay && orderDate <= now;
-      });
-
-      setTodayRevenue(validOrders.reduce((sum, o) => sum + (o.totalAmount ?? 0), 0));
-      setTodayOrdersCount(validOrders.length);
-      setTodayProfit(validOrders.reduce((sum, o) => sum + ((o as any).profit ?? ((o.totalAmount ?? 0) * 0.3)), 0));
-
-      const sorted = [...todayOrdersForRecent].sort((a, b) =>
-        new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-      setRecentOrders(sorted.slice(0, 3));
-      logPerf(`orders loaded in ${nowMs() - ordersStart}ms: count=${orders.length}`);
-    };
-
-    const loadData = async () => {
-      try {
-        const storedStore = readStoredCurrentStore();
-        const storedPermissions = (storedStore?.permissions || []) as Permission[];
-        if (storedStore) {
-          setStoreName(storedStore.name || 'Chưa có cửa hàng');
-          setMemberRole(storedStore.memberRole || '');
-          setPermissions(storedPermissions);
-          setMenus((storedStore.menus || []) as Menu[]);
-          logPerf(`initial cache ready: menus=${storedStore.menus?.length ?? 0}, permissions=${storedPermissions.length}`);
-        }
-
-        const canUseStoredPermissions = storedPermissions.length > 0;
-        if (canUseStoredPermissions) {
-          void loadTodayOrders(storedPermissions).catch(console.error);
-        }
-
-        const meStart = nowMs();
-        const mePayload = await getCurrentMe();
-        const currentStore = mePayload?.currentStore ?? null;
-        setStoreName(currentStore?.name || 'Chưa có cửa hàng');
-        setMemberRole(currentStore?.memberRole || '');
-        const currentPermissions = (currentStore?.permissions || []) as Permission[];
-        setPermissions(currentPermissions);
-        setMenus((currentStore?.menus || []) as Menu[]);
-        logPerf(`me loaded in ${nowMs() - meStart}ms: menus=${currentStore?.menus?.length ?? 0}, permissions=${currentPermissions.length}`);
-
-        if (!canUseStoredPermissions) {
-          await loadTodayOrders(currentPermissions);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
     loadData();
-    loadNotifications();
   });
 
   const shortcuts = hasMenuPayload(menus)
@@ -285,6 +245,9 @@ const Home: React.FC = () => {
       </IonHeader>
 
       <IonContent className="home-content">
+        <IonRefresher slot="fixed" onIonRefresh={async (e) => { await loadData(); e.detail.complete(); }}>
+          <IonRefresherContent />
+        </IonRefresher>
         <div className="home-container">
           <div className="revenue-main-card">
             <div className="revenue-info">

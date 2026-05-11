@@ -1,7 +1,9 @@
 package com.quyen.shoplite.repository;
 
-import com.quyen.shoplite.domain.StoreInvitation;
 import com.quyen.shoplite.util.constant.InvitationStatus;
+
+import com.quyen.shoplite.domain.StoreInvitation;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

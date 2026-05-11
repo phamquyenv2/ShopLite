@@ -30,7 +30,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import type { Category, Product } from '../api/types';
 import { CART_KEY } from '../constants/storage';
-import { ApiError } from '../utils/Apis';
+import { ApiError, authApis, endpoints } from '../utils/Apis';
 import { productService } from '../services/product.service';
 import { useStorePermissions } from '../utils/useStorePermissions';
 import './SalesPage.css';
@@ -102,15 +102,13 @@ const SalesPage: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const [cats, prods] = await Promise.all([
-                productService.getCategories().catch(() => []),
-                productService.getProducts({ size: 200 }),
-            ]);
+            const res = await authApis().get<any>(endpoints['sales-init']);
+            const data = res.data?.data ?? res.data;
 
-            const safeProducts = (Array.isArray(prods) ? prods : []).filter(isProductActive);
+            const safeProducts = (Array.isArray(data?.products) ? data.products : []).filter(isProductActive);
             setProducts(safeProducts);
 
-            const safeCats = Array.isArray(cats) ? cats : [];
+            const safeCats = Array.isArray(data?.categories) ? data.categories : [];
             setCategories(safeCats);
 
             setCustomerId(0);

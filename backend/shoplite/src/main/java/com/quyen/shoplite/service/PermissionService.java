@@ -1,14 +1,18 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.Permission;
-import com.quyen.shoplite.domain.request.ReqPermissionDTO;
-import com.quyen.shoplite.domain.response.ResPermissionDTO;
 import com.quyen.shoplite.repository.PermissionRepository;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.IdInvalidException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
+
+import com.quyen.shoplite.domain.Permission;
+import com.quyen.shoplite.domain.request.ReqPermissionDTO;
+import com.quyen.shoplite.domain.response.ResPermissionDTO;
+
 import com.quyen.shoplite.util.DTOMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +29,7 @@ public class PermissionService {
     private final PermissionRepository permissionRepository;
 
     // ─── Create ────────────────────────────────────────────────────────────────
+    @CacheEvict(value = "permissions", allEntries = true)
     public ResPermissionDTO create(ReqPermissionDTO req) {
         if (permissionRepository.existsByModuleAndApiPathAndMethod(
                 req.getModule(), req.getApiPath(), req.getMethod())) {
@@ -49,6 +54,7 @@ public class PermissionService {
     }
 
     // ─── Update ────────────────────────────────────────────────────────────────
+    @CacheEvict(value = "permissions", allEntries = true)
     public ResPermissionDTO update(Long id, ReqPermissionDTO req) {
         Permission p = permissionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Permission id=" + id));
@@ -61,6 +67,7 @@ public class PermissionService {
     }
 
     // ─── Delete ────────────────────────────────────────────────────────────────
+    @CacheEvict(value = "permissions", allEntries = true)
     public void delete(Long id) {
         Permission p = permissionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Permission id=" + id));
@@ -82,6 +89,7 @@ public class PermissionService {
     }
 
     // ─── Get All (no pagination) ────────────────────────────────────────────────
+    @Cacheable(value = "permissions")
     public List<ResPermissionDTO> findAll() {
         return permissionRepository.findAll().stream()
                 .map(DTOMapper::toResPermissionDTO)

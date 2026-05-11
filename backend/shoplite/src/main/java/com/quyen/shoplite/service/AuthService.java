@@ -1,11 +1,5 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.Role;
-import com.quyen.shoplite.domain.StoreMember;
-import com.quyen.shoplite.domain.User;
-import com.quyen.shoplite.domain.UserToken;
-import com.quyen.shoplite.domain.response.ResLoginDTO;
-import com.quyen.shoplite.domain.response.ResMeDTO;
 import com.quyen.shoplite.repository.RoleRepository;
 import com.quyen.shoplite.repository.StoreMemberRepository;
 import com.quyen.shoplite.repository.UserRepository;
@@ -15,6 +9,13 @@ import com.quyen.shoplite.util.DTOMapper;
 import com.quyen.shoplite.util.constant.StoreMemberStatus;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.UnauthorizedException;
+
+import com.quyen.shoplite.domain.Role;
+import com.quyen.shoplite.domain.StoreMember;
+import com.quyen.shoplite.domain.User;
+import com.quyen.shoplite.domain.UserToken;
+import com.quyen.shoplite.domain.response.ResLoginDTO;
+import com.quyen.shoplite.domain.response.ResMeDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -52,7 +53,7 @@ public class AuthService {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(username, password));
         } catch (AuthenticationException ex) {
-            throw new UnauthorizedException("Ten dang nhap hoac mat khau khong dung");
+            throw new UnauthorizedException("Tên đăng nhập hoặc mật khẩu không đúng");
         }
         SecurityContextHolder.getContext().setAuthentication(authentication);
 

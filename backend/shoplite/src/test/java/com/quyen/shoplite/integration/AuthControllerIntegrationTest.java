@@ -2,41 +2,33 @@ package com.quyen.shoplite.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
-import com.quyen.shoplite.domain.User;
-
-import com.quyen.shoplite.domain.request.ReqLoginDTO;
 import com.quyen.shoplite.repository.UserRepository;
 import com.quyen.shoplite.repository.UserTokenRepository;
+
+import com.quyen.shoplite.domain.User;
+import com.quyen.shoplite.domain.UserToken;
+import com.quyen.shoplite.domain.request.ReqLoginDTO;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.quyen.shoplite.domain.UserToken;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-class AuthControllerIntegrationTest {
+class AuthControllerIntegrationTest extends IntegrationTestBase {
 
     private static final String TEST_PHONE = "0900000001";
-
-    @Autowired
-    private MockMvc mockMvc;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -85,9 +77,9 @@ class AuthControllerIntegrationTest {
         req.setPhone(TEST_PHONE);
         req.setPassword("Password123!");
 
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(withStore(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.data.refreshToken").isNotEmpty());
@@ -100,9 +92,9 @@ class AuthControllerIntegrationTest {
         req.setPhone(TEST_PHONE);
         req.setPassword("WrongPassword!");
 
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(withStore(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.statusCode").value(401))
                 .andExpect(jsonPath("$.message").value("Tên đăng nhập hoặc mật khẩu không đúng"));
@@ -115,9 +107,9 @@ class AuthControllerIntegrationTest {
         req.setPhone("0999999999");
         req.setPassword("Password123!");
 
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(withStore(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.statusCode").value(401))
                 .andExpect(jsonPath("$.message").value("Tên đăng nhập hoặc mật khẩu không đúng"));
@@ -131,17 +123,17 @@ class AuthControllerIntegrationTest {
         req.setPhone(TEST_PHONE);
         req.setPassword("Password123!");
 
-        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
+        MvcResult result = mockMvc.perform(withStore(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
         String refreshToken = JsonPath.read(responseBody, "$.data.refreshToken");
 
         // 2. Perform refresh
-        mockMvc.perform(post("/api/v1/auth/refresh")
-                .header("Authorization", "Bearer " + refreshToken))
+        mockMvc.perform(withStore(post("/api/v1/auth/refresh")
+                .header("Authorization", "Bearer " + refreshToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.data.refreshToken").isNotEmpty());
@@ -155,9 +147,9 @@ class AuthControllerIntegrationTest {
         req.setPhone(TEST_PHONE);
         req.setPassword("Password123!");
 
-        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
+        MvcResult result = mockMvc.perform(withStore(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
@@ -170,16 +162,16 @@ class AuthControllerIntegrationTest {
         userTokenRepository.save(token);
 
         // 3. Perform refresh - expect 401
-        mockMvc.perform(post("/api/v1/auth/refresh")
-                .header("Authorization", "Bearer " + refreshToken))
+        mockMvc.perform(withStore(post("/api/v1/auth/refresh")
+                .header("Authorization", "Bearer " + refreshToken)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     @DisplayName("refresh invalid token")
     void refresh_InvalidToken() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/refresh")
-                .header("Authorization", "Bearer invalid.fake.token"))
+        mockMvc.perform(withStore(post("/api/v1/auth/refresh")
+                .header("Authorization", "Bearer invalid.fake.token")))
                 .andExpect(status().isUnauthorized()); // Spring Security will block it before reaching controller if totally invalid
     }
 
@@ -191,17 +183,17 @@ class AuthControllerIntegrationTest {
         req.setPhone(TEST_PHONE);
         req.setPassword("Password123!");
 
-        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
+        MvcResult result = mockMvc.perform(withStore(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
         String refreshToken = JsonPath.read(responseBody, "$.data.refreshToken");
 
         // 2. Perform logout - expect 204
-        mockMvc.perform(post("/api/v1/auth/logout")
-                .header("Authorization", "Bearer " + refreshToken))
+        mockMvc.perform(withStore(post("/api/v1/auth/logout")
+                .header("Authorization", "Bearer " + refreshToken)))
                 .andExpect(status().isNoContent());
 
         // 3. Verify the token has been marked revoked in the DB

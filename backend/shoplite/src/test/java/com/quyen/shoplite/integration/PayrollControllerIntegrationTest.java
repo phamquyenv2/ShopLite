@@ -1,20 +1,18 @@
 package com.quyen.shoplite.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quyen.shoplite.repository.*;
+
 import com.quyen.shoplite.domain.*;
 import com.quyen.shoplite.domain.request.ReqPayrollSyncDTO;
-import com.quyen.shoplite.repository.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -25,14 +23,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional
 @WithMockUser(username = "payroll_test_user")
-class PayrollControllerIntegrationTest {
+class PayrollControllerIntegrationTest extends IntegrationTestBase {
 
-    @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
 
     @Autowired private UserRepository userRepository;
@@ -75,6 +68,7 @@ class PayrollControllerIntegrationTest {
                 .owner(user)
                 .build();
         store = storeRepository.save(store);
+        this.testStore = store;
         StoreMember member = StoreMember.builder()
                 .store(store)
                 .user(user)
@@ -122,9 +116,9 @@ class PayrollControllerIntegrationTest {
         req.setPeriod(LocalDate.of(2025, 4, 15));
         req.setEmployeeId(testEmployee.getId());
 
-        mockMvc.perform(post("/api/v1/payrolls/sync-monthly")
+        mockMvc.perform(withStore(post("/api/v1/payrolls/sync-monthly")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("Sync payroll success"))
@@ -146,7 +140,7 @@ class PayrollControllerIntegrationTest {
                 .build();
         payrollRepository.save(payroll);
 
-        mockMvc.perform(get("/api/v1/payrolls"))
+        mockMvc.perform(withStore(get("/api/v1/payrolls")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("Get payrolls success"))
@@ -166,7 +160,7 @@ class PayrollControllerIntegrationTest {
                 .build();
         payroll = payrollRepository.save(payroll);
 
-        mockMvc.perform(get("/api/v1/payrolls/" + payroll.getId()))
+        mockMvc.perform(withStore(get("/api/v1/payrolls/" + payroll.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.message").value("Get payroll by ID success"))
@@ -185,7 +179,7 @@ class PayrollControllerIntegrationTest {
                 .build();
         payroll = payrollRepository.save(payroll);
 
-        mockMvc.perform(get("/api/v1/payrolls/employee/" + testEmployee.getId()))
+        mockMvc.perform(withStore(get("/api/v1/payrolls/employee/" + testEmployee.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value(200))
                 .andExpect(jsonPath("$.data[0].employeeId").value(testEmployee.getId()));
@@ -203,9 +197,9 @@ class PayrollControllerIntegrationTest {
         req.setBonus(-100.0);
         req.setPenalty(-50.0);
 
-        mockMvc.perform(post("/api/v1/payrolls/sync-monthly")
+        mockMvc.perform(withStore(post("/api/v1/payrolls/sync-monthly")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
     }
@@ -213,7 +207,7 @@ class PayrollControllerIntegrationTest {
     @Test
     @DisplayName("F2) GET /payrolls/{id} - Not found handling")
     void getPayrollById_NotFound_Failure() throws Exception {
-        mockMvc.perform(get("/api/v1/payrolls/999999"))
+        mockMvc.perform(withStore(get("/api/v1/payrolls/999999")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value(404));
     }

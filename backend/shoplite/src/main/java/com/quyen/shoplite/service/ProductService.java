@@ -1,12 +1,5 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.Category;
-import com.quyen.shoplite.domain.Product;
-import com.quyen.shoplite.domain.Store;
-import com.quyen.shoplite.domain.Unit;
-import com.quyen.shoplite.domain.request.ReqProductUpsertDTO;
-import com.quyen.shoplite.domain.response.ResProductDTO;
-import com.quyen.shoplite.domain.response.ResProductPageDTO;
 import com.quyen.shoplite.repository.CategoryRepository;
 import com.quyen.shoplite.repository.ProductRepository;
 import com.quyen.shoplite.repository.UnitRepository;
@@ -15,7 +8,17 @@ import com.quyen.shoplite.util.ProductSpecification;
 import com.quyen.shoplite.util.constant.ProductStatus;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
+
+import com.quyen.shoplite.domain.Category;
+import com.quyen.shoplite.domain.Product;
+import com.quyen.shoplite.domain.Store;
+import com.quyen.shoplite.domain.Unit;
+import com.quyen.shoplite.domain.request.ReqProductUpsertDTO;
+import com.quyen.shoplite.domain.response.ResProductDTO;
+import com.quyen.shoplite.domain.response.ResProductPageDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -36,6 +39,7 @@ public class ProductService {
     private final CurrentStoreService currentStoreService;
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public ResProductDTO create(ReqProductUpsertDTO req) {
         Store store = currentStoreService.getCurrentStore();
         if (req.getSellingPrice() < 0) {
@@ -117,6 +121,7 @@ public class ProductService {
     }
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public ResProductDTO update(Integer id, ReqProductUpsertDTO req) {
         Long storeId = currentStoreService.getCurrentStoreId();
         Product product = productRepository.findByIdAndStoreIdAndIsDeletedFalse(id, storeId)
@@ -167,6 +172,7 @@ public class ProductService {
     }
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public void softDelete(Integer id) {
         Long storeId = currentStoreService.getCurrentStoreId();
         Product product = productRepository.findByIdAndStoreIdAndIsDeletedFalse(id, storeId)

@@ -17,31 +17,39 @@ import { useParams } from 'react-router-dom';
 import {
     chevronBackOutline,
     ellipsisHorizontalOutline,
-    callOutline,
-    mailOutline,
-    locationOutline,
+    chevronForwardOutline,
     createOutline,
     trashOutline,
-    chevronForwardOutline,
 } from 'ionicons/icons';
 import { supplierService } from '../services/supplier.service';
-import type { Supplier } from '../api/types';
+import { importOrderService } from '../services/importOrder.service';
+import type { Supplier, ImportOrder } from '../api/types';
 import './SupplierDetailPage.css';
+
+const fmt = (n: number) => n.toLocaleString('vi-VN');
 
 const SupplierDetailPage: React.FC = () => {
     const ionRouter = useIonRouter();
     const { id } = useParams<{ id: string }>();
 
     const [supplier, setSupplier] = useState<Supplier | null>(null);
+    const [orders, setOrders] = useState<ImportOrder[]>([]);
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
     const [actionOpen, setActionOpen] = useState(false);
 
+    const totalImportAmount = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+    const totalDebt = 0; // Placeholder like CustomerDetailPage
+
     const loadData = async () => {
         setLoading(true);
         try {
-            const s = await supplierService.getById(id);
+            const [s, allOrders] = await Promise.all([
+                supplierService.getById(id),
+                importOrderService.getAll()
+            ]);
             setSupplier(s);
+            setOrders(allOrders.filter(o => o.supplierId === Number(id)));
         } catch (err: any) {
             setToast(err.message || 'Không thể tải thông tin nhà cung cấp');
         } finally {
@@ -61,6 +69,10 @@ const SupplierDetailPage: React.FC = () => {
         }
     };
 
+    const supplierCode = supplier
+        ? `NCC${String(supplier.id).padStart(4, '0')}`
+        : '---';
+
     if (loading) {
         return (
             <IonPage className="sd-page">
@@ -71,7 +83,6 @@ const SupplierDetailPage: React.FC = () => {
                                 <IonIcon icon={chevronBackOutline} style={{ fontSize: '26px' }} />
                             </IonButton>
                         </IonButtons>
-                        <div className="sd-title">Chi tiết nhà cung cấp</div>
                     </IonToolbar>
                 </IonHeader>
                 <IonContent className="sd-content">
@@ -90,7 +101,6 @@ const SupplierDetailPage: React.FC = () => {
                             <IonIcon icon={chevronBackOutline} style={{ fontSize: '26px' }} />
                         </IonButton>
                     </IonButtons>
-                    <div className="sd-title">Chi tiết nhà cung cấp</div>
                     <IonButtons slot="end">
                         <IonButton color="dark" onClick={() => setActionOpen(true)}>
                             <IonIcon icon={ellipsisHorizontalOutline} style={{ fontSize: '24px' }} />
@@ -101,58 +111,73 @@ const SupplierDetailPage: React.FC = () => {
 
             <IonContent className="sd-content">
                 {/* THÔNG TIN CƠ BẢN */}
-                <div className="sd-section">
-                    <div className="sd-section-header">
-                        <span className="sd-section-label">THÔNG TIN CƠ BẢN</span>
-                        <button className="sd-edit-btn" onClick={() => ionRouter.push(`/suppliers/${id}/edit`)}>Sửa</button>
-                    </div>
+                <div className="sd-section-header">
+                    <span className="sd-section-label">THÔNG TIN CƠ BẢN</span>
+                    <button className="sd-edit-btn" onClick={() => ionRouter.push(`/suppliers/${id}/edit`)}>Sửa</button>
+                </div>
 
-                    <div className="sd-name-row">
-                        <div className="sd-avatar">
-                            <IonIcon icon={chevronBackOutline} style={{ opacity: 0 }} />
-                            <span>{supplier?.name?.charAt(0)?.toUpperCase() ?? 'N'}</span>
-                        </div>
-                        <div className="sd-name">{supplier?.name ?? '---'}</div>
+                <div className="sd-card">
+                    <div className="sd-field">
+                        <div className="sd-field-label">Tên nhà cung cấp</div>
+                        <div className="sd-field-value">{supplier?.name ?? '---'}</div>
+                    </div>
+                    <div className="sd-divider" />
+                    <div className="sd-field">
+                        <div className="sd-field-label">Mã nhà cung cấp</div>
+                        <div className="sd-field-value">{supplierCode}</div>
+                    </div>
+                    <div className="sd-divider" />
+                    <div className="sd-field">
+                        <div className="sd-field-label">Chi nhánh</div>
+                        <div className="sd-field-value">Chi nhánh trung tâm</div>
                     </div>
                 </div>
 
-                {/* LIÊN HỆ */}
-                {(supplier?.phone || supplier?.email || supplier?.address) && (
-                    <div className="sd-section">
-                        <div className="sd-section-header">
-                            <span className="sd-section-label">LIÊN HỆ</span>
+                {/* GIAO DỊCH & CÔNG NỢ */}
+                <div className="sd-card">
+                    <div className="sd-row" onClick={() => ionRouter.push(`/suppliers/${id}/orders`)}>
+                        <div className="sd-row-left">Lịch sử giao dịch</div>
+                        <div className="sd-row-right">
+                            <span className="sd-row-value">{fmt(totalImportAmount)}</span>
+                            <IonIcon icon={chevronForwardOutline} className="sd-row-arrow" />
                         </div>
-
-                        {supplier?.phone && (
-                            <div className="sd-contact-item">
-                                <IonIcon icon={callOutline} className="sd-contact-icon" />
-                                <span>{supplier.phone}</span>
-                            </div>
-                        )}
-                        {supplier?.email && (
-                            <div className="sd-contact-item">
-                                <IonIcon icon={mailOutline} className="sd-contact-icon" />
-                                <span>{supplier.email}</span>
-                            </div>
-                        )}
-                        {supplier?.address && (
-                            <div className="sd-contact-item">
-                                <IonIcon icon={locationOutline} className="sd-contact-icon" />
-                                <span>{supplier.address}</span>
-                            </div>
-                        )}
                     </div>
-                )}
-
-                {/* LỊCH SỬ NHẬP HÀNG */}
-                <div className="sd-section sd-section-rows">
-                    <div
-                        className="sd-row-item"
-                        onClick={() => ionRouter.push(`/import-orders?supplierId=${id}`)}
-                    >
-                        <div className="sd-row-label">Lịch sử nhập hàng</div>
-                        <IonIcon icon={chevronForwardOutline} className="sd-row-arrow" />
+                    <div className="sd-divider" />
+                    <div className="sd-row" onClick={() => ionRouter.push(`/suppliers/${id}/debt`)}>
+                        <div className="sd-row-left">Công nợ</div>
+                        <div className="sd-row-right">
+                            <span className="sd-row-value">{fmt(totalDebt)}</span>
+                            <IonIcon icon={chevronForwardOutline} className="sd-row-arrow" />
+                        </div>
                     </div>
+                </div>
+
+                {/* ĐỊA CHỈ */}
+                <div className="sd-card">
+                    {supplier?.address ? (
+                        <div className="sd-field" onClick={() => ionRouter.push(`/suppliers/${id}/edit`)}>
+                            <div className="sd-field-label">Địa chỉ</div>
+                            <div className="sd-field-value">{supplier.address}</div>
+                        </div>
+                    ) : (
+                        <div className="sd-row" onClick={() => ionRouter.push(`/suppliers/${id}/edit`)}>
+                            <div className="sd-blue-text">Địa chỉ</div>
+                        </div>
+                    )}
+                </div>
+
+                {/* EMAIL */}
+                <div className="sd-card">
+                    {supplier?.email ? (
+                        <div className="sd-field" onClick={() => ionRouter.push(`/suppliers/${id}/edit`)}>
+                            <div className="sd-field-label">Email</div>
+                            <div className="sd-field-value">{supplier.email}</div>
+                        </div>
+                    ) : (
+                        <div className="sd-row" onClick={() => ionRouter.push(`/suppliers/${id}/edit`)}>
+                            <div className="sd-blue-text">Email</div>
+                        </div>
+                    )}
                 </div>
 
                 <div style={{ height: 32 }} />

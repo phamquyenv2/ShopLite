@@ -1,19 +1,17 @@
 package com.quyen.shoplite.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quyen.shoplite.repository.UserRepository;
+
 import com.quyen.shoplite.domain.User;
 import com.quyen.shoplite.domain.request.ReqUserDTO;
-import com.quyen.shoplite.repository.UserRepository;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -21,14 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional
-class UserControllerIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class UserControllerIntegrationTest extends IntegrationTestBase {
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -37,7 +28,7 @@ class UserControllerIntegrationTest {
     private UserRepository userRepository;
 
     @Test
-    @WithMockUser(username = "admin", roles = "STORE_MANAGER")
+    @WithMockUser(username = IntegrationTestBase.TEST_USERNAME)
     @DisplayName("create user success")
     void createUser_Success() throws Exception {
         ReqUserDTO req = new ReqUserDTO();
@@ -45,9 +36,9 @@ class UserControllerIntegrationTest {
         req.setPassword("Password!123");
         req.setActive(true);
 
-        mockMvc.perform(post("/api/v1/users")
+        mockMvc.perform(withStore(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.username").value("newuser123"));
 
@@ -55,7 +46,7 @@ class UserControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "STORE_MANAGER")
+    @WithMockUser(username = IntegrationTestBase.TEST_USERNAME)
     @DisplayName("create user duplicate username failure")
     void createUser_DuplicateUsername_Failure() throws Exception {
         User user = User.builder()
@@ -70,16 +61,16 @@ class UserControllerIntegrationTest {
         req.setPassword("Password!123");
         req.setActive(true);
 
-        mockMvc.perform(post("/api/v1/users")
+        mockMvc.perform(withStore(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "STORE_MANAGER")
+    @WithMockUser(username = IntegrationTestBase.TEST_USERNAME)
     @DisplayName("get user by id success")
     void getUserById_Success() throws Exception {
         User user = User.builder()
@@ -89,24 +80,24 @@ class UserControllerIntegrationTest {
                 .build();
         user = userRepository.save(user);
 
-        mockMvc.perform(get("/api/v1/users/" + user.getId()))
+        mockMvc.perform(withStore(get("/api/v1/users/" + user.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(user.getId()))
                 .andExpect(jsonPath("$.data.username").value("findme"));
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "STORE_MANAGER")
+    @WithMockUser(username = IntegrationTestBase.TEST_USERNAME)
     @DisplayName("get user by id not found")
     void getUserById_NotFound() throws Exception {
-        mockMvc.perform(get("/api/v1/users/999999"))
+        mockMvc.perform(withStore(get("/api/v1/users/999999")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "STORE_MANAGER")
+    @WithMockUser(username = IntegrationTestBase.TEST_USERNAME)
     @DisplayName("update user success")
     void updateUser_Success() throws Exception {
         User user = User.builder()
@@ -120,9 +111,9 @@ class UserControllerIntegrationTest {
         req.setUsername("toupdate"); // Username usually unchanged or validated
         req.setActive(false);
 
-        mockMvc.perform(put("/api/v1/users/" + user.getId())
+        mockMvc.perform(withStore(put("/api/v1/users/" + user.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.active").value(false));
 
@@ -131,7 +122,7 @@ class UserControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "STORE_MANAGER")
+    @WithMockUser(username = IntegrationTestBase.TEST_USERNAME)
     @DisplayName("delete user success")
     void deleteUser_Success() throws Exception {
         User user = User.builder()
@@ -141,7 +132,7 @@ class UserControllerIntegrationTest {
                 .build();
         user = userRepository.save(user);
 
-        mockMvc.perform(delete("/api/v1/users/" + user.getId()))
+        mockMvc.perform(withStore(delete("/api/v1/users/" + user.getId())))
                 .andExpect(status().isNoContent());
 
         assertThat(userRepository.existsById(user.getId())).isFalse();

@@ -1,5 +1,6 @@
 package com.quyen.shoplite.domain.response;
 
+import com.quyen.shoplite.util.constant.SalaryTypeEnum;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,9 +19,13 @@ public class ResPayrollDTO {
     private LocalDate period;
 
     private Double salaryRate;
+    private SalaryTypeEnum salaryType;
+    private Double allowance;
+    private Double commission;
     private Double totalHours;
     private Double bonus;
     private Double penalty;
+    private Double deduction;
 
     /**
      * Tổng lương: totalHours * salaryRate + bonus - penalty
@@ -37,4 +42,3 @@ public class ResPayrollDTO {
     /** Số ngày nghỉ không phép hoặc bỏ ca không báo (LEAVE_UNAPPROVED + bỏ ca) */
     private int absentWithoutLeaveDays;
 }
-

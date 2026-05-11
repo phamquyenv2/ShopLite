@@ -45,8 +45,11 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Compile tests and package
-        run: ./gradlew clean compileTestJava assemble --no-daemon
+      - name: Run unit tests
+        run: ./gradlew test --no-daemon
+
+      - name: Compile and package
+        run: ./gradlew assemble --no-daemon
 
       - name: Upload test reports
         if: failure()
@@ -81,6 +84,13 @@ jobs:
         run: npm run build
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/shopliteapp/dist
+          retention-days: 1
 
   preview-frontend:
     name: Preview Frontend
@@ -195,7 +205,7 @@ jobs:
               --memory=2Gi
               --cpu=2
               --timeout=300
-              --min-instances=1
+              --min-instances=2
               --max-instances=10
               --concurrency=40
               --cpu-boost
@@ -203,7 +213,7 @@ jobs:
   deploy-frontend:
     name: Deploy Frontend to Firebase
     runs-on: ubuntu-latest
-    needs: build-frontend
+    needs: [build-frontend, deploy-backend]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     defaults:
       run:
@@ -215,20 +225,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/shopliteapp/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-        env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          name: frontend-dist
+          path: frontend/shopliteapp/dist
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0

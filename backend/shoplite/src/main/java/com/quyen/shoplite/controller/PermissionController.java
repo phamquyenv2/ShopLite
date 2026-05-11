@@ -1,9 +1,10 @@
 package com.quyen.shoplite.controller;
 
-import com.quyen.shoplite.domain.request.ReqPermissionDTO;
-import com.quyen.shoplite.domain.response.ResPermissionDTO;
 import com.quyen.shoplite.service.PermissionService;
 import com.quyen.shoplite.util.annotation.ApiMessage;
+
+import com.quyen.shoplite.domain.request.ReqPermissionDTO;
+import com.quyen.shoplite.domain.response.ResPermissionDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;

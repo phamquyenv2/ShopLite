@@ -1,11 +1,11 @@
 package com.quyen.shoplite.util;
 
-import com.quyen.shoplite.domain.*;
-import com.quyen.shoplite.domain.response.*;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import com.quyen.shoplite.domain.*;
+import com.quyen.shoplite.domain.response.*;
 
 /**
  * Utility class để chuyển đổi (mapping) giữa Entity và DTO.
@@ -245,9 +245,13 @@ public class DTOMapper {
         dto.setId(payroll.getId());
         dto.setPeriod(payroll.getPeriod());
         dto.setSalaryRate(payroll.getSalaryRate());
+        dto.setSalaryType(payroll.getSalaryType());
+        dto.setAllowance(payroll.getAllowance());
+        dto.setCommission(payroll.getCommission());
         dto.setTotalHours(payroll.getTotalHours());
         dto.setBonus(payroll.getBonus());
         dto.setPenalty(payroll.getPenalty());
+        dto.setDeduction(payroll.getDeduction());
         dto.setTotalSalary(payroll.getTotalSalary());
         if (payroll.getEmployee() != null) {
             dto.setEmployeeId(payroll.getEmployee().getId());

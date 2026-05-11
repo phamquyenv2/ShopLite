@@ -1,8 +1,9 @@
 package com.quyen.shoplite.config;
 
-import com.quyen.shoplite.domain.User;
 import com.quyen.shoplite.repository.UserRepository;
 import com.quyen.shoplite.util.error.IdInvalidException;
+
+import com.quyen.shoplite.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

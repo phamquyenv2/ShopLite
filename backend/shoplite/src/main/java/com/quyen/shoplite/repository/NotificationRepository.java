@@ -1,7 +1,9 @@
 package com.quyen.shoplite.repository;
 
-import com.quyen.shoplite.domain.Notification;
 import com.quyen.shoplite.util.constant.NotificationType;
+
+import com.quyen.shoplite.domain.Notification;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

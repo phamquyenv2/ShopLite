@@ -1,5 +1,12 @@
 package com.quyen.shoplite.service;
 
+import com.quyen.shoplite.repository.AttendanceRepository;
+import com.quyen.shoplite.repository.EmployeeRepository;
+import com.quyen.shoplite.repository.PayrollRepository;
+import com.quyen.shoplite.repository.RosterRepository;
+import com.quyen.shoplite.repository.PaymentRepository;
+import com.quyen.shoplite.repository.UserRepository;
+
 import com.quyen.shoplite.domain.Attendance;
 import com.quyen.shoplite.domain.Employee;
 import com.quyen.shoplite.domain.Payroll;
@@ -8,13 +15,6 @@ import com.quyen.shoplite.domain.StoreMember;
 import com.quyen.shoplite.domain.User;
 import com.quyen.shoplite.domain.request.ReqPayrollSyncDTO;
 import com.quyen.shoplite.domain.response.ResPayrollDTO;
-import com.quyen.shoplite.repository.AttendanceRepository;
-import com.quyen.shoplite.repository.EmployeeRepository;
-import com.quyen.shoplite.repository.PayrollRepository;
-import com.quyen.shoplite.repository.RosterRepository;
-import com.quyen.shoplite.repository.PaymentRepository;
-import com.quyen.shoplite.repository.UserRepository;
-
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,13 +42,14 @@ class PayrollServiceTest {
     @Mock private PaymentRepository paymentRepository;
     @Mock private CurrentStoreService currentStoreService;
     @Mock private UserRepository userRepository;
+    @Mock private EmployeeSalaryHistoryService salaryHistoryService;
 
     private PayrollService payrollService;
     private Employee       employee;
 
     @BeforeEach
     void setUp() {
-        payrollService = new PayrollService(payrollRepository, employeeRepository, attendanceRepository, rosterRepository, paymentRepository, currentStoreService, userRepository);
+        payrollService = new PayrollService(payrollRepository, employeeRepository, attendanceRepository, rosterRepository, paymentRepository, currentStoreService, userRepository, salaryHistoryService);
         User user = User.builder().id(1).username("emp1").build();
         Store store = Store.builder().id(1L).name("Test Store").owner(user).build();
         StoreMember storeMember = StoreMember.builder().id(1L).store(store).user(user).build();

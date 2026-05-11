@@ -1,10 +1,12 @@
 package com.quyen.shoplite.repository;
 
-import com.quyen.shoplite.domain.Attendance;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import com.quyen.shoplite.domain.Attendance;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -25,6 +27,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Integer>
     Optional<Attendance> findTopByEmployee_StoreMember_Store_IdAndEmployee_IdOrderByCheckInDesc(Long storeId, Integer employeeId);
 
     List<Attendance> findAllByOrderByWorkingDayDescCheckInDesc();
+
+    @EntityGraph(attributePaths = {"employee", "employee.storeMember", "employee.storeMember.user", "office", "roster"})
     List<Attendance> findAllByEmployee_StoreMember_Store_IdOrderByWorkingDayDescCheckInDesc(Long storeId);
 
     @Query("SELECT a FROM Attendance a WHERE a.employee.id = :eid " +

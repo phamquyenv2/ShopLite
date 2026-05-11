@@ -1,7 +1,9 @@
 package com.quyen.shoplite.repository;
 
-import com.quyen.shoplite.domain.Transaction;
 import com.quyen.shoplite.util.constant.TypeTransactionEnum;
+
+import com.quyen.shoplite.domain.Transaction;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

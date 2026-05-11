@@ -79,6 +79,10 @@ export const endpoints = {
     // employees
     employees: '/api/v1/employees',
     'employee-detail': (id: number | string) => `/api/v1/employees/${id}`,
+    'employee-salary-histories': (employeeId: number | string) => `/api/v1/employees/${employeeId}/salary-histories`,
+    'employee-salary-current': (employeeId: number | string) => `/api/v1/employees/${employeeId}/salary-histories/current`,
+    'employee-salary-me': '/api/v1/employee-salaries/me',
+    'employee-salary-me-history': '/api/v1/employee-salaries/me/history',
 
     // offices
     offices: '/api/v1/offices',
@@ -164,6 +168,10 @@ export const endpoints = {
     'payment-create': '/api/v1/payment/create',
     'webhook-sepay': '/api/v1/payment/webhook/sepay',
     'payment-status': (id: number | string) => `/api/v1/payment/orders/${id}/status`,
+
+    // BFF aggregate endpoints
+    'dashboard-today': '/api/v1/dashboard/today',
+    'sales-init': '/api/v1/sales/init',
 } as const;
 
 const DEFAULT_BASE_URL = 'http://localhost:8080';

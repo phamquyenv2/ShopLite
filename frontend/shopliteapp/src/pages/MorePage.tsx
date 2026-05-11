@@ -260,6 +260,15 @@ const MorePage: React.FC = () => {
           ))}
 
           <div className="menu-list-group">
+            {permissions.some(p => p.apiPath.startsWith('/api/v1/employee-salaries/me')) && (
+              <div className="menu-list-item" onClick={() => history.push('/my-salary')}>
+                <div className="item-left">
+                  <IonIcon icon={walletOutline} style={{ color: '#3b82f6' }} />
+                  <span>Mức lương của tôi</span>
+                </div>
+                <IonIcon icon={chevronForwardOutline} className="chevron" />
+              </div>
+            )}
             <div className="menu-list-item">
               <div className="item-left">
                 <IonIcon icon={informationCircleOutline} />

@@ -1,14 +1,16 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.*;
-import com.quyen.shoplite.domain.request.ReqImportItemDTO;
-import com.quyen.shoplite.domain.request.ReqImportOrderDTO;
-import com.quyen.shoplite.domain.response.ResImportOrderDTO;
 import com.quyen.shoplite.repository.*;
 import com.quyen.shoplite.util.constant.ImportOrderStatusEnum;
 import com.quyen.shoplite.util.constant.TypeInventoryEnum;
 import com.quyen.shoplite.util.constant.TypeInventoryEnum;
 import com.quyen.shoplite.util.error.IdInvalidException;
+
+import com.quyen.shoplite.domain.*;
+import com.quyen.shoplite.domain.Store;
+import com.quyen.shoplite.domain.request.ReqImportItemDTO;
+import com.quyen.shoplite.domain.request.ReqImportOrderDTO;
+import com.quyen.shoplite.domain.response.ResImportOrderDTO;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -29,6 +31,8 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,9 +51,17 @@ class ImportOrderServiceTest {
     private InventoryLogsRepository inventoryLogsRepository;
     @Mock
     private PaymentService paymentService;
+    @Mock
+    private CurrentStoreService currentStoreService;
 
     @InjectMocks
     private ImportOrderService importOrderService;
+
+    private Store testStore() {
+        Store store = new Store();
+        store.setId(1L);
+        return store;
+    }
 
     // Bean-validation validator (no Spring context needed)
     private Validator validator;
@@ -112,6 +124,7 @@ class ImportOrderServiceTest {
         o.setStatus(status);
         o.setTotalAmount(total);
         o.setAmountPaid(0.0);
+        o.setStore(testStore()); // required by processCompletedImportOrder
         return o;
     }
 
@@ -144,8 +157,9 @@ class ImportOrderServiceTest {
             Supplier supplier = makeSupplier(1);
             Product product = makeProduct(1, 100);
 
-            when(supplierRepository.findById(1)).thenReturn(Optional.of(supplier));
-            when(productRepository.findById(1)).thenReturn(Optional.of(product));
+            org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+            when(supplierRepository.findByIdAndStoreId(1, 1L)).thenReturn(Optional.of(supplier));
+            when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(1, 1L)).thenReturn(Optional.of(product));
 
             ImportOrder savedOrder = makeOrder(10, ImportOrderStatusEnum.PENDING, 0);
             when(importOrderRepository.save(any(ImportOrder.class))).thenReturn(savedOrder);
@@ -183,8 +197,9 @@ class ImportOrderServiceTest {
         @DisplayName("Success – null tax / discount treated as 0")
         void create_Success_NullTaxDiscount() {
             // Arrange
-            when(supplierRepository.findById(1)).thenReturn(Optional.of(makeSupplier(1)));
-            when(productRepository.findById(1)).thenReturn(Optional.of(makeProduct(1, 50)));
+            org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+            when(supplierRepository.findByIdAndStoreId(1, 1L)).thenReturn(Optional.of(makeSupplier(1)));
+            when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(1, 1L)).thenReturn(Optional.of(makeProduct(1, 50)));
             when(importOrderRepository.save(any(ImportOrder.class)))
                     .thenAnswer(inv -> inv.getArgument(0));
             when(importItemRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -226,9 +241,10 @@ class ImportOrderServiceTest {
             req.setSupplierId(1);
             req.setItems(List.of(i1, i2));
 
-            when(supplierRepository.findById(1)).thenReturn(Optional.of(supplier));
-            when(productRepository.findById(1)).thenReturn(Optional.of(p1));
-            when(productRepository.findById(2)).thenReturn(Optional.of(p2));
+            org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+            when(supplierRepository.findByIdAndStoreId(1, 1L)).thenReturn(Optional.of(supplier));
+            when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(1, 1L)).thenReturn(Optional.of(p1));
+            when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(2, 1L)).thenReturn(Optional.of(p2));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(importItemRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -254,8 +270,9 @@ class ImportOrderServiceTest {
         @Test
         @DisplayName("Success – importPrice = 0 is allowed")
         void create_Success_ZeroImportPrice() {
-            when(supplierRepository.findById(1)).thenReturn(Optional.of(makeSupplier(1)));
-            when(productRepository.findById(1)).thenReturn(Optional.of(makeProduct(1, 5)));
+            org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+            when(supplierRepository.findByIdAndStoreId(1, 1L)).thenReturn(Optional.of(makeSupplier(1)));
+            when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(1, 1L)).thenReturn(Optional.of(makeProduct(1, 5)));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(importItemRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -273,7 +290,8 @@ class ImportOrderServiceTest {
         @Test
         @DisplayName("Failure – supplier not found throws IdInvalidException")
         void create_SupplierNotFound() {
-            when(supplierRepository.findById(999)).thenReturn(Optional.empty());
+            org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+            when(supplierRepository.findByIdAndStoreId(999, 1L)).thenReturn(Optional.empty());
 
             ReqImportOrderDTO req = buildRequest(999, 1, 1, 10.0, null, null);
 
@@ -288,8 +306,9 @@ class ImportOrderServiceTest {
         @Test
         @DisplayName("Failure – product not found throws IdInvalidException")
         void create_ProductNotFound() {
-            when(supplierRepository.findById(1)).thenReturn(Optional.of(makeSupplier(1)));
-            when(productRepository.findById(999)).thenReturn(Optional.empty());
+            org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+            when(supplierRepository.findByIdAndStoreId(1, 1L)).thenReturn(Optional.of(makeSupplier(1)));
+            when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(999, 1L)).thenReturn(Optional.empty());
 
             ReqImportOrderDTO req = buildRequest(1, 999, 1, 10.0, null, null);
 
@@ -303,8 +322,9 @@ class ImportOrderServiceTest {
         @Test
         @DisplayName("Failure – negative total (discount > subtotals) throws IdInvalidException")
         void create_NegativeTotal() {
-            when(supplierRepository.findById(1)).thenReturn(Optional.of(makeSupplier(1)));
-            when(productRepository.findById(1)).thenReturn(Optional.of(makeProduct(1, 50)));
+            org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+            when(supplierRepository.findByIdAndStoreId(1, 1L)).thenReturn(Optional.of(makeSupplier(1)));
+            when(productRepository.findByIdAndStoreIdAndIsDeletedFalse(1, 1L)).thenReturn(Optional.of(makeProduct(1, 50)));
 
             // qty=1, price=10 → subtotal=10, discount=500 → total=-490
             ReqImportOrderDTO req = buildRequest(1, 1, 1, 10.0, null, 500.0);
@@ -331,7 +351,8 @@ class ImportOrderServiceTest {
             order.setSupplier(makeSupplier(1));
             ImportItem item = makeItem(20, order, makeProduct(1, 10), 3, 100.0);
 
-            when(importOrderRepository.findById(5)).thenReturn(Optional.of(order));
+            when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+            when(importOrderRepository.findByIdAndStoreId(5, 1L)).thenReturn(Optional.of(order));
             when(importItemRepository.findByImportOrder_Id(5)).thenReturn(List.of(item));
 
             // Act
@@ -344,14 +365,15 @@ class ImportOrderServiceTest {
             assertEquals(20, result.getItems().get(0).getId());
             assertEquals(300.0, result.getTotalAmount(), 1e-9);
 
-            verify(importOrderRepository).findById(5);
+            verify(importOrderRepository).findByIdAndStoreId(5, 1L);
             verify(importItemRepository).findByImportOrder_Id(5);
         }
 
         @Test
         @DisplayName("Failure – import order not found throws IdInvalidException")
         void findById_NotFound() {
-            when(importOrderRepository.findById(99)).thenReturn(Optional.empty());
+            when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+            when(importOrderRepository.findByIdAndStoreId(99, 1L)).thenReturn(Optional.empty());
 
             IdInvalidException ex = assertThrows(IdInvalidException.class,
                     () -> importOrderService.findById(99));
@@ -376,9 +398,9 @@ class ImportOrderServiceTest {
             o1.setSupplier(makeSupplier(1));
             o2.setSupplier(makeSupplier(2));
 
-            when(importOrderRepository.findAll()).thenReturn(List.of(o1, o2));
-            when(importItemRepository.findByImportOrder_Id(1)).thenReturn(List.of());
-            when(importItemRepository.findByImportOrder_Id(2)).thenReturn(List.of());
+            when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+            when(importOrderRepository.findAllByStoreIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(o1, o2));
+            when(importItemRepository.findByImportOrder_IdIn(any())).thenReturn(List.of());
 
             // Act
             List<ResImportOrderDTO> result = importOrderService.findAll();
@@ -387,18 +409,20 @@ class ImportOrderServiceTest {
             assertEquals(2, result.size());
             assertEquals(1, result.get(0).getId());
             assertEquals(2, result.get(1).getId());
-            verify(importItemRepository, times(2)).findByImportOrder_Id(anyInt());
+            verify(importItemRepository).findByImportOrder_IdIn(any());
         }
 
         @Test
         @DisplayName("Success – empty repository returns empty list")
         void findAll_Empty() {
-            when(importOrderRepository.findAll()).thenReturn(List.of());
+            when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+            when(importOrderRepository.findAllByStoreIdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
 
             List<ResImportOrderDTO> result = importOrderService.findAll();
 
             assertTrue(result.isEmpty());
-            verify(importItemRepository, never()).findByImportOrder_Id(anyInt());
+            // when orderIds is empty the batch call is still made (with empty list)
+            verify(importItemRepository).findByImportOrder_IdIn(any());
         }
     }
 
@@ -417,9 +441,11 @@ class ImportOrderServiceTest {
             Product product = makeProduct(1, 10);   // initial stock = 10
             ImportItem item = makeItem(5, order, product, 4, 100.0); // add 4
 
-            when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
+            when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+            when(importOrderRepository.findByIdAndStoreIdWithLock(1, 1L)).thenReturn(Optional.of(order));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(importItemRepository.findByImportOrder_Id(1)).thenReturn(List.of(item));
+            when(productRepository.findByIdAndStoreIdWithLock(eq(1), eq(1L))).thenReturn(Optional.of(product));
             when(productRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(inventoryLogsRepository.save(any())).thenReturn(new InventoryLogs());
 
@@ -439,9 +465,11 @@ class ImportOrderServiceTest {
             Product product = makeProduct(2, 5);
             ImportItem item = makeItem(7, order, product, 3, 100.0);
 
-            when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
+            when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+            when(importOrderRepository.findByIdAndStoreIdWithLock(1, 1L)).thenReturn(Optional.of(order));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(importItemRepository.findByImportOrder_Id(1)).thenReturn(List.of(item));
+            when(productRepository.findByIdAndStoreIdWithLock(eq(2), eq(1L))).thenReturn(Optional.of(product));
             when(productRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(inventoryLogsRepository.save(any())).thenReturn(new InventoryLogs());
 
@@ -475,9 +503,12 @@ class ImportOrderServiceTest {
             ImportItem item1 = makeItem(1, order, p1, 5, 100.0);
             ImportItem item2 = makeItem(2, order, p2, 3, 200.0);
 
-            when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
+            when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+            when(importOrderRepository.findByIdAndStoreIdWithLock(1, 1L)).thenReturn(Optional.of(order));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(importItemRepository.findByImportOrder_Id(1)).thenReturn(List.of(item1, item2));
+            when(productRepository.findByIdAndStoreIdWithLock(eq(1), eq(1L))).thenReturn(Optional.of(p1));
+            when(productRepository.findByIdAndStoreIdWithLock(eq(2), eq(1L))).thenReturn(Optional.of(p2));
             when(productRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(inventoryLogsRepository.save(any())).thenReturn(new InventoryLogs());
 
@@ -499,9 +530,11 @@ class ImportOrderServiceTest {
             Product product = makeProduct(1, 5);
             ImportItem item = makeItem(1, order, product, 1, 200.0);
 
-            when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
+            when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+            when(importOrderRepository.findByIdAndStoreIdWithLock(1, 1L)).thenReturn(Optional.of(order));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(importItemRepository.findByImportOrder_Id(1)).thenReturn(List.of(item));
+            when(productRepository.findByIdAndStoreIdWithLock(eq(1), eq(1L))).thenReturn(Optional.of(product));
             when(productRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(inventoryLogsRepository.save(any())).thenReturn(new InventoryLogs());
 
@@ -510,7 +543,7 @@ class ImportOrderServiceTest {
 
             // Assert
             ArgumentCaptor<ImportOrder> captor = ArgumentCaptor.forClass(ImportOrder.class);
-            verify(importOrderRepository).save(captor.capture());
+            verify(importOrderRepository, atLeastOnce()).save(captor.capture());
             assertEquals(ImportOrderStatusEnum.COMPLETED, captor.getValue().getStatus());
         }
 
@@ -518,7 +551,8 @@ class ImportOrderServiceTest {
         @Test
         @DisplayName("Failure – import order not found throws IdInvalidException")
         void complete_OrderNotFound() {
-            when(importOrderRepository.findById(99)).thenReturn(Optional.empty());
+            when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+            when(importOrderRepository.findByIdAndStoreIdWithLock(99, 1L)).thenReturn(Optional.empty());
 
             IdInvalidException ex = assertThrows(IdInvalidException.class,
                     () -> importOrderService.updateStatus(99, ImportOrderStatusEnum.COMPLETED));
@@ -530,7 +564,8 @@ class ImportOrderServiceTest {
         @DisplayName("Failure – already COMPLETED order cannot be updated (status guard)")
         void complete_AlreadyCompleted_StatusGuardThrows() {
             ImportOrder order = makeOrder(1, ImportOrderStatusEnum.COMPLETED, 100.0);
-            when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
+            when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+            when(importOrderRepository.findByIdAndStoreIdWithLock(1, 1L)).thenReturn(Optional.of(order));
 
             IdInvalidException ex = assertThrows(IdInvalidException.class,
                     () -> importOrderService.updateStatus(1, ImportOrderStatusEnum.COMPLETED));
@@ -546,7 +581,8 @@ class ImportOrderServiceTest {
         @DisplayName("Failure – already CANCELLED order cannot be updated")
         void complete_AlreadyCancelled_Throws() {
             ImportOrder order = makeOrder(1, ImportOrderStatusEnum.CANCELLED, 100.0);
-            when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
+            when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+            when(importOrderRepository.findByIdAndStoreIdWithLock(1, 1L)).thenReturn(Optional.of(order));
 
             IdInvalidException ex = assertThrows(IdInvalidException.class,
                     () -> importOrderService.updateStatus(1, ImportOrderStatusEnum.COMPLETED));
@@ -569,9 +605,9 @@ class ImportOrderServiceTest {
         @DisplayName("Success – PENDING → CANCELLED sets status, no side effects")
         void cancel_Success_NoSideEffects() {
             ImportOrder order = makeOrder(1, ImportOrderStatusEnum.PENDING, 200.0);
-            when(importOrderRepository.findById(1)).thenReturn(Optional.of(order));
+            when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+            when(importOrderRepository.findByIdAndStoreIdWithLock(1, 1L)).thenReturn(Optional.of(order));
             when(importOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(importItemRepository.findByImportOrder_Id(1)).thenReturn(List.of());
 
             importOrderService.updateStatus(1, ImportOrderStatusEnum.CANCELLED);
 

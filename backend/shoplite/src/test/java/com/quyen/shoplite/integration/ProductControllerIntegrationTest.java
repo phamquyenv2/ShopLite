@@ -1,23 +1,21 @@
 package com.quyen.shoplite.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quyen.shoplite.repository.CategoryRepository;
+import com.quyen.shoplite.repository.ProductRepository;
+import com.quyen.shoplite.repository.UnitRepository;
+
 import com.quyen.shoplite.domain.Category;
 import com.quyen.shoplite.domain.Product;
 import com.quyen.shoplite.domain.Unit;
 import com.quyen.shoplite.domain.request.ReqProductUpsertDTO;
-import com.quyen.shoplite.repository.CategoryRepository;
-import com.quyen.shoplite.repository.ProductRepository;
-import com.quyen.shoplite.repository.UnitRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -27,15 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.springframework.security.test.context.support.WithMockUser;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional
-@WithMockUser
-class ProductControllerIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class ProductControllerIntegrationTest extends IntegrationTestBase {
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -54,10 +44,10 @@ class ProductControllerIntegrationTest {
 
     @BeforeEach
     void setup() {
-        Category cat = categoryRepository.save(Category.builder().name("CatIT").build());
+        Category cat = categoryRepository.save(Category.builder().store(testStore).name("CatIT").build());
         categoryItId = cat.getId();
 
-        Unit u = unitRepository.save(Unit.builder().name("UnitIT").description("u").build());
+        Unit u = unitRepository.save(Unit.builder().store(testStore).name("UnitIT").description("u").build());
         unitItId = u.getId();
     }
 
@@ -74,9 +64,9 @@ class ProductControllerIntegrationTest {
         req.setSellingPrice(10.5);
         req.setCostPrice(8.0);
 
-        mockMvc.perform(post("/api/v1/products")
+        mockMvc.perform(withStore(post("/api/v1/products")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("Prod IT"))
                 .andExpect(jsonPath("$.data.categoryId").value(categoryItId));
@@ -97,9 +87,9 @@ class ProductControllerIntegrationTest {
         req.setSellingPrice(10.5);
         req.setCostPrice(8.0);
 
-        mockMvc.perform(post("/api/v1/products")
+        mockMvc.perform(withStore(post("/api/v1/products")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("Category not found with id=9999"));
@@ -118,9 +108,9 @@ class ProductControllerIntegrationTest {
         req.setSellingPrice(10.5);
         req.setCostPrice(8.0);
 
-        mockMvc.perform(post("/api/v1/products")
+        mockMvc.perform(withStore(post("/api/v1/products")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("Unit not found with id=9999"));
@@ -129,7 +119,7 @@ class ProductControllerIntegrationTest {
     @Test
     @DisplayName("create product duplicate sku failure")
     void createProduct_DuplicateSkuFailure() throws Exception {
-        productRepository.save(Product.builder()
+        productRepository.save(Product.builder().store(testStore)
                 .category(categoryRepository.findById(categoryItId).get())
                 .unit(unitRepository.findById(unitItId).get())
                 .name("Exst Prod")
@@ -150,9 +140,9 @@ class ProductControllerIntegrationTest {
         req.setSellingPrice(10.5);
         req.setCostPrice(8.0);
 
-        mockMvc.perform(post("/api/v1/products")
+        mockMvc.perform(withStore(post("/api/v1/products")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value("SKU already exists: SKUIT"));
@@ -161,7 +151,7 @@ class ProductControllerIntegrationTest {
     @Test
     @DisplayName("create product duplicate barcode failure")
     void createProduct_DuplicateBarcodeFailure() throws Exception {
-        productRepository.save(Product.builder()
+        productRepository.save(Product.builder().store(testStore)
                 .category(categoryRepository.findById(categoryItId).get())
                 .unit(unitRepository.findById(unitItId).get())
                 .name("Exst Prod")
@@ -182,9 +172,9 @@ class ProductControllerIntegrationTest {
         req.setSellingPrice(10.5);
         req.setCostPrice(8.0);
 
-        mockMvc.perform(post("/api/v1/products")
+        mockMvc.perform(withStore(post("/api/v1/products")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value("Barcode already exists: 111222"));
@@ -203,9 +193,9 @@ class ProductControllerIntegrationTest {
         req.setSellingPrice(-10.5); // Invalid
         req.setCostPrice(0.0);
 
-        mockMvc.perform(post("/api/v1/products")
+        mockMvc.perform(withStore(post("/api/v1/products")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.errors").isArray());
@@ -224,9 +214,9 @@ class ProductControllerIntegrationTest {
         req.setSellingPrice(10.5);
         req.setCostPrice(8.0);
 
-        mockMvc.perform(post("/api/v1/products")
+        mockMvc.perform(withStore(post("/api/v1/products")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.errors").isArray());
@@ -235,7 +225,7 @@ class ProductControllerIntegrationTest {
     @Test
     @DisplayName("get product by id success")
     void getProduct_Success() throws Exception {
-        Product p = productRepository.save(Product.builder()
+        Product p = productRepository.save(Product.builder().store(testStore)
                 .category(categoryRepository.findById(categoryItId).get())
                 .unit(unitRepository.findById(unitItId).get())
                 .name("TestProd")
@@ -246,7 +236,7 @@ class ProductControllerIntegrationTest {
                 .isDeleted(false)
                 .build());
 
-        mockMvc.perform(get("/api/v1/products/" + p.getId()))
+        mockMvc.perform(withStore(get("/api/v1/products/" + p.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(p.getId()))
                 .andExpect(jsonPath("$.data.name").value("TestProd"));
@@ -255,7 +245,7 @@ class ProductControllerIntegrationTest {
     @Test
     @DisplayName("get product by id not found")
     void getProduct_NotFoundFailure() throws Exception {
-        mockMvc.perform(get("/api/v1/products/9999"))
+        mockMvc.perform(withStore(get("/api/v1/products/9999")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value(404))
                 .andExpect(jsonPath("$.message").value("Product not found with id=9999"));
@@ -264,7 +254,7 @@ class ProductControllerIntegrationTest {
     @Test
     @DisplayName("update product success")
     void updateProduct_Success() throws Exception {
-        Product p = productRepository.save(Product.builder()
+        Product p = productRepository.save(Product.builder().store(testStore)
                 .category(categoryRepository.findById(categoryItId).get())
                 .unit(unitRepository.findById(unitItId).get())
                 .name("OldProd")
@@ -286,9 +276,9 @@ class ProductControllerIntegrationTest {
         req.setCostPrice(12.0);
         req.setVersion(p.getVersion());
 
-        mockMvc.perform(put("/api/v1/products/" + p.getId())
+        mockMvc.perform(withStore(put("/api/v1/products/" + p.getId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("UpdatedProd"))
                 .andExpect(jsonPath("$.data.sku").value("SKU222"));
@@ -301,7 +291,7 @@ class ProductControllerIntegrationTest {
     @Test
     @DisplayName("delete product success")
     void deleteProduct_Success() throws Exception {
-        Product p = productRepository.save(Product.builder()
+        Product p = productRepository.save(Product.builder().store(testStore)
                 .category(categoryRepository.findById(categoryItId).get())
                 .unit(unitRepository.findById(unitItId).get())
                 .name("ToDelProd")
@@ -312,7 +302,7 @@ class ProductControllerIntegrationTest {
                 .isDeleted(false)
                 .build());
 
-        mockMvc.perform(delete("/api/v1/products/" + p.getId()))
+        mockMvc.perform(withStore(delete("/api/v1/products/" + p.getId())))
                 .andExpect(status().isNoContent());
 
         Product deleted = productRepository.findById(p.getId()).orElseThrow();

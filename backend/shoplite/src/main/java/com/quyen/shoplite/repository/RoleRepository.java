@@ -1,8 +1,9 @@
 package com.quyen.shoplite.repository;
 
-import com.quyen.shoplite.domain.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
+import com.quyen.shoplite.domain.Role;
 
 import java.util.Optional;
 

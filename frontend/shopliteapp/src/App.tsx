@@ -17,6 +17,7 @@ import ProductEditPage from './pages/ProductEditPage';
 import EmployeesPage from './pages/EmployeesPage';
 import EmployeeDetailPage from './pages/EmployeeDetailPage';
 import EmployeeSalaryPage from './pages/EmployeeSalaryPage';
+import MySalaryPage from './pages/MySalaryPage';
 import RosterPage from './pages/RosterPage';
 import AttendancePage from './pages/AttendancePage';
 import PayrollsPage from './pages/PayrollsPage';
@@ -72,6 +73,8 @@ import CustomerDebtPage from './pages/CustomerDebtPage';
 import SuppliersPage from './pages/SuppliersPage';
 import SupplierDetailPage from './pages/SupplierDetailPage';
 import SupplierFormPage from './pages/SupplierFormPage';
+import SupplierTransactionsPage from './pages/SupplierTransactionsPage';
+import SupplierDebtPage from './pages/SupplierDebtPage';
 
 setupIonicReact({ mode: 'md' });
 
@@ -130,6 +133,7 @@ const AppContent: React.FC = () => {
       <Route exact path="/employees/:id(\d+)/salary" render={() => <RequireAuth component={EmployeeSalaryPage} />} />
       <Route exact path="/roster" render={() => <RequireAuth component={RosterPage} />} />
       <Route exact path="/attendance" render={() => <RequireAuth component={AttendancePage} />} />
+      <Route exact path="/my-salary" render={() => <RequireAuth component={MySalaryPage} />} />
       <Route exact path="/payrolls" render={() => <RequireAuth component={PayrollsPage} />} />
       <Route exact path="/roles/:id" render={() => <RequireAuth component={RoleDetailPage} />} />
 
@@ -159,7 +163,8 @@ const AppContent: React.FC = () => {
       <Route exact path="/suppliers/new" render={() => <RequireAuth component={SupplierFormPage} />} />
       <Route exact path="/suppliers/:id(\d+)" render={() => <RequireAuth component={SupplierDetailPage} />} />
       <Route exact path="/suppliers/:id(\d+)/edit" render={() => <RequireAuth component={SupplierFormPage} />} />
-
+      <Route exact path="/suppliers/:id(\d+)/orders" render={() => <RequireAuth component={SupplierTransactionsPage} />} />
+      <Route exact path="/suppliers/:id(\d+)/debt" render={() => <RequireAuth component={SupplierDebtPage} />} />
 
       <Route exact path="/more" render={() => <RequireAuth component={MorePage} />} />
 

@@ -1,11 +1,12 @@
 package com.quyen.shoplite.config;
 
-import com.quyen.shoplite.domain.Permission;
-import com.quyen.shoplite.domain.Role;
-import com.quyen.shoplite.domain.StoreMember;
 import com.quyen.shoplite.service.CurrentStoreService;
 import com.quyen.shoplite.util.SecurityUtil;
 import com.quyen.shoplite.util.error.PermissionException;
+
+import com.quyen.shoplite.domain.Permission;
+import com.quyen.shoplite.domain.Role;
+import com.quyen.shoplite.domain.StoreMember;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,11 @@ public class PermissionInterceptor implements HandlerInterceptor {
 
         String path = (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
         String httpMethod = request.getMethod();
+
+        // Allow CORS preflight requests to pass through without permission check
+        if ("OPTIONS".equalsIgnoreCase(httpMethod)) {
+            return true;
+        }
 
         // Lấy username từ JWT (SecurityContextHolder)
         String username = SecurityUtil.getCurrentUserLogin().orElse("");

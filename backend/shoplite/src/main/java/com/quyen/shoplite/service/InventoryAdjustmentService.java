@@ -1,9 +1,5 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.*;
-import com.quyen.shoplite.domain.request.ReqAdjustmentItemDTO;
-import com.quyen.shoplite.domain.request.ReqInventoryAdjustmentDTO;
-import com.quyen.shoplite.domain.response.ResInventoryAdjustmentDTO;
 import com.quyen.shoplite.repository.InventoryAdjustmentRepository;
 import com.quyen.shoplite.repository.InventoryLogsRepository;
 import com.quyen.shoplite.repository.ProductRepository;
@@ -11,6 +7,11 @@ import com.quyen.shoplite.util.DTOMapper;
 import com.quyen.shoplite.util.constant.TypeInventoryEnum;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
+
+import com.quyen.shoplite.domain.*;
+import com.quyen.shoplite.domain.request.ReqAdjustmentItemDTO;
+import com.quyen.shoplite.domain.request.ReqInventoryAdjustmentDTO;
+import com.quyen.shoplite.domain.response.ResInventoryAdjustmentDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -122,10 +125,15 @@ public class InventoryAdjustmentService {
 
     public List<ResInventoryAdjustmentDTO> findAll() {
         Long storeId = currentStoreService.getCurrentStoreId();
-        return adjustmentRepository.findAllByStoreIdOrderByCreatedAtDesc(storeId).stream()
+        List<InventoryAdjustment> adjustments = adjustmentRepository.findAllByStoreIdOrderByCreatedAtDesc(storeId);
+        List<Integer> adjIds = adjustments.stream().map(InventoryAdjustment::getId).toList();
+        Map<Integer, List<InventoryLogs>> logsMap = inventoryLogsRepository.findByStoreIdAndAdjustment_IdIn(storeId, adjIds)
+                .stream()
+                .collect(Collectors.groupingBy(log -> log.getAdjustment().getId()));
+        return adjustments.stream()
                 .map(adj -> DTOMapper.toResInventoryAdjustmentDTO(
                         adj,
-                        inventoryLogsRepository.findByStoreIdAndAdjustment_Id(storeId, adj.getId())))
+                        logsMap.getOrDefault(adj.getId(), List.of())))
                 .toList();
     }
 

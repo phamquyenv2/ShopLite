@@ -1,8 +1,9 @@
 package com.quyen.shoplite.util;
 
-import com.quyen.shoplite.domain.Product;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
+
+import com.quyen.shoplite.domain.Product;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,24 +1,22 @@
 package com.quyen.shoplite.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quyen.shoplite.repository.*;
+import com.quyen.shoplite.util.constant.*;
+
 import com.quyen.shoplite.domain.*;
 import com.quyen.shoplite.domain.request.ReqOrderDTO;
 import com.quyen.shoplite.domain.request.ReqOrderItemDTO;
 import com.quyen.shoplite.domain.request.ReqPaymentDTO;
-import com.quyen.shoplite.repository.*;
-import com.quyen.shoplite.util.constant.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -29,15 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional
-@WithMockUser
-class OrderControllerIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class OrderControllerIntegrationTest extends IntegrationTestBase {
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -69,6 +59,9 @@ class OrderControllerIntegrationTest {
     @Autowired
     private PaymentRepository paymentRepository;
 
+    @Autowired
+    private FundAccountRepository fundAccountRepository;
+
     // Shared test data IDs
     private Integer userId;
     private Integer customerId;
@@ -84,16 +77,16 @@ class OrderControllerIntegrationTest {
                 .build());
         userId = user.getId();
 
-        Customer customer = customerRepository.save(Customer.builder()
+        Customer customer = customerRepository.save(Customer.builder().store(testStore)
                 .name("IT Customer")
                 .phone("090" + System.nanoTime() % 10000000)
                 .build());
         customerId = customer.getId();
 
-        Category cat = categoryRepository.save(Category.builder().name("ITCat_" + System.nanoTime()).build());
-        Unit unit = unitRepository.save(Unit.builder().name("ITUnit_" + System.nanoTime()).description("u").build());
+        Category cat = categoryRepository.save(Category.builder().store(testStore).name("ITCat_" + System.nanoTime()).build());
+        Unit unit = unitRepository.save(Unit.builder().store(testStore).name("ITUnit_" + System.nanoTime()).description("u").build());
 
-        Product product = productRepository.save(Product.builder()
+        Product product = productRepository.save(Product.builder().store(testStore)
                 .category(cat)
                 .unit(unit)
                 .name("IT Product")
@@ -105,7 +98,7 @@ class OrderControllerIntegrationTest {
                 .build());
         productId = product.getId();
 
-        Product lowStockProduct = productRepository.save(Product.builder()
+        Product lowStockProduct = productRepository.save(Product.builder().store(testStore)
                 .category(cat)
                 .unit(unit)
                 .name("Low Stock Product")
@@ -116,6 +109,18 @@ class OrderControllerIntegrationTest {
                 .isDeleted(false)
                 .build());
         lowStockProductId = lowStockProduct.getId();
+
+        // Seed fund accounts for payment tests
+        fundAccountRepository.save(FundAccount.builder()
+                .store(testStore)
+                .name("Test Cash")
+                .type(FundTypeEnum.CASH)
+                .build());
+        fundAccountRepository.save(FundAccount.builder()
+                .store(testStore)
+                .name("Test Bank")
+                .type(FundTypeEnum.BANK)
+                .build());
     }
 
     // ========== Helper: build valid CreateOrderRequest ===========
@@ -137,9 +142,9 @@ class OrderControllerIntegrationTest {
     @Test
     @DisplayName("POST /orders - create order success")
     void createOrder_Success() throws Exception {
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(withStore(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validOrderRequest())))
+                .content(objectMapper.writeValueAsString(validOrderRequest()))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("DRAFT"))
                 .andExpect(jsonPath("$.data.totalAmount").value(100.0))
@@ -158,9 +163,9 @@ class OrderControllerIntegrationTest {
         // Now it only changes to DRAFT and doesn't decrement stock yet unless CONFIRMED.
         // If your test asserts stock decrease on creation, you either test the confirm endpoint or change this.
         // Let's assume order create returns DRAFT and no stock changes.
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(withStore(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validOrderRequest())))
+                .content(objectMapper.writeValueAsString(validOrderRequest()))))
                 .andExpect(status().isCreated());
 
         Product updated = productRepository.findById(productId).orElseThrow();
@@ -171,16 +176,16 @@ class OrderControllerIntegrationTest {
     @DisplayName("GET /orders/{id} - get order by id success")
     void getOrderById_Success() throws Exception {
         // create one order first
-        MvcResult result = mockMvc.perform(post("/api/v1/orders")
+        MvcResult result = mockMvc.perform(withStore(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validOrderRequest())))
+                .content(objectMapper.writeValueAsString(validOrderRequest()))))
                 .andExpect(status().isCreated())
                 .andReturn();
 
         Integer orderId = objectMapper.readTree(result.getResponse().getContentAsString())
                 .path("data").path("id").asInt();
 
-        mockMvc.perform(get("/api/v1/orders/" + orderId))
+        mockMvc.perform(withStore(get("/api/v1/orders/" + orderId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(orderId))
                 .andExpect(jsonPath("$.data.customerId").value(customerId))
@@ -190,12 +195,12 @@ class OrderControllerIntegrationTest {
     @Test
     @DisplayName("GET /orders - list orders success")
     void listOrders_Success() throws Exception {
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(withStore(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validOrderRequest())))
+                .content(objectMapper.writeValueAsString(validOrderRequest()))))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/v1/orders"))
+        mockMvc.perform(withStore(get("/api/v1/orders")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
@@ -204,9 +209,9 @@ class OrderControllerIntegrationTest {
     @Test
     @DisplayName("DELETE /orders/{id} - cancel order success, stock restored, RETURN log created")
     void cancelOrder_Success() throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/v1/orders")
+        MvcResult result = mockMvc.perform(withStore(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validOrderRequest())))
+                .content(objectMapper.writeValueAsString(validOrderRequest()))))
                 .andExpect(status().isCreated())
                 .andReturn();
 
@@ -214,7 +219,7 @@ class OrderControllerIntegrationTest {
                 .path("data").path("id").asInt();
 
         // cancel
-        mockMvc.perform(delete("/api/v1/orders/" + orderId))
+        mockMvc.perform(withStore(delete("/api/v1/orders/" + orderId)))
                 .andExpect(status().isNoContent());
 
         // Order status = CANCELLED
@@ -235,9 +240,9 @@ class OrderControllerIntegrationTest {
         ReqOrderDTO req = validOrderRequest();
         req.setCustomerId(99999); // non-existent
 
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(withStore(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Customer")));
@@ -249,9 +254,9 @@ class OrderControllerIntegrationTest {
         ReqOrderDTO req = validOrderRequest();
         req.setItems(List.of()); // empty
 
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(withStore(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("items")));
@@ -268,9 +273,9 @@ class OrderControllerIntegrationTest {
         ReqOrderDTO req = validOrderRequest();
         req.setItems(List.of(item));
 
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(withStore(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.errors").isArray());
@@ -287,9 +292,9 @@ class OrderControllerIntegrationTest {
         ReqOrderDTO req = validOrderRequest();
         req.setItems(List.of(item));
 
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(withStore(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .content(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Product")));
@@ -300,7 +305,7 @@ class OrderControllerIntegrationTest {
     @Test
     @DisplayName("GET /orders/{id} - order not found failure")
     void getOrderById_NotFound_Failure() throws Exception {
-        mockMvc.perform(get("/api/v1/orders/99999"))
+        mockMvc.perform(withStore(get("/api/v1/orders/99999")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Order")));
@@ -310,9 +315,9 @@ class OrderControllerIntegrationTest {
     @Test
     @DisplayName("POST /api/v1/payment - add payment success")
     void addPayment_Success() throws Exception {
-        MvcResult orderResult = mockMvc.perform(post("/api/v1/orders")
+        MvcResult orderResult = mockMvc.perform(withStore(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validOrderRequest())))
+                .content(objectMapper.writeValueAsString(validOrderRequest()))))
                 .andExpect(status().isCreated())
                 .andReturn();
 
@@ -320,8 +325,8 @@ class OrderControllerIntegrationTest {
                 .path("data").path("id").asInt();
         
         // Cần confirm order trước khi thanh toán
-        mockMvc.perform(patch("/api/v1/orders/" + orderId + "/status")
-                .param("status", "PENDING_PAYMENT"))
+        mockMvc.perform(withStore(patch("/api/v1/orders/" + orderId + "/status")
+                .param("status", "PENDING_PAYMENT")))
                 .andExpect(status().isOk());
 
         ReqPaymentDTO payReq = new ReqPaymentDTO();
@@ -330,9 +335,9 @@ class OrderControllerIntegrationTest {
         payReq.setPaymentMethod(PaymentMethodEnum.CASH);
         payReq.setAmount(BigDecimal.valueOf(100.0));
 
-        mockMvc.perform(post("/api/v1/payment")
+        mockMvc.perform(withStore(post("/api/v1/payment")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payReq)))
+                .content(objectMapper.writeValueAsString(payReq))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.referenceId").value(orderId))
                 .andExpect(jsonPath("$.data.amount").value(100.0))
@@ -342,17 +347,17 @@ class OrderControllerIntegrationTest {
     @Test
     @DisplayName("POST /api/v1/payment - revenue transaction created on completed payment")
     void addPayment_CreatesRevenueTransaction() throws Exception {
-        MvcResult orderResult = mockMvc.perform(post("/api/v1/orders")
+        MvcResult orderResult = mockMvc.perform(withStore(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validOrderRequest())))
+                .content(objectMapper.writeValueAsString(validOrderRequest()))))
                 .andExpect(status().isCreated())
                 .andReturn();
 
         Integer orderId = objectMapper.readTree(orderResult.getResponse().getContentAsString())
                 .path("data").path("id").asInt();
                 
-        mockMvc.perform(patch("/api/v1/orders/" + orderId + "/status")
-                .param("status", "PENDING_PAYMENT"))
+        mockMvc.perform(withStore(patch("/api/v1/orders/" + orderId + "/status")
+                .param("status", "PENDING_PAYMENT")))
                 .andExpect(status().isOk());
 
         ReqPaymentDTO payReq = new ReqPaymentDTO();
@@ -361,9 +366,9 @@ class OrderControllerIntegrationTest {
         payReq.setPaymentMethod(PaymentMethodEnum.BANK_TRANSFER);
         payReq.setAmount(BigDecimal.valueOf(100.0));
 
-        mockMvc.perform(post("/api/v1/payment")
+        mockMvc.perform(withStore(post("/api/v1/payment")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payReq)))
+                .content(objectMapper.writeValueAsString(payReq))))
                 .andExpect(status().isCreated());
 
         // Assert REVENUE transaction created
@@ -384,9 +389,9 @@ class OrderControllerIntegrationTest {
     @Test
     @DisplayName("POST /api/v1/payment - invalid amount (negative) failure")
     void addPayment_InvalidAmount_Failure() throws Exception {
-        MvcResult orderResult = mockMvc.perform(post("/api/v1/orders")
+        MvcResult orderResult = mockMvc.perform(withStore(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validOrderRequest())))
+                .content(objectMapper.writeValueAsString(validOrderRequest()))))
                 .andExpect(status().isCreated())
                 .andReturn();
 
@@ -399,9 +404,9 @@ class OrderControllerIntegrationTest {
         payReq.setPaymentMethod(PaymentMethodEnum.CASH);
         payReq.setAmount(BigDecimal.valueOf(-50.0)); // invalid
 
-        mockMvc.perform(post("/api/v1/payment")
+        mockMvc.perform(withStore(post("/api/v1/payment")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payReq)))
+                .content(objectMapper.writeValueAsString(payReq))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.errors").isArray());
@@ -410,9 +415,9 @@ class OrderControllerIntegrationTest {
     @Test
     @DisplayName("POST /api/v1/payment - malformed enum (invalid method) failure")
     void addPayment_MalformedEnum_Failure() throws Exception {
-        MvcResult orderResult = mockMvc.perform(post("/api/v1/orders")
+        MvcResult orderResult = mockMvc.perform(withStore(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validOrderRequest())))
+                .content(objectMapper.writeValueAsString(validOrderRequest()))))
                 .andExpect(status().isCreated())
                 .andReturn();
 
@@ -424,9 +429,9 @@ class OrderControllerIntegrationTest {
             {"referenceType": "ORDER", "referenceId": %d, "paymentMethod": "INVALID_METHOD", "amount": 100.0}
             """.formatted(orderId);
 
-        mockMvc.perform(post("/api/v1/payment")
+        mockMvc.perform(withStore(post("/api/v1/payment")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(invalidJson))
+                .content(invalidJson)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
     }
@@ -434,17 +439,17 @@ class OrderControllerIntegrationTest {
     @Test
     @DisplayName("POST /api/v1/payment - duplicate payment failure (idempotency)")
     void addPayment_Duplicate_Failure() throws Exception {
-        MvcResult orderResult = mockMvc.perform(post("/api/v1/orders")
+        MvcResult orderResult = mockMvc.perform(withStore(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(validOrderRequest())))
+                .content(objectMapper.writeValueAsString(validOrderRequest()))))
                 .andExpect(status().isCreated())
                 .andReturn();
 
         Integer orderId = objectMapper.readTree(orderResult.getResponse().getContentAsString())
                 .path("data").path("id").asInt();
 
-        mockMvc.perform(patch("/api/v1/orders/" + orderId + "/status")
-                .param("status", "PENDING_PAYMENT"))
+        mockMvc.perform(withStore(patch("/api/v1/orders/" + orderId + "/status")
+                .param("status", "PENDING_PAYMENT")))
                 .andExpect(status().isOk());
 
         ReqPaymentDTO payReq = new ReqPaymentDTO();
@@ -454,15 +459,15 @@ class OrderControllerIntegrationTest {
         payReq.setAmount(BigDecimal.valueOf(100.0));
 
         // First payment - success
-        mockMvc.perform(post("/api/v1/payment")
+        mockMvc.perform(withStore(post("/api/v1/payment")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payReq)))
+                .content(objectMapper.writeValueAsString(payReq))))
                 .andExpect(status().isCreated());
 
         // Second payment - duplicate
-        mockMvc.perform(post("/api/v1/payment")
+        mockMvc.perform(withStore(post("/api/v1/payment")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payReq)))
+                .content(objectMapper.writeValueAsString(payReq))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400));
 

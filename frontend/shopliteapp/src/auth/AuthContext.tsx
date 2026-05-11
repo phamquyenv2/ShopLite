@@ -101,7 +101,9 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             if (storedUser) {
                 setUser(storedUser);
                 setStatus('authenticated');
-                warmMeCache();
+                // Don't call warmMeCache() here — the access token is still valid
+                // and meSession.ts already has its own TTL-based cache (5 min).
+                // Calling it here creates a redundant /me request on every focus/visibilitychange.
                 return;
             }
         }

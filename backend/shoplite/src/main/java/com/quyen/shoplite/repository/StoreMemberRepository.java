@@ -1,7 +1,9 @@
 package com.quyen.shoplite.repository;
 
-import com.quyen.shoplite.domain.StoreMember;
 import com.quyen.shoplite.util.constant.StoreMemberStatus;
+
+import com.quyen.shoplite.domain.StoreMember;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
