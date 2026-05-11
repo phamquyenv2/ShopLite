@@ -1,6 +1,7 @@
 package com.quyen.shoplite.service;
 
 import com.quyen.shoplite.repository.RoleRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
 
 import com.quyen.shoplite.domain.Permission;
@@ -34,6 +35,8 @@ class RoleServiceTest {
 
     @Mock
     private PermissionService permissionService;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private RoleService roleService;

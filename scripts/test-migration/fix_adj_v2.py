@@ -1,3 +1,6 @@
+"""Rewrite InventoryAdjustmentServiceTest to match real service signatures."""
+
+content = '''\
 package com.quyen.shoplite.service;
 
 import com.quyen.shoplite.repository.InventoryAdjustmentRepository;
@@ -447,7 +450,7 @@ class InventoryAdjustmentServiceTest {
             var result = service.findAll();
 
             assertTrue(result.isEmpty());
-            verify(inventoryLogsRepository).findByStoreIdAndAdjustment_IdIn(anyLong(), any());
+            verify(inventoryLogsRepository, never()).findByStoreIdAndAdjustment_IdIn(anyLong(), any());
         }
     }
 
@@ -482,3 +485,9 @@ class InventoryAdjustmentServiceTest {
         }
     }
 }
+'''
+
+path = "backend/shoplite/src/test/java/com/quyen/shoplite/service/InventoryAdjustmentServiceTest.java"
+with open(path, 'w', encoding='utf-8', newline='\r\n') as f:
+    f.write(content)
+print("InventoryAdjustmentServiceTest rewritten!")

@@ -59,7 +59,7 @@ class EmployeeServiceTest {
     void setUp() {
         owner = makeUser(1, "owner");
         store = Store.builder().id(10L).name("Main Store").owner(owner).build();
-        when(currentStoreService.getCurrentStoreId()).thenReturn(store.getId());
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStoreId()).thenReturn(store.getId());
     }
 
     @Test
@@ -69,7 +69,7 @@ class EmployeeServiceTest {
         Role role = Role.builder().id(4L).name("ORDER_STAFF").build();
         ReqEmployeeDTO req = validReq(user.getId(), office.getId());
 
-        when(currentStoreService.getCurrentStore()).thenReturn(store);
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(store);
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(employeeRepository.existsByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(store.getId(), user.getId()))
                 .thenReturn(false);
@@ -104,7 +104,7 @@ class EmployeeServiceTest {
         User user = makeUser(2, "cashier");
         ReqEmployeeDTO req = validReq(user.getId(), 3);
 
-        when(currentStoreService.getCurrentStore()).thenReturn(store);
+        org.mockito.Mockito.lenient().when(currentStoreService.getCurrentStore()).thenReturn(store);
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(employeeRepository.existsByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(store.getId(), user.getId()))
                 .thenReturn(true);
@@ -122,9 +122,7 @@ class EmployeeServiceTest {
         StoreMember member = makeMember(7L, user);
         Employee employee = makeEmployee(8, member, office);
 
-        when(officeRepository.findAllByStoreIdOrderByIdAsc(store.getId())).thenReturn(List.of(office));
-        when(storeMemberRepository.findAllByStore_IdAndStatus(store.getId(), StoreMemberStatus.ACTIVE)).thenReturn(List.of(member));
-        when(employeeRepository.findByStoreMember_Id(member.getId())).thenReturn(Optional.of(employee));
+        // EmployeeService.findAll() only calls findAllByStoreMember_Store_IdOrderByIdAsc
         when(employeeRepository.findAllByStoreMember_Store_IdOrderByIdAsc(store.getId())).thenReturn(List.of(employee));
 
         List<ResEmployeeDTO> result = service.findAll();

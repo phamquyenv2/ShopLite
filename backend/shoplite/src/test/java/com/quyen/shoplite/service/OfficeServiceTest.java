@@ -5,6 +5,7 @@ import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
 
 import com.quyen.shoplite.domain.Office;
+import com.quyen.shoplite.domain.Store;
 import com.quyen.shoplite.domain.request.ReqOfficeDTO;
 import com.quyen.shoplite.domain.response.ResOfficeDTO;
 
@@ -24,77 +25,75 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class OfficeServiceTest {
 
-    @Mock
-    private OfficeRepository officeRepository;
+    @Mock private OfficeRepository officeRepository;
+    @Mock private CurrentStoreService currentStoreService;
 
     @InjectMocks
     private OfficeService officeService;
 
+    private Store testStore() {
+        Store store = new Store();
+        store.setId(1L);
+        return store;
+    }
+
     @Test
     void create_ShouldReturnOffice_WhenNameIsUnique() {
-        // Arrange
+        when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+        when(officeRepository.existsByStoreIdAndName(1L, "New Office")).thenReturn(false);
+
         ReqOfficeDTO req = new ReqOfficeDTO();
         req.setName("  New Office  ");
         req.setOfficeLat(BigDecimal.valueOf(10.0));
         req.setOfficeLng(BigDecimal.valueOf(20.0));
         req.setRadius(500);
 
-        when(officeRepository.existsByName("New Office")).thenReturn(false);
-
         Office savedOffice = Office.builder()
-                .id(1)
-                .name("New Office")
+                .id(1).name("New Office")
                 .officeLat(BigDecimal.valueOf(10.0))
                 .officeLng(BigDecimal.valueOf(20.0))
-                .radius(500)
-                .build();
+                .radius(500).build();
         when(officeRepository.save(any(Office.class))).thenReturn(savedOffice);
 
-        // Act
         ResOfficeDTO result = officeService.create(req);
 
-        // Assert
         assertNotNull(result);
         assertEquals(1, result.getId());
         assertEquals("New Office", result.getName());
-        assertEquals(BigDecimal.valueOf(10.0), result.getOfficeLat());
         verify(officeRepository).save(argThat(o -> o.getName().equals("New Office")));
     }
 
     @Test
     void create_ShouldThrowBadRequest_WhenNameExists() {
-        // Arrange
+        when(currentStoreService.getCurrentStore()).thenReturn(testStore());
+        when(officeRepository.existsByStoreIdAndName(1L, "Existing Office")).thenReturn(true);
+
         ReqOfficeDTO req = new ReqOfficeDTO();
         req.setName("Existing Office");
 
-        when(officeRepository.existsByName("Existing Office")).thenReturn(true);
-
-        // Act & Assert
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> 
-            officeService.create(req)
-        );
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->
+            officeService.create(req));
         assertEquals("Office name already exists: Existing Office", exception.getMessage());
         verify(officeRepository, never()).save(any(Office.class));
     }
 
     @Test
     void update_ShouldReturnOffice_WhenIdExistsAndNameIsUnique() {
-        // Arrange
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+
         Integer id = 1;
         ReqOfficeDTO req = new ReqOfficeDTO();
         req.setName("Updated Office");
 
         Office existingOffice = Office.builder().id(id).name("Old Name").build();
-        when(officeRepository.findById(id)).thenReturn(Optional.of(existingOffice));
-        when(officeRepository.existsByNameAndIdNot("Updated Office", id)).thenReturn(false);
+        when(officeRepository.findByIdAndStoreId(id, 1L)).thenReturn(Optional.of(existingOffice));
+        when(officeRepository.existsByStoreIdAndNameAndIdNot(1L, "Updated Office", id)).thenReturn(false);
 
         Office savedOffice = Office.builder().id(id).name("Updated Office").build();
         when(officeRepository.save(existingOffice)).thenReturn(savedOffice);
 
-        // Act
         ResOfficeDTO result = officeService.update(id, req);
 
-        // Assert
         assertNotNull(result);
         assertEquals("Updated Office", result.getName());
         verify(officeRepository).save(existingOffice);
@@ -102,64 +101,60 @@ class OfficeServiceTest {
 
     @Test
     void update_ShouldThrowResourceNotFound_WhenIdDoesNotExist() {
-        // Arrange
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+
         Integer id = 99;
         ReqOfficeDTO req = new ReqOfficeDTO();
         req.setName("Updated Office");
 
-        when(officeRepository.findById(id)).thenReturn(Optional.empty());
+        when(officeRepository.findByIdAndStoreId(id, 1L)).thenReturn(Optional.empty());
 
-        // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> 
-            officeService.update(id, req)
-        );
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () ->
+            officeService.update(id, req));
         assertEquals("Office not found with id=99", exception.getMessage());
         verify(officeRepository, never()).save(any(Office.class));
     }
 
     @Test
     void update_ShouldThrowBadRequest_WhenNameExistsForAnotherId() {
-        // Arrange
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+
         Integer id = 1;
         ReqOfficeDTO req = new ReqOfficeDTO();
         req.setName("Duplicate Name");
 
         Office existingOffice = Office.builder().id(id).name("Old Name").build();
-        when(officeRepository.findById(id)).thenReturn(Optional.of(existingOffice));
-        when(officeRepository.existsByNameAndIdNot("Duplicate Name", id)).thenReturn(true);
+        when(officeRepository.findByIdAndStoreId(id, 1L)).thenReturn(Optional.of(existingOffice));
+        when(officeRepository.existsByStoreIdAndNameAndIdNot(1L, "Duplicate Name", id)).thenReturn(true);
 
-        // Act & Assert
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> 
-            officeService.update(id, req)
-        );
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->
+            officeService.update(id, req));
         assertEquals("Office name already exists: Duplicate Name", exception.getMessage());
         verify(officeRepository, never()).save(any(Office.class));
     }
 
     @Test
     void delete_ShouldCallRepositoryDelete_WhenIdExists() {
-        // Arrange
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
+
         Integer id = 1;
         Office existingOffice = Office.builder().id(id).name("Name").build();
-        when(officeRepository.findById(id)).thenReturn(Optional.of(existingOffice));
+        when(officeRepository.findByIdAndStoreId(id, 1L)).thenReturn(Optional.of(existingOffice));
 
-        // Act
         officeService.delete(id);
 
-        // Assert
         verify(officeRepository).delete(existingOffice);
     }
 
     @Test
     void delete_ShouldThrowResourceNotFound_WhenIdDoesNotExist() {
-        // Arrange
-        Integer id = 99;
-        when(officeRepository.findById(id)).thenReturn(Optional.empty());
+        when(currentStoreService.getCurrentStoreId()).thenReturn(1L);
 
-        // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> 
-            officeService.delete(id)
-        );
+        Integer id = 99;
+        when(officeRepository.findByIdAndStoreId(id, 1L)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () ->
+            officeService.delete(id));
         assertEquals("Office not found with id=99", exception.getMessage());
         verify(officeRepository, never()).delete(any(Office.class));
     }

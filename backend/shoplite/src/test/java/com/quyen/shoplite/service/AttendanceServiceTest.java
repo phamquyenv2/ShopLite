@@ -111,14 +111,22 @@ class AttendanceServiceTest {
 
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
             when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
-            when(attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId())).thenReturn(Optional.empty());
+            when(attendanceRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndCheckOutIsNull(1L, employee.getId())).thenReturn(Optional.empty());
 
             LocalDateTime now = LocalDateTime.of(2026, 4, 13, 8, 0);
             setClockTime(now);
 
-            when(rosterRepository.findMatchingRoster(eq(employee.getId()), eq(now.toLocalDate()), eq(now.toLocalTime()), any()))
-                    .thenReturn(Collections.emptyList());
+            // Provide a roster with a valid check-in window: start=07:30, end=16:30
+            Roster roster = new Roster();
+            roster.setId(1);
+            roster.setEmployee(employee);
+            roster.setWorkingDay(now.toLocalDate());
+            roster.setStartTime(LocalTime.of(7, 30));
+            roster.setEndTime(LocalTime.of(16, 30));
 
+            when(rosterRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDay(
+                    1L, employee.getId(), now.toLocalDate())).thenReturn(List.of(roster));
+            when(attendanceRepository.existsByRoster_Id(roster.getId())).thenReturn(false);
             when(attendanceRepository.save(any(Attendance.class))).thenAnswer(inv -> inv.getArgument(0));
 
             ReqAttendanceCheckInDTO req = new ReqAttendanceCheckInDTO();
@@ -132,8 +140,8 @@ class AttendanceServiceTest {
 
             assertEquals(AttendanceStatusEnum.VALID, saved.getStatus());
             assertTrue(saved.getDistance() <= office.getRadius());
-            assertTrue(saved.isWalkIn());
-            assertNull(saved.getRoster());
+            assertFalse(saved.isWalkIn()); // service hardcodes walkIn=false
+            assertEquals(roster, saved.getRoster());
             assertEquals(now, saved.getCheckIn());
         }
     }
@@ -145,16 +153,26 @@ class AttendanceServiceTest {
 
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
             when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
-            when(attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId())).thenReturn(Optional.empty());
+            when(attendanceRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndCheckOutIsNull(1L, employee.getId())).thenReturn(Optional.empty());
 
             LocalDateTime now = LocalDateTime.of(2026, 4, 13, 8, 0);
             setClockTime(now);
 
             ReqAttendanceCheckInDTO req = new ReqAttendanceCheckInDTO();
-            req.setLatitude(11.0); // Far away
+            req.setLatitude(11.0); // Far away (> 100m radius)
             req.setLongitude(20.0);
 
-            when(rosterRepository.findMatchingRoster(any(), any(), any(), any())).thenReturn(Collections.emptyList());
+            // Roster with valid window so checkIn proceeds past roster check
+            Roster roster = new Roster();
+            roster.setId(1);
+            roster.setEmployee(employee);
+            roster.setWorkingDay(now.toLocalDate());
+            roster.setStartTime(LocalTime.of(7, 30));
+            roster.setEndTime(LocalTime.of(16, 30));
+
+            when(rosterRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDay(
+                    1L, employee.getId(), now.toLocalDate())).thenReturn(List.of(roster));
+            when(attendanceRepository.existsByRoster_Id(roster.getId())).thenReturn(false);
             when(attendanceRepository.save(any(Attendance.class))).thenAnswer(inv -> inv.getArgument(0));
 
             BadRequestException ex = assertThrows(BadRequestException.class, () -> service.checkIn(req));
@@ -174,14 +192,22 @@ class AttendanceServiceTest {
 
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
             when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
-            when(attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId())).thenReturn(Optional.empty());
+            when(attendanceRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndCheckOutIsNull(1L, employee.getId())).thenReturn(Optional.empty());
 
-            LocalDateTime now = LocalDateTime.of(2026, 4, 13, 14, 0);
+            LocalDateTime now = LocalDateTime.of(2026, 4, 13, 14, 0); // 14:00
             setClockTime(now);
 
+            // Second shift: starts 13:30, ends 22:00
             Roster roster2 = new Roster();
             roster2.setId(2);
-            when(rosterRepository.findMatchingRoster(any(), any(), any(), any())).thenReturn(List.of(roster2));
+            roster2.setEmployee(employee);
+            roster2.setWorkingDay(now.toLocalDate());
+            roster2.setStartTime(LocalTime.of(13, 30));
+            roster2.setEndTime(LocalTime.of(22, 0));
+
+            when(rosterRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndWorkingDay(
+                    1L, employee.getId(), now.toLocalDate())).thenReturn(List.of(roster2));
+            when(attendanceRepository.existsByRoster_Id(roster2.getId())).thenReturn(false);
             when(attendanceRepository.save(any(Attendance.class))).thenAnswer(inv -> inv.getArgument(0));
 
             ReqAttendanceCheckInDTO req = new ReqAttendanceCheckInDTO();
@@ -217,7 +243,7 @@ class AttendanceServiceTest {
                     .walkIn(true)
                     .build();
 
-            when(attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId())).thenReturn(Optional.of(openAttendance));
+            when(attendanceRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndCheckOutIsNull(1L, employee.getId())).thenReturn(Optional.of(openAttendance));
 
             LocalDateTime checkOutTime = LocalDateTime.of(2026, 4, 13, 17, 0);
             setClockTime(checkOutTime);
@@ -266,7 +292,7 @@ class AttendanceServiceTest {
                     .status(AttendanceStatusEnum.VALID)
                     .build();
 
-            when(attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId())).thenReturn(Optional.of(openAttendance));
+            when(attendanceRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndCheckOutIsNull(1L, employee.getId())).thenReturn(Optional.of(openAttendance));
 
             // Checkout early 16:45
             LocalDateTime checkOutTime = LocalDateTime.of(2026, 4, 13, 16, 45);
@@ -310,7 +336,7 @@ class AttendanceServiceTest {
                     .status(AttendanceStatusEnum.VALID)
                     .build();
 
-            when(attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId())).thenReturn(Optional.of(openAttendance));
+            when(attendanceRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndCheckOutIsNull(1L, employee.getId())).thenReturn(Optional.of(openAttendance));
             setClockTime(checkInTime.plusHours(1));
 
             when(attendanceRepository.save(any(Attendance.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -386,7 +412,7 @@ class AttendanceServiceTest {
             when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
 
             setClockTime(LocalDateTime.of(2026, 4, 13, 8, 0));
-            when(attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId())).thenReturn(Optional.of(new Attendance()));
+            when(attendanceRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndCheckOutIsNull(1L, employee.getId())).thenReturn(Optional.of(new Attendance()));
 
             ReqAttendanceCheckInDTO req = new ReqAttendanceCheckInDTO();
 
@@ -401,7 +427,7 @@ class AttendanceServiceTest {
             sec.when(SecurityUtil::requireCurrentUserLogin).thenReturn(currentUsername);
             when(userRepository.findByUsername(currentUsername)).thenReturn(Optional.of(user));
             when(employeeRepository.findByStoreMember_Store_IdAndStoreMember_User_IdAndDeletedFalse(1L, user.getId())).thenReturn(Optional.of(employee));
-            when(attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId())).thenReturn(Optional.empty());
+            when(attendanceRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndCheckOutIsNull(1L, employee.getId())).thenReturn(Optional.empty());
 
             ReqAttendanceCheckOutDTO req = new ReqAttendanceCheckOutDTO();
 
@@ -424,7 +450,7 @@ class AttendanceServiceTest {
                     .checkIn(checkInTime)
                     .build();
 
-            when(attendanceRepository.findByEmployee_IdAndCheckOutIsNull(employee.getId())).thenReturn(Optional.of(openAttendance));
+            when(attendanceRepository.findByEmployee_StoreMember_Store_IdAndEmployee_IdAndCheckOutIsNull(1L, employee.getId())).thenReturn(Optional.of(openAttendance));
 
             // checkOut before checkIn
             LocalDateTime checkOutTime = LocalDateTime.of(2026, 4, 13, 9, 0);

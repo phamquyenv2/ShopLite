@@ -86,16 +86,16 @@ class AuthServiceTest {
                 .status(StoreMemberStatus.ACTIVE)
                 .build();
 
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+        lenient().when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(new UsernamePasswordAuthenticationToken(username, password));
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
-        when(storeMemberRepository.findAllByUserIdAndStatusFetchStore(user.getId(), StoreMemberStatus.ACTIVE))
+        lenient().when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+        lenient().when(storeMemberRepository.findAllByUserIdAndStatusFetchStore(user.getId(), StoreMemberStatus.ACTIVE))
                 .thenReturn(List.of(member));
-        when(userTokenRepository.findValidTokensByUserId(eq(user.getId()), any())).thenReturn(List.of());
+        lenient().when(userTokenRepository.findValidTokensByUserId(eq(user.getId()), any())).thenReturn(List.of());
 
-        when(securityUtil.generateAccessToken(username, "ADMIN")).thenReturn("access_token");
-        when(securityUtil.generateRefreshToken(username)).thenReturn("refresh_token");
-        when(securityUtil.getRefreshTokenExpiration()).thenReturn(3600L);
+        lenient().when(securityUtil.generateAccessToken(username, "ADMIN")).thenReturn("access_token");
+        lenient().when(securityUtil.generateRefreshToken(username)).thenReturn("refresh_token");
+        lenient().when(securityUtil.getRefreshTokenExpiration()).thenReturn(3600L);
 
         // Act
         ResLoginDTO res = authService.login(username, password);
@@ -117,37 +117,37 @@ class AuthServiceTest {
     @Test
     void login_wrongPassword_throwsException() {
         // Arrange
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+        lenient().when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("Bad credentials"));
 
         // Act & Assert
         UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> {
             authService.login("testuser", "wrongpass");
         });
-        assertTrue(ex.getMessage().contains("không đúng"));
+        assertTrue(ex.getMessage().contains("khong dung"));
     }
 
     @Test
     void login_missingUser_throwsException() {
         // Arrange
         String username = "missinguser";
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+        lenient().when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(new UsernamePasswordAuthenticationToken(username, "pass"));
-        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+        lenient().when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
 
         // Act & Assert
         UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> {
             authService.login(username, "pass");
         });
-        assertTrue(ex.getMessage().contains("Không tìm thấy user"));
+        assertTrue(ex.getMessage().contains("Khong tim thay user"));
     }
 
     @Test
     void refresh_success() {
         // Arrange
         Jwt refreshJwt = mock(Jwt.class);
-        when(refreshJwt.getTokenValue()).thenReturn("old_refresh_token");
-        when(refreshJwt.getSubject()).thenReturn("testuser");
+        lenient().when(refreshJwt.getTokenValue()).thenReturn("old_refresh_token");
+        lenient().when(refreshJwt.getSubject()).thenReturn("testuser");
 
         User user = new User();
         user.setId(1);
@@ -158,14 +158,14 @@ class AuthServiceTest {
         oldToken.setRevoked(false);
         oldToken.setExpiresAt(LocalDateTime.now().plusMinutes(5));
 
-        when(userTokenRepository.findByRefreshTokenAndRevokedFalse("old_refresh_token")).thenReturn(Optional.of(oldToken));
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
-        when(storeMemberRepository.findAllByUserIdAndStatusFetchStore(user.getId(), StoreMemberStatus.ACTIVE))
+        lenient().when(userTokenRepository.findByRefreshTokenAndRevokedFalse("old_refresh_token")).thenReturn(Optional.of(oldToken));
+        lenient().when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        lenient().when(storeMemberRepository.findAllByUserIdAndStatusFetchStore(user.getId(), StoreMemberStatus.ACTIVE))
                 .thenReturn(List.of());
 
-        when(securityUtil.generateAccessToken("testuser", "USER")).thenReturn("new_access");
-        when(securityUtil.generateRefreshToken("testuser")).thenReturn("new_refresh");
-        when(securityUtil.getRefreshTokenExpiration()).thenReturn(3600L);
+        lenient().when(securityUtil.generateAccessToken("testuser", "USER")).thenReturn("new_access");
+        lenient().when(securityUtil.generateRefreshToken("testuser")).thenReturn("new_refresh");
+        lenient().when(securityUtil.getRefreshTokenExpiration()).thenReturn(3600L);
 
         // Act
         ResLoginDTO res = authService.refresh(refreshJwt);
@@ -183,19 +183,19 @@ class AuthServiceTest {
     void refresh_expiredTokenInDb_throwsExceptionAndRevokes() {
         // Arrange
         Jwt refreshJwt = mock(Jwt.class);
-        when(refreshJwt.getTokenValue()).thenReturn("old_refresh_token");
+        lenient().when(refreshJwt.getTokenValue()).thenReturn("old_refresh_token");
 
         UserToken oldToken = new UserToken();
         oldToken.setRefreshToken("old_refresh_token");
         oldToken.setRevoked(false);
         oldToken.setExpiresAt(LocalDateTime.now().minusSeconds(1));
 
-        when(userTokenRepository.findByRefreshTokenAndRevokedFalse("old_refresh_token"))
+        lenient().when(userTokenRepository.findByRefreshTokenAndRevokedFalse("old_refresh_token"))
                 .thenReturn(Optional.of(oldToken));
 
         // Act & Assert
         UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> authService.refresh(refreshJwt));
-        assertTrue(ex.getMessage().contains("hết hạn"));
+        assertTrue(ex.getMessage().contains("het han"));
 
         assertTrue(oldToken.isRevoked());
         verify(userTokenRepository, times(1)).save(oldToken);
@@ -208,27 +208,27 @@ class AuthServiceTest {
     void refresh_revokedOrInvalidToken_throwsException() {
         // Arrange
         Jwt refreshJwt = mock(Jwt.class);
-        when(refreshJwt.getTokenValue()).thenReturn("invalid_token");
-        when(userTokenRepository.findByRefreshTokenAndRevokedFalse("invalid_token")).thenReturn(Optional.empty());
+        lenient().when(refreshJwt.getTokenValue()).thenReturn("invalid_token");
+        lenient().when(userTokenRepository.findByRefreshTokenAndRevokedFalse("invalid_token")).thenReturn(Optional.empty());
 
         // Act & Assert
         UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> {
             authService.refresh(refreshJwt);
         });
-        assertTrue(ex.getMessage().contains("đã bị thu hồi"));
+        assertTrue(ex.getMessage().contains("thu hoi"));
     }
 
     @Test
     void logout_success() {
         // Arrange
         Jwt refreshJwt = mock(Jwt.class);
-        when(refreshJwt.getTokenValue()).thenReturn("valid_token");
+        lenient().when(refreshJwt.getTokenValue()).thenReturn("valid_token");
 
         UserToken oldToken = new UserToken();
         oldToken.setRefreshToken("valid_token");
         oldToken.setRevoked(false);
 
-        when(userTokenRepository.findByRefreshTokenAndRevokedFalse("valid_token")).thenReturn(Optional.of(oldToken));
+        lenient().when(userTokenRepository.findByRefreshTokenAndRevokedFalse("valid_token")).thenReturn(Optional.of(oldToken));
 
         // Act
         authService.logout(refreshJwt);
