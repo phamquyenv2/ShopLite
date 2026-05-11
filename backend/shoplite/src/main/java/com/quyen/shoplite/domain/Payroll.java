@@ -1,5 +1,6 @@
 package com.quyen.shoplite.domain;
 
+import com.quyen.shoplite.util.constant.SalaryTypeEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,6 +30,19 @@ public class Payroll {
     @Column(name = "salary_rate", nullable = false)
     private Double salaryRate;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "salary_type", nullable = false, length = 30)
+    @Builder.Default
+    private SalaryTypeEnum salaryType = SalaryTypeEnum.HOURLY;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Double allowance = 0.0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Double commission = 0.0;
+
     @Column(name = "total_hours", nullable = false)
     private Double totalHours;
 
@@ -39,6 +53,10 @@ public class Payroll {
     @Column(nullable = false)
     @Builder.Default
     private Double penalty = 0.0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Double deduction = 0.0;
 
     /**
      * Formula: total_salary = total_hours * salary_rate + bonus - penalty

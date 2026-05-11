@@ -1,9 +1,11 @@
 package com.quyen.shoplite.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quyen.shoplite.repository.RoleRepository;
+
 import com.quyen.shoplite.domain.Role;
 import com.quyen.shoplite.domain.request.ReqRoleDTO;
-import com.quyen.shoplite.repository.RoleRepository;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,11 +1,5 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.Role;
-import com.quyen.shoplite.domain.Store;
-import com.quyen.shoplite.domain.StoreMember;
-import com.quyen.shoplite.domain.User;
-import com.quyen.shoplite.domain.UserToken;
-import com.quyen.shoplite.domain.response.ResLoginDTO;
 import com.quyen.shoplite.repository.RoleRepository;
 import com.quyen.shoplite.repository.StoreMemberRepository;
 import com.quyen.shoplite.repository.UserRepository;
@@ -13,6 +7,14 @@ import com.quyen.shoplite.repository.UserTokenRepository;
 import com.quyen.shoplite.util.SecurityUtil;
 import com.quyen.shoplite.util.constant.StoreMemberStatus;
 import com.quyen.shoplite.util.error.UnauthorizedException;
+
+import com.quyen.shoplite.domain.Role;
+import com.quyen.shoplite.domain.Store;
+import com.quyen.shoplite.domain.StoreMember;
+import com.quyen.shoplite.domain.User;
+import com.quyen.shoplite.domain.UserToken;
+import com.quyen.shoplite.domain.response.ResLoginDTO;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;

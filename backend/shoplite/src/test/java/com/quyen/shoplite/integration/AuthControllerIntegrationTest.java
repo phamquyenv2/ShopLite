@@ -2,11 +2,13 @@ package com.quyen.shoplite.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
-import com.quyen.shoplite.domain.User;
-
-import com.quyen.shoplite.domain.request.ReqLoginDTO;
 import com.quyen.shoplite.repository.UserRepository;
 import com.quyen.shoplite.repository.UserTokenRepository;
+
+import com.quyen.shoplite.domain.User;
+import com.quyen.shoplite.domain.UserToken;
+import com.quyen.shoplite.domain.request.ReqLoginDTO;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,7 +25,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.quyen.shoplite.domain.UserToken;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;

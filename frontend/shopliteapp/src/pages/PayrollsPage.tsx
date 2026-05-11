@@ -155,16 +155,20 @@ const PayrollsPage: React.FC = () => {
                         </select>
                     </div>}
 
-                    <div className="wf-search">
-                        <IonIcon icon={searchOutline} />
-                        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Tìm nhân viên trong bảng lương" />
-                    </div>
+                    {canViewAllPayrolls && (
+                        <div className="wf-search">
+                            <IonIcon icon={searchOutline} />
+                            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Tìm nhân viên trong bảng lương" />
+                        </div>
+                    )}
 
                     <div className="wf-summary">
-                        <div className="wf-summary-item">
-                            <div className="wf-summary-value">{totals.rows}</div>
-                            <div className="wf-summary-label">Nhân viên</div>
-                        </div>
+                        {canViewAllPayrolls && (
+                            <div className="wf-summary-item">
+                                <div className="wf-summary-value">{totals.rows}</div>
+                                <div className="wf-summary-label">Nhân viên</div>
+                            </div>
+                        )}
                         <div className="wf-summary-item">
                             <div className="wf-summary-value">{totals.hours.toFixed(1)}</div>
                             <div className="wf-summary-label">Giờ công</div>
@@ -179,28 +183,36 @@ const PayrollsPage: React.FC = () => {
 
             <IonContent className="wf-content">
                 <div className="wf-list-card">
-                    <div className="wf-section-label">Thiết lập nhanh</div>
-                    <div className="wf-form-card" style={{ marginTop: 0 }}>
-                        <div className="wf-form-grid">
-                            <div className="wf-form-field">
-                                <label>Thưởng chung</label>
-                                <input type="number" min={0} value={bonus} onChange={e => setBonus(Number(e.target.value))} />
+                    {canSyncPayrolls && (
+                        <>
+                            <div className="wf-section-label">Thiết lập nhanh</div>
+                            <div className="wf-form-card" style={{ marginTop: 0 }}>
+                                <div className="wf-form-grid">
+                                    <div className="wf-form-field">
+                                        <label>Thưởng chung</label>
+                                        <input type="number" min={0} value={bonus} onChange={e => setBonus(Number(e.target.value))} />
+                                    </div>
+                                    <div className="wf-form-field">
+                                        <label>Phạt cố định</label>
+                                        <input type="number" min={0} value={penalty} onChange={e => setPenalty(Number(e.target.value))} />
+                                    </div>
+                                </div>
+                                <div className="wf-form-field">
+                                    <label>Phạt mỗi ngày vắng không phép</label>
+                                    <input type="number" min={0} value={penaltyPerAbsent} onChange={e => setPenaltyPerAbsent(Number(e.target.value))} />
+                                </div>
                             </div>
-                            <div className="wf-form-field">
-                                <label>Phạt cố định</label>
-                                <input type="number" min={0} value={penalty} onChange={e => setPenalty(Number(e.target.value))} />
-                            </div>
-                        </div>
-                        <div className="wf-form-field">
-                            <label>Phạt mỗi ngày vắng không phép</label>
-                            <input type="number" min={0} value={penaltyPerAbsent} onChange={e => setPenaltyPerAbsent(Number(e.target.value))} />
-                        </div>
-                    </div>
+                        </>
+                    )}
 
                     <div className="wf-section-label">Danh sách lương</div>
                     {loading ? <div className="wf-loading"><IonSpinner name="crescent" /></div> : (
                         filteredPayrolls.length === 0 ? (
-                            <div className="wf-empty">Chưa có bảng lương tháng này. Bấm “Tính lương” để đồng bộ từ chấm công.</div>
+                            <div className="wf-empty">
+                                {canSyncPayrolls 
+                                    ? 'Chưa có bảng lương tháng này. Bấm “Tính lương” để đồng bộ từ chấm công.' 
+                                    : 'Chưa có bảng lương tháng này.'}
+                            </div>
                         ) : filteredPayrolls.map(item => (
                             <div className="wf-row" key={item.id}>
                                 <div className="wf-avatar">

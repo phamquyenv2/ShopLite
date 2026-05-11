@@ -1,7 +1,8 @@
 package com.quyen.shoplite.repository;
 
-import com.quyen.shoplite.domain.FundAccount;
 import com.quyen.shoplite.util.constant.FundTypeEnum;
+
+import com.quyen.shoplite.domain.FundAccount;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;

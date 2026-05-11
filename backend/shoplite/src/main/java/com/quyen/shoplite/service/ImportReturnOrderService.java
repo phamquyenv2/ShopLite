@@ -1,16 +1,17 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.*;
-import com.quyen.shoplite.domain.request.ReqImportReturnItemDTO;
-import com.quyen.shoplite.domain.request.ReqImportReturnOrderDTO;
-import com.quyen.shoplite.domain.request.ReqPaymentDTO;
-import com.quyen.shoplite.domain.response.ResImportReturnOrderDTO;
-import com.quyen.shoplite.domain.response.ResImportReturnItemDTO;
 import com.quyen.shoplite.repository.*;
 import com.quyen.shoplite.util.constant.PaymentMethodEnum;
 import com.quyen.shoplite.util.constant.RefTypeEnum;
 import com.quyen.shoplite.util.constant.TypeInventoryEnum;
 import com.quyen.shoplite.util.error.IdInvalidException;
+
+import com.quyen.shoplite.domain.*;
+import com.quyen.shoplite.domain.request.ReqImportReturnItemDTO;
+import com.quyen.shoplite.domain.request.ReqImportReturnOrderDTO;
+import com.quyen.shoplite.domain.request.ReqPaymentDTO;
+import com.quyen.shoplite.domain.response.ResImportReturnItemDTO;
+import com.quyen.shoplite.domain.response.ResImportReturnOrderDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -201,8 +203,13 @@ public class ImportReturnOrderService {
 
     public List<ResImportReturnOrderDTO> findAll() {
         Long storeId = currentStoreService.getCurrentStoreId();
-        return importReturnOrderRepository.findAllByStoreIdOrderByCreatedAtDesc(storeId).stream()
-                .map(order -> toDTO(order, importReturnItemRepository.findByImportReturnOrder_Id(order.getId())))
+        List<ImportReturnOrder> orders = importReturnOrderRepository.findAllByStoreIdOrderByCreatedAtDesc(storeId);
+        List<Integer> orderIds = orders.stream().map(ImportReturnOrder::getId).toList();
+        Map<Integer, List<ImportReturnItem>> itemsMap = importReturnItemRepository.findByImportReturnOrder_IdIn(orderIds)
+                .stream()
+                .collect(Collectors.groupingBy(item -> item.getImportReturnOrder().getId()));
+        return orders.stream()
+                .map(order -> toDTO(order, itemsMap.getOrDefault(order.getId(), List.of())))
                 .collect(Collectors.toList());
     }
 

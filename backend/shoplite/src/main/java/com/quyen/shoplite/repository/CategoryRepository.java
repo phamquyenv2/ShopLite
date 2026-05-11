@@ -1,7 +1,8 @@
 package com.quyen.shoplite.repository;
 
-import com.quyen.shoplite.domain.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.quyen.shoplite.domain.Category;
 
 import java.util.Optional;
 import java.util.List;

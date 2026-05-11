@@ -1,13 +1,5 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.Employee;
-import com.quyen.shoplite.domain.Office;
-import com.quyen.shoplite.domain.Role;
-import com.quyen.shoplite.domain.StoreMember;
-import com.quyen.shoplite.domain.Store;
-import com.quyen.shoplite.domain.User;
-import com.quyen.shoplite.domain.request.ReqEmployeeDTO;
-import com.quyen.shoplite.domain.response.ResEmployeeDTO;
 import com.quyen.shoplite.repository.EmployeeRepository;
 import com.quyen.shoplite.repository.OfficeRepository;
 import com.quyen.shoplite.repository.RoleRepository;
@@ -17,12 +9,23 @@ import com.quyen.shoplite.util.DTOMapper;
 import com.quyen.shoplite.util.constant.StoreMemberStatus;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
+
+import com.quyen.shoplite.domain.Employee;
+import com.quyen.shoplite.domain.Office;
+import com.quyen.shoplite.domain.Role;
+import com.quyen.shoplite.domain.Store;
+import com.quyen.shoplite.domain.StoreMember;
+import com.quyen.shoplite.domain.User;
+import com.quyen.shoplite.domain.request.ReqEmployeeDTO;
+import com.quyen.shoplite.domain.response.ResEmployeeDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -203,18 +206,28 @@ public class EmployeeService {
                 .findFirst()
                 .orElse(null);
 
-        storeMemberRepository.findAllByStore_IdAndStatus(storeId, StoreMemberStatus.ACTIVE)
-                .forEach(member -> employeeRepository.findByStoreMember_Id(member.getId())
-                        .ifPresentOrElse(employee -> {
-                            if (employee.isDeleted()) {
-                                employee.setDeleted(false);
-                                employeeRepository.save(employee);
-                            }
-                        }, () -> employeeRepository.save(Employee.builder()
-                                .storeMember(member)
-                                .store(member.getStore())
-                                .office(defaultOffice)
-                                .salaryRate(0.0)
-                                .build())));
+        List<StoreMember> activeMembers = storeMemberRepository.findAllByStore_IdAndStatus(storeId, StoreMemberStatus.ACTIVE);
+        List<Long> memberIds = activeMembers.stream().map(StoreMember::getId).toList();
+
+        Map<Long, Employee> existingEmployeeMap = employeeRepository.findByStoreMember_IdIn(memberIds)
+                .stream()
+                .collect(Collectors.toMap(e -> e.getStoreMember().getId(), e -> e, (a, b) -> a));
+
+        for (StoreMember member : activeMembers) {
+            Employee existing = existingEmployeeMap.get(member.getId());
+            if (existing != null) {
+                if (existing.isDeleted()) {
+                    existing.setDeleted(false);
+                    employeeRepository.save(existing);
+                }
+            } else {
+                employeeRepository.save(Employee.builder()
+                        .storeMember(member)
+                        .store(member.getStore())
+                        .office(defaultOffice)
+                        .salaryRate(0.0)
+                        .build());
+            }
+        }
     }
 }

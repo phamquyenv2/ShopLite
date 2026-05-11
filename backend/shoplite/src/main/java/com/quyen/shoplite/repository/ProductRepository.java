@@ -1,12 +1,14 @@
 package com.quyen.shoplite.repository;
 
-import com.quyen.shoplite.domain.Product;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import com.quyen.shoplite.domain.Product;
 
 import java.util.List;
 import java.util.Optional;
@@ -48,6 +50,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer>,
     boolean existsByStoreIdAndSkuAndIdNot(Long storeId, String sku, Integer id);
     boolean existsByStoreIdAndBarcode(Long storeId, String barcode);
     boolean existsByStoreIdAndBarcodeAndIdNot(Long storeId, String barcode, Integer id);
+    @EntityGraph(attributePaths = {"category", "unit"})
     List<Product> findAllByStoreIdAndIsDeletedFalse(Long storeId);
     List<Product> findAllByStoreIdAndCategoryId(Long storeId, Integer categoryId);
     Optional<Product> findByStoreIdAndBarcodeAndIsDeletedFalse(Long storeId, String barcode);

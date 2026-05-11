@@ -1,14 +1,17 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.Store;
-import com.quyen.shoplite.domain.Unit;
-import com.quyen.shoplite.domain.request.ReqUnitUpsertDTO;
-import com.quyen.shoplite.domain.response.ResUnitDTO;
 import com.quyen.shoplite.repository.UnitRepository;
 import com.quyen.shoplite.util.DTOMapper;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
+
+import com.quyen.shoplite.domain.Store;
+import com.quyen.shoplite.domain.Unit;
+import com.quyen.shoplite.domain.request.ReqUnitUpsertDTO;
+import com.quyen.shoplite.domain.response.ResUnitDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +24,12 @@ public class UnitService {
     private final UnitRepository unitRepository;
     private final CurrentStoreService currentStoreService;
 
+    public Long getStoreId() {
+        return currentStoreService.getCurrentStoreId();
+    }
+
     @Transactional
+    @CacheEvict(value = "units", key = "#root.target.storeId")
     public ResUnitDTO create(ReqUnitUpsertDTO req) {
         Store store = currentStoreService.getCurrentStore();
         String normalizedName = req.getName().trim();
@@ -41,6 +49,7 @@ public class UnitService {
         return DTOMapper.toResUnitDTO(findEntityById(id));
     }
 
+    @Cacheable(value = "units", key = "#root.target.storeId")
     public List<ResUnitDTO> findAll() {
         Long storeId = currentStoreService.getCurrentStoreId();
         return unitRepository.findAllByStoreIdOrderByNameAsc(storeId).stream()
@@ -49,6 +58,7 @@ public class UnitService {
     }
 
     @Transactional
+    @CacheEvict(value = "units", key = "#root.target.storeId")
     public ResUnitDTO update(Integer id, ReqUnitUpsertDTO req) {
         Unit unit = findEntityById(id);
         String normalizedName = req.getName().trim();
@@ -63,6 +73,7 @@ public class UnitService {
     }
 
     @Transactional
+    @CacheEvict(value = "units", key = "#root.target.storeId")
     public void delete(Integer id) {
         Unit unit = findEntityById(id);
         unitRepository.delete(unit);

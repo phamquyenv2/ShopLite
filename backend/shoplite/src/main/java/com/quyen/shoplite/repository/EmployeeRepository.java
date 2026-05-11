@@ -1,7 +1,10 @@
 package com.quyen.shoplite.repository;
 
 import com.quyen.shoplite.domain.Employee;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -44,11 +47,16 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
 
     // --- Store-scoped ---
 
+    @EntityGraph(attributePaths = {"storeMember", "storeMember.user", "storeMember.role", "office"})
     List<Employee> findAllByStoreMember_Store_IdAndDeletedFalseOrderByIdAsc(Long storeId);
 
+    @EntityGraph(attributePaths = {"storeMember", "storeMember.user", "storeMember.role", "office"})
     List<Employee> findAllByStoreMember_Store_IdOrderByIdAsc(Long storeId);
 
     Optional<Employee> findByStoreMember_Id(Long storeMemberId);
+
+    @Query("SELECT e FROM Employee e WHERE e.storeMember.id IN :storeMemberIds")
+    List<Employee> findByStoreMember_IdIn(@Param("storeMemberIds") List<Long> storeMemberIds);
 
     Optional<Employee> findByIdAndStoreMember_Store_IdAndDeletedFalse(Integer id, Long storeId);
 

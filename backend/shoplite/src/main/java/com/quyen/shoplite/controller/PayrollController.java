@@ -1,13 +1,15 @@
 package com.quyen.shoplite.controller;
 
-import com.quyen.shoplite.domain.request.ReqPayrollSyncDTO;
-import com.quyen.shoplite.domain.response.ResPayrollDTO;
 import com.quyen.shoplite.service.PayrollService;
 import com.quyen.shoplite.util.annotation.ApiMessage;
+
+import com.quyen.shoplite.domain.request.ReqPayrollSyncDTO;
+import com.quyen.shoplite.domain.response.ResPayrollDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
+
 import jakarta.validation.constraints.Positive;
 import org.springframework.validation.annotation.Validated;
 

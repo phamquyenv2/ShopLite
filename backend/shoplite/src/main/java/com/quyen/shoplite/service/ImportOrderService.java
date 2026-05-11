@@ -1,10 +1,5 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.*;
-import com.quyen.shoplite.domain.request.ReqImportItemDTO;
-import com.quyen.shoplite.domain.request.ReqImportOrderDTO;
-import com.quyen.shoplite.domain.request.ReqPaymentDTO;
-import com.quyen.shoplite.domain.response.ResImportOrderDTO;
 import com.quyen.shoplite.repository.*;
 import com.quyen.shoplite.util.DTOMapper;
 import com.quyen.shoplite.util.constant.ImportOrderStatusEnum;
@@ -12,6 +7,12 @@ import com.quyen.shoplite.util.constant.PaymentMethodEnum;
 import com.quyen.shoplite.util.constant.RefTypeEnum;
 import com.quyen.shoplite.util.constant.TypeInventoryEnum;
 import com.quyen.shoplite.util.error.IdInvalidException;
+
+import com.quyen.shoplite.domain.*;
+import com.quyen.shoplite.domain.request.ReqImportItemDTO;
+import com.quyen.shoplite.domain.request.ReqImportOrderDTO;
+import com.quyen.shoplite.domain.request.ReqPaymentDTO;
+import com.quyen.shoplite.domain.response.ResImportOrderDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -206,10 +209,15 @@ public class ImportOrderService {
 
     public List<ResImportOrderDTO> findAll() {
         Long storeId = currentStoreService.getCurrentStoreId();
-        return importOrderRepository.findAllByStoreIdOrderByCreatedAtDesc(storeId).stream()
+        List<ImportOrder> orders = importOrderRepository.findAllByStoreIdOrderByCreatedAtDesc(storeId);
+        List<Integer> orderIds = orders.stream().map(ImportOrder::getId).toList();
+        Map<Integer, List<ImportItem>> itemsMap = importItemRepository.findByImportOrder_IdIn(orderIds)
+                .stream()
+                .collect(Collectors.groupingBy(item -> item.getImportOrder().getId()));
+        return orders.stream()
                 .map(order -> DTOMapper.toResImportOrderDTO(
                         order,
-                        importItemRepository.findByImportOrder_Id(order.getId())))
+                        itemsMap.getOrDefault(order.getId(), List.of())))
                 .toList();
     }
 

@@ -1,14 +1,16 @@
 package com.quyen.shoplite.controller;
 
-import com.quyen.shoplite.domain.request.ReqInventoryAdjustmentDTO;
-import com.quyen.shoplite.domain.response.ResInventoryAdjustmentDTO;
 import com.quyen.shoplite.service.InventoryAdjustmentService;
 import com.quyen.shoplite.util.annotation.ApiMessage;
+
+import com.quyen.shoplite.domain.request.ReqInventoryAdjustmentDTO;
+import com.quyen.shoplite.domain.response.ResInventoryAdjustmentDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.*;
+
 import jakarta.validation.constraints.Positive;
 import org.springframework.validation.annotation.Validated;
 

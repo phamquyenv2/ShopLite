@@ -1,13 +1,17 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.Category;
-import com.quyen.shoplite.domain.Store;
-import com.quyen.shoplite.domain.request.ReqCategoryUpsertDTO;
-import com.quyen.shoplite.domain.response.ResCategoryDTO;
 import com.quyen.shoplite.repository.CategoryRepository;
 import com.quyen.shoplite.util.DTOMapper;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
+
+import com.quyen.shoplite.domain.Category;
+import com.quyen.shoplite.domain.Store;
+import com.quyen.shoplite.domain.request.ReqCategoryUpsertDTO;
+import com.quyen.shoplite.domain.response.ResCategoryDTO;
+
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +29,11 @@ public class CategoryService {
         this.currentStoreService = currentStoreService;
     }
 
+    public Long getStoreId() {
+        return currentStoreService.getCurrentStoreId();
+    }
+
+    @CacheEvict(value = "categories", key = "#root.target.storeId")
     public ResCategoryDTO create(ReqCategoryUpsertDTO req) {
         Store store = currentStoreService.getCurrentStore();
         String normalizedName = req.getName().trim();
@@ -45,6 +54,7 @@ public class CategoryService {
         return DTOMapper.toResCategoryDTO(category);
     }
 
+    @Cacheable(value = "categories", key = "#root.target.storeId")
     public List<ResCategoryDTO> findAll() {
         Long storeId = currentStoreService.getCurrentStoreId();
         return categoryRepository.findAllByStoreIdOrderByNameAsc(storeId).stream()
@@ -52,6 +62,7 @@ public class CategoryService {
                 .toList();
     }
 
+    @CacheEvict(value = "categories", key = "#root.target.storeId")
     public ResCategoryDTO update(Integer id, ReqCategoryUpsertDTO req) {
         Long storeId = currentStoreService.getCurrentStoreId();
         Category category = categoryRepository.findByIdAndStoreId(id, storeId)
@@ -64,6 +75,7 @@ public class CategoryService {
         return DTOMapper.toResCategoryDTO(categoryRepository.save(category));
     }
 
+    @CacheEvict(value = "categories", key = "#root.target.storeId")
     public void delete(Integer id) {
         Long storeId = currentStoreService.getCurrentStoreId();
         Category category = categoryRepository.findByIdAndStoreId(id, storeId)

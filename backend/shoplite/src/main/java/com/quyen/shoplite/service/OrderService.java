@@ -1,16 +1,17 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.*;
-import com.quyen.shoplite.domain.request.ReqOrderDTO;
-import com.quyen.shoplite.domain.request.ReqOrderItemDTO;
-import com.quyen.shoplite.domain.response.ResOrderDTO;
-import com.quyen.shoplite.domain.response.ResOrderItemDTO;
 import com.quyen.shoplite.repository.*;
 import com.quyen.shoplite.util.DTOMapper;
 import com.quyen.shoplite.util.constant.RefTypeEnum;
 import com.quyen.shoplite.util.constant.StatusEnum;
 import com.quyen.shoplite.util.constant.TypeInventoryEnum;
 import com.quyen.shoplite.util.error.IdInvalidException;
+
+import com.quyen.shoplite.domain.*;
+import com.quyen.shoplite.domain.request.ReqOrderDTO;
+import com.quyen.shoplite.domain.request.ReqOrderItemDTO;
+import com.quyen.shoplite.domain.response.ResOrderDTO;
+import com.quyen.shoplite.domain.response.ResOrderItemDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -22,8 +23,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -356,13 +359,26 @@ public class OrderService {
                     ? orderRepository.findByStoreIdAndStatusInAndCreatedAtBetween(storeId, statuses, fromDate, toDate, sort)
                     : orderRepository.findByStoreIdAndStatusIn(storeId, statuses, sort);
         }
-        return orders.stream()
-                .map(order -> {
-                    ResOrderDTO dto = toOrderDTOWithPayment(order);
-                    dto.setItems(orderItemsRepository.findAllByOrderId(order.getId()).stream()
-                            .map(DTOMapper::toResOrderItemDTO).toList());
-                    return dto;
-                }).toList();
+        List<Integer> orderIds = orders.stream().map(Order::getId).toList();
+
+        Map<Integer, Payment> paymentMap = paymentRepository
+                .findByStoreIdAndReferenceTypeAndReferenceIdIn(storeId, RefTypeEnum.ORDER, orderIds)
+                .stream()
+                .collect(Collectors.toMap(Payment::getReferenceId, p -> p, (a, b) -> a));
+
+        Map<Integer, List<OrderItems>> itemsMap = orderItemsRepository
+                .findAllByOrderIdIn(orderIds)
+                .stream()
+                .collect(Collectors.groupingBy(item -> item.getOrder().getId()));
+
+        return orders.stream().map(order -> {
+            ResOrderDTO dto = DTOMapper.toResOrderDTO(order);
+            Payment payment = paymentMap.get(order.getId());
+            if (payment != null) dto.setPaymentMethod(payment.getPaymentMethod());
+            dto.setItems(itemsMap.getOrDefault(order.getId(), List.of()).stream()
+                    .map(DTOMapper::toResOrderItemDTO).toList());
+            return dto;
+        }).toList();
     }
 
     private LocalDateTime parseDateTime(String raw) {

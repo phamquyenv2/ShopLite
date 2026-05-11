@@ -1,8 +1,9 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.RolePermissionsChangedEvent;
 import com.quyen.shoplite.repository.StoreMemberRepository;
 import com.quyen.shoplite.util.constant.StoreMemberStatus;
+
+import com.quyen.shoplite.domain.RolePermissionsChangedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

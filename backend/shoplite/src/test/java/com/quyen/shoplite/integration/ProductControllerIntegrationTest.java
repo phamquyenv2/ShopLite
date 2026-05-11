@@ -1,13 +1,15 @@
 package com.quyen.shoplite.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quyen.shoplite.repository.CategoryRepository;
+import com.quyen.shoplite.repository.ProductRepository;
+import com.quyen.shoplite.repository.UnitRepository;
+
 import com.quyen.shoplite.domain.Category;
 import com.quyen.shoplite.domain.Product;
 import com.quyen.shoplite.domain.Unit;
 import com.quyen.shoplite.domain.request.ReqProductUpsertDTO;
-import com.quyen.shoplite.repository.CategoryRepository;
-import com.quyen.shoplite.repository.ProductRepository;
-import com.quyen.shoplite.repository.UnitRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

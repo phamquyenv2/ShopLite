@@ -205,6 +205,37 @@ export type Employee = {
     officeName?: string | null;
 };
 
+export type SalaryType = 'HOURLY' | 'DAILY' | 'MONTHLY';
+
+export type EmployeeSalaryHistory = {
+    id: number;
+    employeeId: number;
+    employeeUsername?: string | null;
+    salaryType: SalaryType;
+    baseRate: number;
+    allowance: number;
+    commission: number;
+    recurringBonus: number;
+    recurringDeduction: number;
+    effectiveFrom: string;
+    effectiveTo?: string | null;
+    reason?: string | null;
+    createdBy?: string | null;
+    createdAt?: string | null;
+    current: boolean;
+};
+
+export type EmployeeSalaryHistoryPayload = {
+    salaryType: SalaryType;
+    baseRate: number;
+    allowance?: number;
+    commission?: number;
+    recurringBonus?: number;
+    recurringDeduction?: number;
+    effectiveFrom?: string | null;
+    reason?: string | null;
+};
+
 export type RosterType = 'WORKING' | 'LEAVE_APPROVED' | 'LEAVE_UNAPPROVED';
 
 export type Roster = {
@@ -278,10 +309,14 @@ export type Payroll = {
     employeeId: number;
     employeeUsername?: string | null;
     period: string;
+    salaryType?: SalaryType | null;
     salaryRate?: number | null;
+    allowance?: number | null;
+    commission?: number | null;
     totalHours?: number | null;
     bonus?: number | null;
     penalty?: number | null;
+    deduction?: number | null;
     totalSalary?: number | null;
     scheduledWorkingDays: number;
     actualPresentDays: number;

@@ -1,11 +1,5 @@
 package com.quyen.shoplite.service;
 
-import com.quyen.shoplite.domain.Attendance;
-import com.quyen.shoplite.domain.Employee;
-import com.quyen.shoplite.domain.Payroll;
-import com.quyen.shoplite.domain.Roster;
-import com.quyen.shoplite.domain.request.ReqPayrollSyncDTO;
-import com.quyen.shoplite.domain.response.ResPayrollDTO;
 import com.quyen.shoplite.repository.AttendanceRepository;
 import com.quyen.shoplite.repository.EmployeeRepository;
 import com.quyen.shoplite.repository.PayrollRepository;
@@ -15,8 +9,17 @@ import com.quyen.shoplite.repository.UserRepository;
 import com.quyen.shoplite.util.constant.RefTypeEnum;
 import com.quyen.shoplite.util.DTOMapper;
 import com.quyen.shoplite.util.SecurityUtil;
+import com.quyen.shoplite.util.constant.SalaryTypeEnum;
 import com.quyen.shoplite.util.error.BadRequestException;
 import com.quyen.shoplite.util.error.ResourceNotFoundException;
+
+import com.quyen.shoplite.domain.Attendance;
+import com.quyen.shoplite.domain.Employee;
+import com.quyen.shoplite.domain.EmployeeSalaryHistory;
+import com.quyen.shoplite.domain.Payroll;
+import com.quyen.shoplite.domain.Roster;
+import com.quyen.shoplite.domain.request.ReqPayrollSyncDTO;
+import com.quyen.shoplite.domain.response.ResPayrollDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +42,7 @@ public class PayrollService {
     private final PaymentRepository paymentRepository;
     private final CurrentStoreService currentStoreService;
     private final UserRepository userRepository;
+    private final EmployeeSalaryHistoryService salaryHistoryService;
 
     // ------------------------------------------------------------------ sync
 
@@ -136,10 +140,24 @@ public class PayrollService {
                 }
             }
 
-            double totalHours  = totalPayableMinutes / 60.0;
-            double bonus       = bonusGlobal;
-            double penalty     = penaltyGlobal + absentPenalty;
-            double totalSalary = totalHours * employee.getSalaryRate() + bonus - penalty;
+            EmployeeSalaryHistory salaryHistory = salaryHistoryService.findEffectiveEntity(employee.getId(), periodEnd);
+            SalaryTypeEnum salaryType = salaryHistory != null ? salaryHistory.getSalaryType() : SalaryTypeEnum.HOURLY;
+            double salaryRate = salaryHistory != null ? salaryHistory.getBaseRate() : employee.getSalaryRate();
+            double allowance = salaryHistory != null ? salaryHistory.getAllowance() : 0.0;
+            double commission = salaryHistory != null ? salaryHistory.getCommission() : 0.0;
+            double recurringBonus = salaryHistory != null ? salaryHistory.getRecurringBonus() : 0.0;
+            double recurringDeduction = salaryHistory != null ? salaryHistory.getRecurringDeduction() : 0.0;
+
+            double totalHours = totalPayableMinutes / 60.0;
+            double bonus = bonusGlobal + recurringBonus;
+            double deduction = recurringDeduction;
+            double penalty = penaltyGlobal + absentPenalty;
+            double baseSalary = switch (salaryType) {
+                case DAILY -> salaryRate * (actualPresentDays + approvedLeaveDays);
+                case MONTHLY -> salaryRate;
+                case HOURLY -> totalHours * salaryRate;
+            };
+            double totalSalary = baseSalary + allowance + commission + bonus - penalty - deduction;
 
             if (totalSalary < 0) {
                 throw new BadRequestException("Total salary cannot be negative for employee ID " + employee.getId());
@@ -152,10 +170,14 @@ public class PayrollService {
                             .period(period)
                             .build());
 
-            payroll.setSalaryRate(employee.getSalaryRate());
+            payroll.setSalaryRate(salaryRate);
+            payroll.setSalaryType(salaryType);
+            payroll.setAllowance(allowance);
+            payroll.setCommission(commission);
             payroll.setTotalHours(totalHours);
             payroll.setBonus(bonus);
             payroll.setPenalty(penalty);
+            payroll.setDeduction(deduction);
             payroll.setTotalSalary(totalSalary);
 
             Payroll saved = payrollRepository.save(payroll);

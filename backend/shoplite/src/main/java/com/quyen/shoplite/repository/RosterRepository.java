@@ -1,7 +1,9 @@
 package com.quyen.shoplite.repository;
 
-import com.quyen.shoplite.domain.Roster;
 import com.quyen.shoplite.util.constant.RosterTypeEnum;
+
+import com.quyen.shoplite.domain.Roster;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

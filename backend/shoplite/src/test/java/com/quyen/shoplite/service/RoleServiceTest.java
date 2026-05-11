@@ -1,11 +1,13 @@
 package com.quyen.shoplite.service;
 
+import com.quyen.shoplite.repository.RoleRepository;
+import com.quyen.shoplite.util.error.ResourceNotFoundException;
+
 import com.quyen.shoplite.domain.Permission;
 import com.quyen.shoplite.domain.Role;
 import com.quyen.shoplite.domain.request.ReqRoleDTO;
 import com.quyen.shoplite.domain.response.ResRoleDTO;
-import com.quyen.shoplite.repository.RoleRepository;
-import com.quyen.shoplite.util.error.ResourceNotFoundException;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

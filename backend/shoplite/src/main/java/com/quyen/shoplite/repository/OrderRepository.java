@@ -1,7 +1,8 @@
 package com.quyen.shoplite.repository;
 
-import com.quyen.shoplite.domain.Order;
 import com.quyen.shoplite.util.constant.StatusEnum;
+
+import com.quyen.shoplite.domain.Order;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
