@@ -16,4 +16,8 @@ public class ReqStoreInvitationDTO {
     @NotNull(message = "roleId is required")
     @Positive(message = "roleId must be greater than 0")
     private Long roleId;
+
+    @NotNull(message = "officeId is required")
+    @Positive(message = "officeId must be greater than 0")
+    private Integer officeId;
 }

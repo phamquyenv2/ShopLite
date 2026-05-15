@@ -22,6 +22,7 @@ import RosterPage from './pages/RosterPage';
 import AttendancePage from './pages/AttendancePage';
 import PayrollsPage from './pages/PayrollsPage';
 import RoleDetailPage from './pages/RoleDetailPage/RoleDetailPage';
+import OfficesPage from './pages/OfficesPage';
 import ImportOrdersPage from './pages/ImportOrdersPage';
 import ImportOrderCreatePage from './pages/ImportOrderCreatePage';
 import ImportOrderDetailPage from './pages/ImportOrderDetailPage';
@@ -136,6 +137,7 @@ const AppContent: React.FC = () => {
       <Route exact path="/my-salary" render={() => <RequireAuth component={MySalaryPage} />} />
       <Route exact path="/payrolls" render={() => <RequireAuth component={PayrollsPage} />} />
       <Route exact path="/roles/:id" render={() => <RequireAuth component={RoleDetailPage} />} />
+      <Route exact path="/offices" render={() => <RequireAuth component={OfficesPage} />} />
 
       <Route exact path="/import-orders" render={() => <RequireAuth component={ImportOrdersPage} />} />
       <Route exact path="/import-order/new" render={() => <RequireAuth component={ImportOrderCreatePage} />} />

@@ -190,10 +190,7 @@ public class AttendanceService {
     }
 
     public LocalDateTime autoCheckoutTimeFor(Attendance attendance) {
-        LocalTime autoCheckout = attendance.getOffice().getAutoCheckoutTime() != null
-                ? attendance.getOffice().getAutoCheckoutTime()
-                : LocalTime.of(23, 59);
-        LocalDateTime limitDT = attendance.getWorkingDay().atTime(autoCheckout);
+        LocalDateTime limitDT = attendance.getWorkingDay().atTime(LocalTime.of(23, 59));
 
         Roster roster = attendance.getRoster();
         if (roster != null && roster.getStartTime() != null && roster.getEndTime() != null) {
@@ -227,8 +224,6 @@ public class AttendanceService {
         long earlyLeaveMinutes = 0L;
 
         Roster roster = attendance.getRoster();
-        Office office = attendance.getOffice();
-
         if (roster != null && roster.getStartTime() != null && roster.getEndTime() != null) {
             LocalDate     day          = attendance.getWorkingDay();
             LocalDateTime shiftStartDT = day.atTime(roster.getStartTime());
@@ -238,8 +233,7 @@ public class AttendanceService {
                 shiftEndDT = shiftEndDT.plusDays(1);
             }
 
-            int grace = office.getLateGraceMinutes() != null ? office.getLateGraceMinutes() : 0;
-            LocalDateTime graceDeadline = shiftStartDT.plusMinutes(grace);
+            LocalDateTime graceDeadline = shiftStartDT;
             if (attendance.getCheckIn().isAfter(graceDeadline)) {
                 lateMinutes = Duration.between(graceDeadline, attendance.getCheckIn()).toMinutes();
             }

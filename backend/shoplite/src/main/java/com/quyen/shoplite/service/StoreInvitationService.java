@@ -54,6 +54,9 @@ public class StoreInvitationService {
             throw new BadRequestException("Role is inactive");
         }
 
+        Office office = officeRepository.findByIdAndStoreId(req.getOfficeId(), store.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Office not found with id=" + req.getOfficeId()));
+
         if (storeMemberRepository.findByStoreIdAndUserId(store.getId(), invitedUser.getId()).isPresent()) {
             throw new BadRequestException("User is already a member of this store");
         }
@@ -70,6 +73,7 @@ public class StoreInvitationService {
                 .invitedUser(invitedUser)
                 .invitedBy(invitedBy)
                 .role(role)
+                .office(office)
                 .phone(localPhone)
                 .status(InvitationStatus.PENDING)
                 .expiresAt(now.plusDays(INVITATION_EXPIRY_DAYS))
@@ -117,7 +121,7 @@ public class StoreInvitationService {
             member.setRole(invitation.getRole());
             member.setJoinedAt(LocalDateTime.now());
         }
-        ensureEmployee(member);
+        ensureEmployee(member, invitation.getOffice());
 
         invitation.setStatus(InvitationStatus.ACCEPTED);
         invitation.setRespondedAt(LocalDateTime.now());
@@ -179,24 +183,29 @@ public class StoreInvitationService {
                 .build();
     }
 
-    private void ensureEmployee(StoreMember member) {
+    private void ensureEmployee(StoreMember member, Office invitedOffice) {
+        Office office = invitedOffice != null ? invitedOffice : firstOffice(member.getStore().getId());
         employeeRepository.findByStoreMember_Id(member.getId())
                 .ifPresentOrElse(employee -> {
+                    employee.setOffice(office);
                     if (employee.isDeleted()) {
                         employee.setDeleted(false);
-                        employeeRepository.save(employee);
                     }
+                    employeeRepository.save(employee);
                 }, () -> {
-                    Office defaultOffice = officeRepository.findAllByStoreIdOrderByIdAsc(member.getStore().getId()).stream()
-                            .findFirst()
-                            .orElse(null);
                     employeeRepository.save(Employee.builder()
                             .storeMember(member)
                             .store(member.getStore())
-                            .office(defaultOffice)
+                            .office(office)
                             .salaryRate(0.0)
                             .build());
                 });
+    }
+
+    private Office firstOffice(Long storeId) {
+        return officeRepository.findAllByStoreIdOrderByIdAsc(storeId).stream()
+                .findFirst()
+                .orElse(null);
     }
 
     private ResStoreInvitationDTO toDto(StoreInvitation invitation) {
@@ -209,6 +218,8 @@ public class StoreInvitationService {
                 .phone(invitation.getPhone())
                 .roleId(invitation.getRole().getId())
                 .roleName(invitation.getRole().getName())
+                .officeId(invitation.getOffice() != null ? invitation.getOffice().getId() : null)
+                .officeName(invitation.getOffice() != null ? invitation.getOffice().getName() : null)
                 .status(invitation.getStatus())
                 .expiresAt(invitation.getExpiresAt())
                 .createdAt(invitation.getCreatedAt())

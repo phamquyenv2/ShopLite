@@ -205,6 +205,14 @@ export type Employee = {
     officeName?: string | null;
 };
 
+export type Office = {
+    id: number;
+    name: string;
+    officeLat: number;
+    officeLng: number;
+    radius: number;
+};
+
 export type SalaryType = 'HOURLY' | 'DAILY' | 'MONTHLY';
 
 export type EmployeeSalaryHistory = {
@@ -364,6 +372,8 @@ export type StoreInvitation = {
     phone: string;
     roleId: number;
     roleName: string;
+    officeId?: number | null;
+    officeName?: string | null;
     status: StoreInvitationStatus;
     expiresAt: string;
     createdAt: string;

@@ -35,6 +35,10 @@ public class StoreInvitation {
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "office_id")
+    private Office office;
+
     @Column(nullable = false, length = 20)
     private String phone;
 

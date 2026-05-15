@@ -19,6 +19,8 @@ public class ResStoreInvitationDTO {
     private String phone;
     private Long roleId;
     private String roleName;
+    private Integer officeId;
+    private String officeName;
     private InvitationStatus status;
     private LocalDateTime expiresAt;
     private LocalDateTime createdAt;

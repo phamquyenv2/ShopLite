@@ -83,7 +83,6 @@ class PayrollControllerIntegrationTest extends IntegrationTestBase {
         testOffice.setOfficeLat(new BigDecimal("10.77609800"));
         testOffice.setOfficeLng(new BigDecimal("106.70081500"));
         testOffice.setRadius(200);
-        testOffice.setLateGraceMinutes(15);
         testOffice = officeRepository.save(testOffice);
 
         // 5. Setup Employee mapped to User & Office

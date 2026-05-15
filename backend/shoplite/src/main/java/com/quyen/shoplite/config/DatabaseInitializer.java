@@ -610,9 +610,8 @@ public class DatabaseInitializer implements CommandLineRunner {
                 permission("/api/v1/payrolls/me", "GET"));
 
         Menu settingsGroup = ensureMenu("GROUP_SETTINGS", "Cai dat chung", null, "settingsOutline", MenuType.GROUP, more, 250);
-        ensureMenu("ITEM_ROLE_MANAGEMENT", "Quan ly nguoi dung", "/employees", "personOutline", MenuType.ITEM, settingsGroup, 251,
-                permission("/api/v1/roles", "GET"),
-                permission("/api/v1/permissions", "GET"));
+        ensureMenu("ITEM_ROLE_MANAGEMENT", "Van phong", "/offices", "businessOutline", MenuType.ITEM, settingsGroup, 251,
+                permission("/api/v1/offices", "GET"));
     }
 
     // ------------------------------------------------------------------ helpers

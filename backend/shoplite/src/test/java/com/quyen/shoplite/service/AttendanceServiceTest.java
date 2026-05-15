@@ -82,7 +82,6 @@ class AttendanceServiceTest {
                 .officeLat(BigDecimal.valueOf(10.0))
                 .officeLng(BigDecimal.valueOf(20.0))
                 .radius(100)
-                .lateGraceMinutes(15)
                 .build();
 
         employee = Employee.builder()
@@ -280,7 +279,7 @@ class AttendanceServiceTest {
             roster.setEndTime(LocalTime.of(17, 0));
             roster.setUnpaidBreakMinutes(30L);
 
-            // check-in 9:20 (after grace 9:15)
+            // check-in 9:20 (after shift start 9:00)
             LocalDateTime checkInTime = LocalDateTime.of(2026, 4, 13, 9, 20);
             Attendance openAttendance = Attendance.builder()
                     .employee(employee)
@@ -311,8 +310,8 @@ class AttendanceServiceTest {
 
             // worked = 9:20 to 16:45 = 7h25m = 445m
             assertEquals(445L, saved.getWorkedMinutes());
-            // late = 9:20 - 9:15 = 5m
-            assertEquals(5L, saved.getLateMinutes());
+            // late = 9:20 - 9:00 = 20m
+            assertEquals(20L, saved.getLateMinutes());
             // early = 17:00 - 16:45 = 15m
             assertEquals(15L, saved.getEarlyLeaveMinutes());
             // payable = effective(9:20) to 16:45 = 445m - 30m break = 415m
