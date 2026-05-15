@@ -33,9 +33,10 @@ import {
     callOutline
 } from 'ionicons/icons';
 import { employeeService } from '../services/employee.service';
+import { officeService } from '../services/office.service';
 import { roleService } from '../services/role.service';
 import { storeInvitationService } from '../services/storeInvitation.service';
-import type { Employee, Role } from '../api/types';
+import type { Employee, Office, Role } from '../api/types';
 import { useStorePermissions } from '../utils/useStorePermissions';
 import './EmployeesPage.css';
 
@@ -93,6 +94,7 @@ const EmployeesPage: React.FC = () => {
     const canUpdateEmployee = can('/api/v1/employees/{id}', 'PUT');
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
+    const [offices, setOffices] = useState<Office[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -102,6 +104,9 @@ const EmployeesPage: React.FC = () => {
     const [inviteName, setInviteName] = useState('');
     const [invitePhone, setInvitePhone] = useState('');
     const [inviteRoleId, setInviteRoleId] = useState<string>('');
+    const [inviteOfficeId, setInviteOfficeId] = useState<string>('');
+    const [rolePickerOpen, setRolePickerOpen] = useState(false);
+    const [officePickerOpen, setOfficePickerOpen] = useState(false);
     const [inviting, setInviting] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [salaryRate, setSalaryRate] = useState('');
@@ -111,15 +116,20 @@ const EmployeesPage: React.FC = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [emps, rols] = await Promise.all([
+            const [emps, rols, officeList] = await Promise.all([
                 employeeService.getEmployees(),
-                roleService.getRoles()
+                roleService.getRoles(),
+                officeService.getOffices()
             ]);
             setEmployees(emps);
             setRoles(rols);
+            setOffices(officeList);
             setInviteName('');
             setInvitePhone('');
             setInviteRoleId('');
+            setInviteOfficeId(officeList[0]?.id ? String(officeList[0].id) : '');
+            setRolePickerOpen(false);
+            setOfficePickerOpen(false);
         } catch (err: any) {
             setToast(err.message || 'Loi khi tai du lieu');
         } finally {
@@ -170,11 +180,17 @@ const EmployeesPage: React.FC = () => {
             setToast('Vui lòng chọn vai trò');
             return;
         }
+        if (!inviteOfficeId) {
+            setToast('Vui lòng chọn văn phòng');
+            return;
+        }
         setInviting(true);
         try {
-            await storeInvitationService.createInvitation(phone, inviteRoleId);
+            await storeInvitationService.createInvitation(phone, inviteRoleId, inviteOfficeId);
             setToast('Đã gửi lời mời');
             setInvitePhone('');
+            setInviteOfficeId(offices[0]?.id ? String(offices[0].id) : '');
+            setOfficePickerOpen(false);
             setInviteOpen(false);
         } catch (err: any) {
             setToast(err.message || 'Không thể gửi lời mời');
@@ -348,7 +364,11 @@ const EmployeesPage: React.FC = () => {
                 )}
             </IonContent>
 
-            <IonModal isOpen={inviteOpen} onDidDismiss={() => setInviteOpen(false)} className="ep-invite-modal">
+            <IonModal isOpen={inviteOpen} onDidDismiss={() => {
+                setInviteOpen(false);
+                setRolePickerOpen(false);
+                setOfficePickerOpen(false);
+            }} className="ep-invite-modal">
                 <div className="ep-invite-header">
                     <button className="ep-invite-back" onClick={() => setInviteOpen(false)}>
                         <IonIcon icon={chevronBackOutline} />
@@ -378,17 +398,82 @@ const EmployeesPage: React.FC = () => {
                         </div>
                         <div className="ep-invite-field">
                             <label>Vai trò <span className="ep-invite-required">*</span></label>
-                            <div className="ep-invite-select-wrap">
-                                <select
-                                    value={inviteRoleId}
-                                    onChange={e => setInviteRoleId(e.target.value)}
+                            <div className="ep-office-picker">
+                                <button
+                                    type="button"
+                                    className={`ep-office-trigger ${inviteRoleId ? 'has-value' : ''}`}
+                                    onClick={() => {
+                                        setRolePickerOpen(open => !open);
+                                        setOfficePickerOpen(false);
+                                    }}
                                 >
-                                    <option value="" disabled>Chọn 1 vai trò cho nhân viên</option>
-                                    {roles.map(role => (
-                                        <option key={role.id} value={role.id}>{role.name}</option>
-                                    ))}
-                                </select>
-                                <IonIcon icon={chevronDownOutline} className="ep-invite-select-icon" />
+                                    <span>
+                                        {roles.find(role => String(role.id) === inviteRoleId)?.name || 'Chọn 1 vai trò cho nhân viên'}
+                                    </span>
+                                    <IonIcon icon={chevronDownOutline} className={rolePickerOpen ? 'open' : ''} />
+                                </button>
+                                {rolePickerOpen && (
+                                    <div className="ep-office-menu">
+                                        {roles.length === 0 ? (
+                                            <div className="ep-office-empty">Chưa có vai trò</div>
+                                        ) : roles.map(role => {
+                                            const selected = String(role.id) === inviteRoleId;
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    key={role.id}
+                                                    className={`ep-office-option ${selected ? 'selected' : ''}`}
+                                                    onClick={() => {
+                                                        setInviteRoleId(String(role.id));
+                                                        setRolePickerOpen(false);
+                                                    }}
+                                                >
+                                                    {role.name}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="ep-invite-field">
+                            <label>Văn phòng <span className="ep-invite-required">*</span></label>
+                            <div className="ep-office-picker">
+                                <button
+                                    type="button"
+                                    className={`ep-office-trigger ${inviteOfficeId ? 'has-value' : ''}`}
+                                    onClick={() => {
+                                        setOfficePickerOpen(open => !open);
+                                        setRolePickerOpen(false);
+                                    }}
+                                >
+                                    <span>
+                                        {offices.find(office => String(office.id) === inviteOfficeId)?.name || 'Chọn văn phòng cho nhân viên'}
+                                    </span>
+                                    <IonIcon icon={chevronDownOutline} className={officePickerOpen ? 'open' : ''} />
+                                </button>
+                                {officePickerOpen && (
+                                    <div className="ep-office-menu">
+                                        {offices.length === 0 ? (
+                                            <div className="ep-office-empty">Chưa có văn phòng</div>
+                                        ) : offices.map(office => {
+                                            const selected = String(office.id) === inviteOfficeId;
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    key={office.id}
+                                                    className={`ep-office-option ${selected ? 'selected' : ''}`}
+                                                    onClick={() => {
+                                                        setInviteOfficeId(String(office.id));
+                                                        setOfficePickerOpen(false);
+                                                    }}
+                                                >
+                                                    {office.name}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -396,7 +481,7 @@ const EmployeesPage: React.FC = () => {
                 <div className="ep-invite-footer">
                     <button
                         className="ep-invite-submit"
-                        disabled={!inviteName.trim() || !invitePhone.trim() || !inviteRoleId || inviting}
+                        disabled={!inviteName.trim() || !invitePhone.trim() || !inviteRoleId || !inviteOfficeId || inviting}
                         onClick={submitInvitation}
                     >
                         {inviting ? 'Đang gửi...' : 'Tạo và gửi lời mời'}

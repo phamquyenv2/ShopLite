@@ -25,6 +25,8 @@ public class DatabaseMigration {
         }
 
         migrateStoreScopedTables();
+        dropOfficeScheduleColumns();
+        migrateStoreInvitationsOffice();
     }
 
     private void migrateStoreScopedTables() {
@@ -92,6 +94,34 @@ public class DatabaseMigration {
                     AND h.store_id = COALESCE(e.store_id, %d)
                 WHERE h.id IS NULL
                 """.formatted(defaultStoreId, defaultStoreId));
+    }
+
+    private void dropOfficeScheduleColumns() {
+        executeIgnoringFailure("ALTER TABLE offices DROP COLUMN shift_start");
+        executeIgnoringFailure("ALTER TABLE offices DROP COLUMN shift_end");
+        executeIgnoringFailure("ALTER TABLE offices DROP COLUMN late_grace_minutes");
+        executeIgnoringFailure("ALTER TABLE offices DROP COLUMN auto_checkout_time");
+    }
+
+    private void migrateStoreInvitationsOffice() {
+        executeIgnoringFailure("ALTER TABLE store_invitations ADD COLUMN office_id INT NULL");
+        executeIgnoringFailure("""
+                UPDATE store_invitations si
+                SET office_id = (
+                    SELECT o.id
+                    FROM offices o
+                    WHERE o.store_id = si.store_id
+                    ORDER BY o.id
+                    LIMIT 1
+                )
+                WHERE si.office_id IS NULL
+                """);
+        executeIgnoringFailure("ALTER TABLE store_invitations ADD INDEX idx_store_invitations_office_id (office_id)");
+        executeIgnoringFailure("""
+                ALTER TABLE store_invitations
+                ADD CONSTRAINT fk_store_invitations_office
+                FOREIGN KEY (office_id) REFERENCES offices(id)
+                """);
     }
 
     private void executeIgnoringFailure(String sql) {

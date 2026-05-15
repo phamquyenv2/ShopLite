@@ -90,7 +90,6 @@ class AttendanceControllerIntegrationTest extends IntegrationTestBase {
         testOffice.setOfficeLat(new BigDecimal("10.77609800")); // Tọa độ giả định
         testOffice.setOfficeLng(new BigDecimal("106.70081500"));
         testOffice.setRadius(200); // Bán kính văn phòng 200m
-        testOffice.setLateGraceMinutes(15);
         testOffice = officeRepository.save(testOffice);
 
         // 5. Setup Employee mapped to User & Office

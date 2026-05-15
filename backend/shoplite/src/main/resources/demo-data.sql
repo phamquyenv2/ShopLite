@@ -21,8 +21,8 @@ UPDATE stores
 SET name = 'ShopLite Demo Store'
 WHERE id = @store_id;
 
-INSERT INTO offices (store_id, name, office_lat, office_lng, radius, shift_start, shift_end, late_grace_minutes, auto_checkout_time)
-SELECT @store_id, 'Chi nhanh trung tam', 10.77620900, 106.70076200, 250, '08:00:00', '17:00:00', 10, '23:59:00'
+INSERT INTO offices (store_id, name, office_lat, office_lng, radius)
+SELECT @store_id, 'Chi nhanh trung tam', 10.77620900, 106.70076200, 250
 WHERE NOT EXISTS (
     SELECT 1 FROM offices WHERE store_id = @store_id AND name = 'Chi nhanh trung tam'
 );

@@ -3,6 +3,7 @@ import {
     arrowUndoOutline,
     bagHandleOutline,
     bagOutline,
+    businessOutline,
     calendarOutline,
     cartOutline,
     clipboardOutline,
@@ -28,6 +29,7 @@ const iconMap: Record<string, string> = {
     arrowUndoOutline,
     bagHandleOutline,
     bagOutline,
+    businessOutline,
     calendarOutline,
     cartOutline,
     clipboardOutline,
@@ -75,7 +77,7 @@ const titleMap: Record<string, string> = {
     ITEM_ROSTER: 'Lịch làm việc',
     ITEM_ATTENDANCE: 'Chấm công',
     ITEM_PAYROLLS: 'Bảng lương',
-    ITEM_ROLE_MANAGEMENT: 'Quản lý người dùng',
+    ITEM_ROLE_MANAGEMENT: 'Văn phòng',
 };
 
 export const getMenuIcon = (icon?: string | null, fallback = gridOutline) =>

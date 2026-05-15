@@ -163,10 +163,6 @@ public class DTOMapper {
         dto.setOfficeLat(office.getOfficeLat());
         dto.setOfficeLng(office.getOfficeLng());
         dto.setRadius(office.getRadius());
-        dto.setShiftStart(office.getShiftStart());
-        dto.setShiftEnd(office.getShiftEnd());
-        dto.setLateGraceMinutes(office.getLateGraceMinutes());
-        dto.setAutoCheckoutTime(office.getAutoCheckoutTime());
         return dto;
     }
 

@@ -11,6 +11,7 @@ import {
   arrowUndoOutline,
   bagHandleOutline,
   bagOutline,
+  businessOutline,
   calendarOutline,
   cartOutline,
   chevronForwardOutline,
@@ -73,6 +74,7 @@ const routeByCode: Record<string, string> = {
   ITEM_ROSTER: '/roster',
   ITEM_ATTENDANCE: '/attendance',
   ITEM_PAYROLLS: '/payrolls',
+  ITEM_ROLE_MANAGEMENT: '/offices',
 };
 
 const fallbackTabs = (permissions: Permission[], menus: Menu[]) => [
@@ -188,8 +190,8 @@ const MorePage: React.FC = () => {
             .map(item => ({
               code: item.code,
               label: getMenuTitle(item),
-              route: item.route || routeByCode[item.code] || undefined,
-              icon: getMenuIcon(item.icon, archiveOutline),
+              route: routeByCode[item.code] || item.route || undefined,
+              icon: item.code === 'ITEM_ROLE_MANAGEMENT' ? businessOutline : getMenuIcon(item.icon, archiveOutline),
               iconClass: iconClassByCode[item.code] || 'icon-blue',
               apiPath: '',
             })),

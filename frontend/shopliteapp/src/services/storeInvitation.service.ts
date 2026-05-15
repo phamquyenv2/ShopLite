@@ -5,9 +5,13 @@ import { clearMeCache } from '../utils/meSession';
 const unwrap = <T>(payload: any): T => payload?.data ?? payload;
 
 export const storeInvitationService = {
-    async createInvitation(phone: string, roleId: number | string): Promise<StoreInvitation> {
+    async createInvitation(phone: string, roleId: number | string, officeId: number | string): Promise<StoreInvitation> {
         try {
-            const res = await authApis().post<any>(endpoints['store-invitations'], { phone, roleId: Number(roleId) });
+            const res = await authApis().post<any>(endpoints['store-invitations'], {
+                phone,
+                roleId: Number(roleId),
+                officeId: Number(officeId),
+            });
             return unwrap<StoreInvitation>(res.data);
         } catch (error: any) {
             throw new ApiError(error.response?.data?.message || 'Khong the gui loi moi', error.response);
