@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
@@ -34,4 +35,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
     List<Transaction> findAllByStoreIdAndPayment_Id(Long storeId, Integer paymentId);
 
     List<Transaction> findAllByStoreIdAndType(Long storeId, TypeTransactionEnum type);
+
+    @Query("SELECT COUNT(t) FROM Transaction t WHERE t.transactionCode LIKE :prefix%")
+    long countByTransactionCodeStartingWith(@org.springframework.data.repository.query.Param("prefix") String prefix);
 }

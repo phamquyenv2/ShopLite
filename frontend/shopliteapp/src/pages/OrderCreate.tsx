@@ -1,5 +1,4 @@
 import {
-    IonActionSheet,
     IonButtons,
     IonContent,
     IonHeader,
@@ -15,12 +14,15 @@ import {
     arrowBackOutline,
     cardOutline,
     chevronForwardOutline,
+    closeOutline,
+    personAddOutline,
+    personOutline,
     pricetagOutline,
     readerOutline,
-    personOutline,
     refreshOutline,
+    searchOutline,
 } from 'ionicons/icons';
-import { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
 import type { Customer, OrderUpsert, Product } from '../api/types';
@@ -122,6 +124,7 @@ const OrderCreatePage: React.FC = () => {
     const [customerId, setCustomerId] = useState<number>(0);
     const [customerName, setCustomerName] = useState<string>('Khách lẻ');
     const [customerSheetOpen, setCustomerSheetOpen] = useState(false);
+    const [customerSearch, setCustomerSearch] = useState('');
 
     const [items, setItems] = useState<SaleCartLine[]>([]);
     const [discountPercent, setDiscountPercent] = useState<number>(0);
@@ -140,7 +143,6 @@ const OrderCreatePage: React.FC = () => {
             : `order-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     );
     const [isConfirmed, setIsConfirmed] = useState(false);
-    // Trạng thái thực tế từ server — dùng để phân nhánh retry flow
     const [orderServerStatus, setOrderServerStatus] = useState<string | null>(null);
     const [qrData, setQrData] = useState<{ qrUrl?: string; transferContent?: string; amount?: number } | null>(null);
     const canSaveDraftOrder = draftOrderId ? canUpdateOrder : canCreateOrder;
@@ -162,7 +164,6 @@ const OrderCreatePage: React.FC = () => {
                         history.replace('/sales');
                     }
                 } catch {
-                    // ignore polling errors
                 }
             }, 3000);
         }
@@ -225,8 +226,6 @@ const OrderCreatePage: React.FC = () => {
         }
         void loadLookups(draft.customerId ?? undefined);
 
-        // Nếu được truyền draftOrderId từ màn DraftOrders (retry),
-        // fetch trạng thái thực tế để phân nhánh đúng.
         const locOrderId = location.state?.draftOrderId;
         if (typeof locOrderId === 'number' && locOrderId > 0) {
             authApis().get<any>(endpoints['order-detail'](locOrderId))
@@ -234,12 +233,11 @@ const OrderCreatePage: React.FC = () => {
                     const order = pickData<{ status?: string }>(res.data);
                     const serverStatus = order?.status ?? null;
                     setOrderServerStatus(serverStatus);
-                    // Nếu đƣn đã confirm (không còn là DRAFT) thì đánh dấu isConfirmed
                     if (serverStatus && serverStatus !== 'DRAFT') {
                         setIsConfirmed(true);
                     }
                 })
-                .catch(() => { /* ignore, flow vẫn hoạt động bình thường */ });
+                .catch(() => { });
         }
     });
 
@@ -371,8 +369,6 @@ const OrderCreatePage: React.FC = () => {
             const isPendingPayment = orderServerStatus === 'PENDING_PAYMENT';
 
             if (!isPendingPayment) {
-                // Lần đầu hoặc đơn vẫn ở DRAFT:
-                // update → confirm → payment
                 await updateDraftOrder(draftOrderId);
                 if (!isConfirmed) {
                     await authApis().patch<any>(endpoints['order-confirm'](draftOrderId));
@@ -380,10 +376,7 @@ const OrderCreatePage: React.FC = () => {
                     setOrderServerStatus('PENDING_PAYMENT');
                 }
             }
-            // Nếu isPendingPayment === true: bỏ qua update + confirm,
-            // thực hiện payment ngay lập tức.
 
-            // Map paymentMethod UI → backend PaymentMethodEnum
             const backendMethod = paymentMethod === 'cash'     ? 'CASH'
                                 : paymentMethod === 'transfer' ? 'BANK_TRANSFER'
                                 : paymentMethod === 'sepay_qr' ? 'BANK_QR'
@@ -422,23 +415,27 @@ const OrderCreatePage: React.FC = () => {
         }
     };
 
-    const customerButtons: Array<{ text: string; role?: 'cancel'; handler?: () => void }> = [
-        {
-            text: 'Khách lẻ (không chọn)',
-            handler: () => {
-                setCustomerId(0);
-                setCustomerName('Khách lẻ');
-            },
-        },
-        ...customers.map((c) => ({
-            text: `${c.name} (${c.phone})`,
-            handler: () => {
-                setCustomerId(c.id);
-                setCustomerName(c.name);
-            },
-        })),
-        { text: 'Huy', role: 'cancel' },
-    ];
+    const filteredCustomers = customers.filter((c) => {
+        const q = customerSearch.trim().toLowerCase();
+        if (!q) return true;
+        return (
+            c.name?.toLowerCase().includes(q) ||
+            c.phone?.toLowerCase().includes(q)
+        );
+    });
+
+    const handleSelectCustomer = (id: number, name: string) => {
+        setCustomerId(id);
+        setCustomerName(name);
+        setCustomerSheetOpen(false);
+        setCustomerSearch('');
+    };
+
+    const handleCreateCustomer = () => {
+        setCustomerSheetOpen(false);
+        setCustomerSearch('');
+        history.push('/customers/new');
+    };
 
     return (
         <IonPage>
@@ -679,15 +676,15 @@ const OrderCreatePage: React.FC = () => {
                         <h3>Quét mã QR để thanh toán</h3>
                         <p>Số tiền: <strong>{formatVnd(qrData.amount ?? 0)}</strong></p>
                         <p>Nội dung CK: <strong>{qrData.transferContent}</strong></p>
-                        
+
                         <div style={{ margin: '20px auto', display: 'flex', justifyContent: 'center' }}>
                             <img src={qrData.qrUrl} alt="QR Code" style={{ maxWidth: '300px', width: '100%', borderRadius: '8px' }} />
                         </div>
-                        
+
                         <p style={{ color: '#666', fontSize: '14px' }}>Hệ thống đang chờ thanh toán. Đơn hàng sẽ tự động hoàn thành khi nhận được tiền.</p>
-                        
-                        <button 
-                            className="order-btn-secondary" 
+
+                        <button
+                            className="order-btn-secondary"
                             style={{ marginTop: '20px', width: '100%' }}
                             onClick={() => {
                                 navigator.clipboard.writeText(qrData.transferContent || '');
@@ -696,8 +693,8 @@ const OrderCreatePage: React.FC = () => {
                         >
                             Copy nội dung CK
                         </button>
-                        <button 
-                            className="order-btn-primary payment-complete" 
+                        <button
+                            className="order-btn-primary payment-complete"
                             style={{ marginTop: '10px' }}
                             onClick={() => {
                                 sessionStorage.removeItem(CART_KEY);
@@ -710,12 +707,81 @@ const OrderCreatePage: React.FC = () => {
                 </IonContent>
             )}
 
-            <IonActionSheet
-                isOpen={customerSheetOpen}
-                onDidDismiss={() => setCustomerSheetOpen(false)}
-                header="Chọn khách hàng"
-                buttons={customerButtons}
-            />
+            {/* ── Custom Customer Picker Modal ── */}
+            {customerSheetOpen && (
+                <div className="cust-modal-overlay" onClick={() => { setCustomerSheetOpen(false); setCustomerSearch(''); }}>
+                    <div className="cust-modal-sheet" onClick={(e) => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className="cust-modal-header">
+                            <span className="cust-modal-title">Chọn khách hàng</span>
+                            <button
+                                className="cust-modal-close"
+                                onClick={() => { setCustomerSheetOpen(false); setCustomerSearch(''); }}
+                            >
+                                <IonIcon icon={closeOutline} />
+                            </button>
+                        </div>
+
+                        {/* Search */}
+                        <div className="cust-search-wrap">
+                            <IonIcon icon={searchOutline} className="cust-search-icon" />
+                            <input
+                                className="cust-search-input"
+                                placeholder="Tìm tên hoặc số điện thoại..."
+                                value={customerSearch}
+                                onChange={(e) => setCustomerSearch(e.target.value)}
+                                autoFocus
+                            />
+                        </div>
+
+                        {/* Create new */}
+                        <button className="cust-create-btn" onClick={handleCreateCustomer}>
+                            <span className="cust-create-icon"><IonIcon icon={personAddOutline} /></span>
+                            <span className="cust-create-label">Tạo khách hàng mới</span>
+                            <IonIcon icon={chevronForwardOutline} className="cust-create-arrow" />
+                        </button>
+
+                        {/* List */}
+                        <div className="cust-list">
+                            {/* Walk-in option */}
+                            <button
+                                className={`cust-item ${customerId === 0 ? 'selected' : ''}`}
+                                onClick={() => handleSelectCustomer(0, 'Khách lẻ')}
+                            >
+                                <div className="cust-item-avatar anon">
+                                    <IonIcon icon={personOutline} />
+                                </div>
+                                <div className="cust-item-meta">
+                                    <div className="cust-item-name">Khách lẻ</div>
+                                    <div className="cust-item-phone">Không liên kết khách hàng</div>
+                                </div>
+                                {customerId === 0 && <span className="cust-item-check">✓</span>}
+                            </button>
+
+                            {filteredCustomers.length === 0 && customerSearch.trim() && (
+                                <div className="cust-empty">Không tìm thấy khách hàng nào</div>
+                            )}
+
+                            {filteredCustomers.map((c) => (
+                                <button
+                                    key={c.id}
+                                    className={`cust-item ${customerId === c.id ? 'selected' : ''}`}
+                                    onClick={() => handleSelectCustomer(c.id, c.name)}
+                                >
+                                    <div className="cust-item-avatar">
+                                        {c.name?.charAt(0)?.toUpperCase() ?? '?'}
+                                    </div>
+                                    <div className="cust-item-meta">
+                                        <div className="cust-item-name">{c.name}</div>
+                                        <div className="cust-item-phone">{c.phone}</div>
+                                    </div>
+                                    {customerId === c.id && <span className="cust-item-check">✓</span>}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <IonToast isOpen={toast !== null} message={toast ?? ''} duration={2200} onDidDismiss={() => setToast(null)} />
         </IonPage>
@@ -723,3 +789,4 @@ const OrderCreatePage: React.FC = () => {
 };
 
 export default OrderCreatePage;
+

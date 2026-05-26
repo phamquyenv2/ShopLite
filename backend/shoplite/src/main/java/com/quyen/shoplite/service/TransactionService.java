@@ -22,7 +22,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +34,6 @@ public class TransactionService {
     private final CurrentStoreService currentStoreService;
 
     private static final DateTimeFormatter CODE_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
-    private static final AtomicLong SEQ = new AtomicLong(1);
 
     /**
      * Tạo Transaction — cập nhật balance FundAccount trong cùng 1 DB transaction.
@@ -143,11 +141,22 @@ public class TransactionService {
     }
 
     /**
-     * Generate unique transaction code: TXN-yyyyMMdd-SEQ
+     * Generate unique transaction code: TXN-yyyyMMdd-NNNN
+     * Dùng count từ DB + retry để tránh duplicate khi restart server hoặc concurrent requests.
      */
     private String generateTransactionCode() {
         String dateStr = LocalDate.now().format(CODE_DATE_FMT);
-        long seq = SEQ.getAndIncrement();
-        return "TXN-" + dateStr + "-" + String.format("%04d", seq);
+        String prefix = "TXN-" + dateStr + "-";
+        // Lấy số records hiện có trong DB với prefix này
+        long count = transactionRepository.countByTransactionCodeStartingWith(prefix);
+        // Thử từ count+1 cho đến khi không bị trùng
+        for (int attempt = 0; attempt < 100; attempt++) {
+            String candidate = prefix + String.format("%04d", count + 1 + attempt);
+            if (!transactionRepository.findByTransactionCode(candidate).isPresent()) {
+                return candidate;
+            }
+        }
+        // Fallback: thêm timestamp millis để đảm bảo unique tuyệt đối
+        return prefix + System.currentTimeMillis();
     }
 }

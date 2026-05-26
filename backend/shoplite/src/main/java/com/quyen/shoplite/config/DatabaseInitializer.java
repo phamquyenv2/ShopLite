@@ -338,7 +338,11 @@ public class DatabaseInitializer implements CommandLineRunner {
                 perm("View fund accounts", "/api/v1/fund-accounts", "GET", "FUND_ACCOUNTS"),
                 perm("View active fund accounts", "/api/v1/fund-accounts/active", "GET", "FUND_ACCOUNTS"),
                 perm("View fund account by id", "/api/v1/fund-accounts/{id}", "GET", "FUND_ACCOUNTS"),
-                perm("Deactivate fund account", "/api/v1/fund-accounts/{id}/deactivate", "PATCH", "FUND_ACCOUNTS")
+                perm("Deactivate fund account", "/api/v1/fund-accounts/{id}/deactivate", "PATCH", "FUND_ACCOUNTS"),
+                // REPORTS
+                perm("View end of day report", "/api/v1/reports/end-of-day", "GET", "REPORTS"),
+                perm("View sales report", "/api/v1/reports/sales", "GET", "REPORTS"),
+                perm("View inventory report", "/api/v1/reports/inventory", "GET", "REPORTS")
         );
 
         List<Permission> allPermissions = new ArrayList<>();
@@ -363,7 +367,8 @@ public class DatabaseInitializer implements CommandLineRunner {
                         || ("GET".equals(p.getMethod()) && p.getApiPath().startsWith("/api/v1/employee-salaries/me"))
                         || p.getApiPath().contains("/attendance/check-")
                         || p.getApiPath().startsWith("/api/v1/attendance/me")
-                        || p.getApiPath().startsWith("/api/v1/dashboard"))
+                        || p.getApiPath().startsWith("/api/v1/dashboard")
+                        || ("GET".equals(p.getMethod()) && p.getApiPath().startsWith("/api/v1/reports")))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         ensureRole("ORDER_STAFF", "Nhan vien ghi don - tao don, xem san pham", orderStaff);
 
@@ -381,7 +386,8 @@ public class DatabaseInitializer implements CommandLineRunner {
                         || ("GET".equals(p.getMethod()) && p.getApiPath().startsWith("/api/v1/employee-salaries/me"))
                         || p.getApiPath().contains("/attendance/check-")
                         || p.getApiPath().startsWith("/api/v1/attendance/me")
-                        || p.getApiPath().startsWith("/api/v1/dashboard"))
+                        || p.getApiPath().startsWith("/api/v1/dashboard")
+                        || ("GET".equals(p.getMethod()) && p.getApiPath().startsWith("/api/v1/reports")))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         ensureRole("CASHIER", "Nhan vien thu ngan - thanh toan, quan ly quy", cashier);
 
@@ -399,7 +405,8 @@ public class DatabaseInitializer implements CommandLineRunner {
                         || ("GET".equals(p.getMethod()) && p.getApiPath().startsWith("/api/v1/employee-salaries/me"))
                         || p.getApiPath().contains("/attendance/check-")
                         || p.getApiPath().startsWith("/api/v1/attendance/me")
-                        || p.getApiPath().startsWith("/api/v1/dashboard"))
+                        || p.getApiPath().startsWith("/api/v1/dashboard")
+                        || ("GET".equals(p.getMethod()) && p.getApiPath().startsWith("/api/v1/reports")))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         ensureRole("WAREHOUSE", "Nhan vien kho - kiem kho, nhap xuat hang", warehouse);
 
