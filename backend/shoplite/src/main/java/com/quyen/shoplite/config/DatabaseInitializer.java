@@ -572,7 +572,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         ensureMenu("SHORTCUT_IMPORT_ORDERS", "Nhap hang", "/import-orders", "logInOutline", MenuType.SHORTCUT, null, 140,
                 permission("/api/v1/import-orders", "GET"));
 
-        Menu transactionGroup = ensureMenu("GROUP_TRANSACTION", "Giao dich", null, "appsOutline", MenuType.GROUP, more, 210);
+        Menu transactionGroup = ensureMenu("GROUP_TRANSACTION", "Giao dich", "/more#transactions", "appsOutline", MenuType.GROUP, more, 210);
         ensureMenu("ITEM_SALES", "Ban hang", "/sales", "bagHandleOutline", MenuType.ITEM, transactionGroup, 211,
                 permission("/api/v1/orders", "POST"));
         ensureMenu("ITEM_ORDERS", "Hoa don", "/orders", "receiptOutline", MenuType.ITEM, transactionGroup, 212,
@@ -582,7 +582,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         ensureMenu("ITEM_FUND_LEDGER", "So quy", "/fund-ledger", "walletOutline", MenuType.ITEM, transactionGroup, 214,
                 permission("/api/v1/fund-accounts", "GET"));
 
-        Menu productGroup = ensureMenu("GROUP_PRODUCTS", "Hang hoa", null, "archiveOutline", MenuType.GROUP, more, 220);
+        Menu productGroup = ensureMenu("GROUP_PRODUCTS", "Hang hoa", "/more#products", "archiveOutline", MenuType.GROUP, more, 220);
         ensureMenu("ITEM_PRODUCTS", "Hang hoa", "/products", "archiveOutline", MenuType.ITEM, productGroup, 221,
                 permission("/api/v1/products", "GET"));
         ensureMenu("ITEM_INVENTORY_ADJUSTMENTS", "Kiem kho", "/inventory-adjustments", "clipboardOutline", MenuType.ITEM, productGroup, 222,
@@ -592,24 +592,24 @@ public class DatabaseInitializer implements CommandLineRunner {
         ensureMenu("ITEM_IMPORT_RETURN_ORDERS", "Tra hang nhap", "/import-return-orders", "arrowUndoOutline", MenuType.ITEM, productGroup, 224,
                 permission("/api/v1/import-return-orders", "GET"));
 
-        Menu partnerGroup = ensureMenu("GROUP_PARTNERS", "Doi tac", null, "peopleOutline", MenuType.GROUP, more, 230);
+        Menu partnerGroup = ensureMenu("GROUP_PARTNERS", "Doi tac", "/more#partners", "peopleOutline", MenuType.GROUP, more, 230);
         ensureMenu("ITEM_CUSTOMERS", "Khach hang", "/customers", "personOutline", MenuType.ITEM, partnerGroup, 231,
                 permission("/api/v1/customers", "GET"));
         ensureMenu("ITEM_SUPPLIERS", "Nha cung cap", "/suppliers", "storefrontOutline", MenuType.ITEM, partnerGroup, 232,
                 permission("/api/v1/suppliers", "GET"));
 
-        Menu employeeGroup = ensureMenu("GROUP_EMPLOYEES", "Nhan vien", null, "peopleOutline", MenuType.GROUP, more, 240);
+        Menu employeeGroup = ensureMenu("GROUP_EMPLOYEES", "Nhan vien", "/more#employees", "peopleOutline", MenuType.GROUP, more, 240);
         ensureMenu("ITEM_EMPLOYEES", "Nhan vien", "/employees", "peopleOutline", MenuType.ITEM, employeeGroup, 241,
                 permission("/api/v1/employees", "GET"));
-        ensureMenu("ITEM_ROSTER", "Lich lam viec", null, "timeOutline", MenuType.ITEM, employeeGroup, 242,
+        ensureMenu("ITEM_ROSTER", "Lich lam viec", "/roster", "timeOutline", MenuType.ITEM, employeeGroup, 242,
                 permission("/api/v1/roster/day", "GET"));
-        ensureMenu("ITEM_ATTENDANCE", "Cham cong", null, "calendarOutline", MenuType.ITEM, employeeGroup, 243,
+        ensureMenu("ITEM_ATTENDANCE", "Cham cong", "/attendance", "calendarOutline", MenuType.ITEM, employeeGroup, 243,
                 permission("/api/v1/attendance", "GET"));
-        ensureMenu("ITEM_PAYROLLS", "Bang luong", null, "documentTextOutline", MenuType.ITEM, employeeGroup, 244,
+        ensureMenu("ITEM_PAYROLLS", "Bang luong", "/payrolls", "documentTextOutline", MenuType.ITEM, employeeGroup, 244,
                 permission("/api/v1/payrolls", "GET"),
                 permission("/api/v1/payrolls/me", "GET"));
 
-        Menu settingsGroup = ensureMenu("GROUP_SETTINGS", "Cai dat chung", null, "settingsOutline", MenuType.GROUP, more, 250);
+        Menu settingsGroup = ensureMenu("GROUP_SETTINGS", "Cai dat chung", "/more#settings", "settingsOutline", MenuType.GROUP, more, 250);
         ensureMenu("ITEM_ROLE_MANAGEMENT", "Van phong", "/offices", "businessOutline", MenuType.ITEM, settingsGroup, 251,
                 permission("/api/v1/offices", "GET"));
     }

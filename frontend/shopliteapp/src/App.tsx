@@ -76,6 +76,9 @@ import SupplierDetailPage from './pages/SupplierDetailPage';
 import SupplierFormPage from './pages/SupplierFormPage';
 import SupplierTransactionsPage from './pages/SupplierTransactionsPage';
 import SupplierDebtPage from './pages/SupplierDebtPage';
+import ReportEndOfDayPage from './pages/ReportEndOfDayPage';
+import ReportSalesPage from './pages/ReportSalesPage';
+import ReportInventoryPage from './pages/ReportInventoryPage';
 
 setupIonicReact({ mode: 'md' });
 
@@ -167,6 +170,10 @@ const AppContent: React.FC = () => {
       <Route exact path="/suppliers/:id(\d+)/edit" render={() => <RequireAuth component={SupplierFormPage} />} />
       <Route exact path="/suppliers/:id(\d+)/orders" render={() => <RequireAuth component={SupplierTransactionsPage} />} />
       <Route exact path="/suppliers/:id(\d+)/debt" render={() => <RequireAuth component={SupplierDebtPage} />} />
+
+      <Route exact path="/reports/end-of-day" render={() => <RequireAuth component={ReportEndOfDayPage} />} />
+      <Route exact path="/reports/sales" render={() => <RequireAuth component={ReportSalesPage} />} />
+      <Route exact path="/reports/inventory" render={() => <RequireAuth component={ReportInventoryPage} />} />
 
       <Route exact path="/more" render={() => <RequireAuth component={MorePage} />} />
 

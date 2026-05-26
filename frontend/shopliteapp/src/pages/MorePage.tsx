@@ -11,6 +11,7 @@ import {
   arrowUndoOutline,
   bagHandleOutline,
   bagOutline,
+  barChartOutline,
   businessOutline,
   calendarOutline,
   cartOutline,
@@ -26,8 +27,10 @@ import {
   personOutline,
   receiptOutline,
   reorderThreeOutline,
+  statsChartOutline,
   storefrontOutline,
   timeOutline,
+  todayOutline,
   walletOutline,
 } from 'ionicons/icons';
 import { useEffect, useState } from 'react';
@@ -75,6 +78,9 @@ const routeByCode: Record<string, string> = {
   ITEM_ATTENDANCE: '/attendance',
   ITEM_PAYROLLS: '/payrolls',
   ITEM_ROLE_MANAGEMENT: '/offices',
+  ITEM_REPORT_END_OF_DAY: '/reports/end-of-day',
+  ITEM_REPORT_SALES: '/reports/sales',
+  ITEM_REPORT_INVENTORY: '/reports/inventory',
 };
 
 const fallbackTabs = (permissions: Permission[], menus: Menu[]) => [
@@ -118,6 +124,14 @@ const fallbackGroups: StaticGroup[] = [
       { code: 'ITEM_ROSTER', label: 'Lịch làm việc', route: '/roster', icon: timeOutline, iconClass: 'icon-blue', apiPath: '/api/v1/roster/day' },
       { code: 'ITEM_ATTENDANCE', label: 'Chấm công', route: '/attendance', icon: calendarOutline, iconClass: 'icon-blue', apiPath: '/api/v1/attendance' },
       { code: 'ITEM_PAYROLLS', label: 'Bảng lương', route: '/payrolls', icon: documentTextOutline, iconClass: 'icon-blue', apiPath: '/api/v1/payrolls' },
+    ],
+  },
+  {
+    title: 'Báo cáo',
+    items: [
+      { code: 'ITEM_REPORT_END_OF_DAY', label: 'Cuối ngày', route: '/reports/end-of-day', icon: todayOutline, iconClass: 'icon-blue', apiPath: '/api/v1/orders' },
+      { code: 'ITEM_REPORT_SALES', label: 'Bán hàng', route: '/reports/sales', icon: statsChartOutline, iconClass: 'icon-green', apiPath: '/api/v1/orders' },
+      { code: 'ITEM_REPORT_INVENTORY', label: 'Hàng hóa', route: '/reports/inventory', icon: barChartOutline, iconClass: 'icon-blue', apiPath: '/api/v1/products' },
     ],
   },
 ];
@@ -260,6 +274,34 @@ const MorePage: React.FC = () => {
               </div>
             </div>
           ))}
+
+          {/* ── Báo cáo – luôn hiển thị ── */}
+          <div className="menu-group">
+            <h3 className="group-title">Báo cáo</h3>
+            <div className="grid-2-col">
+              <div
+                className="menu-grid-item"
+                onClick={() => history.push('/reports/end-of-day')}
+              >
+                <IonIcon icon={todayOutline} className="icon-blue" />
+                <span>Cuối ngày</span>
+              </div>
+              <div
+                className="menu-grid-item"
+                onClick={() => history.push('/reports/sales')}
+              >
+                <IonIcon icon={statsChartOutline} className="icon-green" />
+                <span>Bán hàng</span>
+              </div>
+              <div
+                className="menu-grid-item"
+                onClick={() => history.push('/reports/inventory')}
+              >
+                <IonIcon icon={barChartOutline} className="icon-blue" />
+                <span>Hàng hóa</span>
+              </div>
+            </div>
+          </div>
 
           <div className="menu-list-group">
             {permissions.some(p => p.apiPath.startsWith('/api/v1/employee-salaries/me')) && (
