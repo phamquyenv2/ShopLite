@@ -19,6 +19,8 @@ import {
 } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
 import DateRangePickerModal, { DateRange, rangeLabelOf } from '../components/DateRangePickerModal';
+import { reportService } from '../services/report.service';
+import { getStoredStoreId } from '../utils/Apis';
 import './Reports.css';
 
 /* ---------- helpers ---------- */
@@ -57,45 +59,6 @@ interface TopProduct {
   revenue: number;
 }
 
-/* ---------- mock data ---------- */
-const mockSummary = (period: Period, customRange?: DateRange): DaySummary => {
-  let multiplier = 1;
-  if (period === 'yesterday') multiplier = 0.85;
-  else if (period === 'week') multiplier = 6.3;
-  else if (period === 'month') multiplier = 28.5;
-  else if (period === 'custom' && customRange) {
-    multiplier = Math.max(1, Math.round(
-      (new Date(customRange.to).getTime() - new Date(customRange.from).getTime()) / 86_400_000
-    ) + 1);
-  }
-  const base = 12_350_000;
-  const orders = Math.round(14 * multiplier);
-  const revenue = Math.round(base * multiplier);
-  const discount = Math.round(revenue * 0.05);
-  const refund = Math.round(revenue * 0.02);
-  return {
-    totalRevenue: revenue,
-    totalOrders: orders,
-    totalProducts: Math.round(38 * multiplier),
-    totalDiscount: discount,
-    totalRefund: refund,
-    netRevenue: revenue - discount - refund,
-    avgOrderValue: orders > 0 ? Math.round(revenue / orders) : 0,
-    newCustomers: Math.round(3 * multiplier),
-    cashAmount: Math.round(revenue * 0.45),
-    bankAmount: Math.round(revenue * 0.38),
-    ewalletAmount: Math.round(revenue * 0.17),
-  };
-};
-
-const mockTopProducts = (): TopProduct[] => [
-  { name: 'Cà phê sữa đá', qty: 42, revenue: 2_310_000 },
-  { name: 'Bánh mì thịt', qty: 35, revenue: 1_750_000 },
-  { name: 'Nước cam ép', qty: 28, revenue: 1_260_000 },
-  { name: 'Trà đào cam sả', qty: 22, revenue: 1_100_000 },
-  { name: 'Sandwich trứng', qty: 18, revenue: 810_000 },
-];
-
 const PERIODS: { key: Exclude<Period, 'custom'>; label: string }[] = [
   { key: 'today',     label: 'Hôm nay'   },
   { key: 'yesterday', label: 'Hôm qua'   },
@@ -104,9 +67,9 @@ const PERIODS: { key: Exclude<Period, 'custom'>; label: string }[] = [
 ];
 
 const PAYMENT_ROWS = [
-  { key: 'cash',   label: 'Tiền mặt',    emoji: '💵', cls: ''       },
-  { key: 'bank',   label: 'Chuyển khoản',emoji: '🏦', cls: 'green'  },
-  { key: 'ewallet',label: 'Ví điện tử',  emoji: '📱', cls: 'orange' },
+  { key: 'cash',    label: 'Tiền mặt',     emoji: '💵', cls: ''       },
+  { key: 'bank',    label: 'Chuyển khoản', emoji: '🏦', cls: 'green'  },
+  { key: 'ewallet', label: 'Ví điện tử',   emoji: '📱', cls: 'orange' },
 ] as const;
 
 /* ============================================================ */
@@ -116,16 +79,41 @@ const ReportEndOfDayPage: React.FC = () => {
   const [customRange, setCustomRange] = useState<DateRange | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [summary, setSummary] = useState<DaySummary>(mockSummary('today'));
-  const [topProducts, setTopProducts] = useState<TopProduct[]>(mockTopProducts());
+  const [summary, setSummary] = useState<DaySummary>({
+    totalRevenue: 0, totalOrders: 0, totalProducts: 0,
+    totalDiscount: 0, totalRefund: 0, netRevenue: 0,
+    avgOrderValue: 0, newCustomers: 0,
+    cashAmount: 0, bankAmount: 0, ewalletAmount: 0,
+  });
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
 
-  const load = (p: Period = period, cr: DateRange | null = customRange) => {
+  const periodToDateRange = (p: Period, cr: DateRange | null): { from: string; to: string } => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    if (p === 'today') return { from: todayStr, to: todayStr };
+    if (p === 'yesterday') { const d = new Date(); d.setDate(d.getDate() - 1); const s = d.toISOString().split('T')[0]; return { from: s, to: s }; }
+    if (p === 'week') { const d = new Date(); d.setDate(d.getDate() - 6); return { from: d.toISOString().split('T')[0], to: todayStr }; }
+    if (p === 'month') { const d = new Date(); d.setDate(d.getDate() - 29); return { from: d.toISOString().split('T')[0], to: todayStr }; }
+    if (p === 'custom' && cr) return { from: cr.from, to: cr.to };
+    return { from: todayStr, to: todayStr };
+  };
+
+  const load = async (p: Period = period, cr: DateRange | null = customRange) => {
     setLoading(true);
-    setTimeout(() => {
-      setSummary(mockSummary(p, cr ?? undefined));
-      setTopProducts(mockTopProducts());
-      setLoading(false);
-    }, 500);
+    const storeId = Number(getStoredStoreId() || 1);
+    const { from, to } = periodToDateRange(p, cr);
+    const res = await reportService.getEndOfDayReport(storeId, from, to);
+    if (res) {
+      setSummary({
+        totalRevenue: res.totalRevenue, totalOrders: res.totalOrders,
+        totalProducts: res.totalProducts, totalDiscount: res.totalDiscount,
+        totalRefund: res.totalRefund, netRevenue: res.netRevenue,
+        avgOrderValue: res.avgOrderValue, newCustomers: res.newCustomers,
+        cashAmount: res.cashAmount, bankAmount: res.bankAmount, ewalletAmount: res.ewalletAmount,
+      });
+      setTopProducts(res.topProducts || []);
+    }
+    setLoading(false);
   };
 
   useEffect(() => {

@@ -19,6 +19,8 @@ import {
 } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
 import DateRangePickerModal, { DateRange, rangeLabelOf } from '../components/DateRangePickerModal';
+import { reportService } from '../services/report.service';
+import { getStoredStoreId } from '../utils/Apis';
 import './Reports.css';
 
 /* ---------- helpers ---------- */
@@ -57,93 +59,28 @@ interface RecentOrder {
   code: string;
   customer: string;
   amount: number;
-  status: 'PAID' | 'PENDING' | 'CANCELLED';
+  status: string;
   time: string;
 }
 
-/* ---------- mock data ---------- */
-const REVENUE_POINTS: Record<Exclude<Period, 'custom'>, RevenuePoint[]> = {
-  today: [
-    { label: '08-10h', value: 450_000 },
-    { label: '10-12h', value: 950_000 },
-    { label: '12-14h', value: 2_100_000 },
-    { label: '14-16h', value: 650_000 },
-    { label: '16-18h', value: 800_000 },
-    { label: '18-20h', value: 1_500_000 },
-    { label: '20-22h', value: 450_000 },
-  ],
-  week: [
-    { label: 'T2', value: 8_200_000 },
-    { label: 'T3', value: 11_500_000 },
-    { label: 'T4', value: 9_800_000 },
-    { label: 'T5', value: 14_200_000 },
-    { label: 'T6', value: 16_700_000 },
-    { label: 'T7', value: 12_300_000 },
-    { label: 'CN', value: 7_400_000 },
-  ],
-  month: Array.from({ length: 8 }, (_, i) => ({
-    label: `T${i + 1}`,
-    value: 8_000_000 + (i % 3) * 2_000_000,
-  })),
-  quarter: [
-    { label: 'Tháng 3', value: 145_000_000 },
-    { label: 'Tháng 4', value: 178_000_000 },
-    { label: 'Tháng 5', value: 193_000_000 },
-  ],
-};
-
-const mockSummary = (period: Period, customRange?: DateRange): SalesSummary => {
-  let mult = 1;
-  if (period === 'week')    mult = 7;
-  else if (period === 'month')   mult = 30;
-  else if (period === 'quarter') mult = 90;
-  else if (period === 'custom' && customRange) {
-    mult = Math.max(1, Math.round(
-      (new Date(customRange.to).getTime() - new Date(customRange.from).getTime()) / 86_400_000
-    ) + 1);
-  }
-  const rev  = 6_900_000 * mult;
-  const disc = rev * 0.04;
-  const ret  = rev * 0.015;
-  return {
-    totalRevenue:  rev,
-    totalOrders:   14 * mult,
-    totalDiscount: disc,
-    netRevenue:    rev - disc - ret,
-    avgOrderValue: 493_000,
-    returnAmount:  ret,
-    growth:        12.4,
-  };
-};
-
-const mockCategories = (): TopCategory[] => [
-  { name: 'Đồ uống',       revenue: 3_120_000, orders: 42, pct: 45 },
-  { name: 'Thức ăn nhanh', revenue: 1_890_000, orders: 28, pct: 27 },
-  { name: 'Bánh & Snack',  revenue:   980_000, orders: 18, pct: 14 },
-  { name: 'Tráng miệng',   revenue:   620_000, orders: 12, pct:  9 },
-  { name: 'Khác',          revenue:   290_000, orders:  6, pct:  5 },
-];
-
-const mockRecentOrders = (): RecentOrder[] => [
-  { code: 'HD001234', customer: 'Nguyễn Văn A', amount: 285_000, status: 'PAID',      time: '18:42' },
-  { code: 'HD001233', customer: 'Trần Thị B',   amount: 156_000, status: 'PAID',      time: '17:30' },
-  { code: 'HD001232', customer: 'Lê Minh C',    amount: 540_000, status: 'PENDING',   time: '16:15' },
-  { code: 'HD001231', customer: 'Phạm Thu D',   amount:  89_000, status: 'CANCELLED', time: '15:00' },
-  { code: 'HD001230', customer: 'Hoàng Văn E',  amount: 320_000, status: 'PAID',      time: '14:22' },
-];
-
 const PERIODS: { key: Exclude<Period, 'custom'>; label: string }[] = [
-  { key: 'today',   label: 'Hôm nay'  },
-  { key: 'week',    label: '7 ngày'   },
-  { key: 'month',   label: 'Tháng này'},
-  { key: 'quarter', label: 'Quý này'  },
+  { key: 'today',   label: 'Hôm nay'   },
+  { key: 'week',    label: '7 ngày'    },
+  { key: 'month',   label: 'Tháng này' },
+  { key: 'quarter', label: 'Quý này'   },
 ];
 
-const STATUS_MAP: Record<RecentOrder['status'], { label: string; cls: string }> = {
-  PAID:      { label: 'Đã thu',  cls: ''     },
-  PENDING:   { label: 'Chờ TT',  cls: 'blue' },
-  CANCELLED: { label: 'Đã huỷ', cls: 'red'  },
+const STATUS_MAP: Record<string, { label: string; cls: string }> = {
+  PAID:            { label: 'Đã thu',    cls: ''     },
+  COMPLETED:       { label: 'Đã thu',    cls: ''     },
+  PENDING:         { label: 'Chờ TT',   cls: 'blue' },
+  PENDING_PAYMENT: { label: 'Chờ TT',   cls: 'blue' },
+  DRAFT:           { label: 'Nháp',     cls: 'blue' },
+  CANCELLED:       { label: 'Đã huỷ',  cls: 'red'  },
+  FAIL:            { label: 'Thất bại', cls: 'red'  },
 };
+const getOrderStatus = (status: string) =>
+  STATUS_MAP[status] ?? { label: status, cls: '' };
 
 /* ============================================================ */
 const ReportSalesPage: React.FC = () => {
@@ -152,18 +89,45 @@ const ReportSalesPage: React.FC = () => {
   const [customRange, setCustomRange] = useState<DateRange | null>(null);
   const [pickerOpen, setPickerOpen]   = useState(false);
   const [loading, setLoading]         = useState(false);
-  const [summary, setSummary]         = useState<SalesSummary>(mockSummary('today'));
-  const [categories, setCategories]   = useState<TopCategory[]>(mockCategories());
-  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>(mockRecentOrders());
+  const [summary, setSummary]         = useState<SalesSummary>({
+    totalRevenue: 0, totalOrders: 0, totalDiscount: 0,
+    netRevenue: 0, avgOrderValue: 0, returnAmount: 0, growth: 0,
+  });
+  const [categories, setCategories]   = useState<TopCategory[]>([]);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [revenuePoints, setRevenuePoints] = useState<RevenuePoint[]>([]);
 
-  const load = (p: Period = period, cr: DateRange | null = customRange) => {
+  const periodToDateRange = (p: Period, cr: DateRange | null): { from: string; to: string } => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    if (p === 'today') return { from: todayStr, to: todayStr };
+    if (p === 'week') { const d = new Date(); d.setDate(d.getDate() - 6); return { from: d.toISOString().split('T')[0], to: todayStr }; }
+    if (p === 'month') { const d = new Date(); d.setDate(d.getDate() - 29); return { from: d.toISOString().split('T')[0], to: todayStr }; }
+    if (p === 'quarter') { const d = new Date(); d.setDate(d.getDate() - 89); return { from: d.toISOString().split('T')[0], to: todayStr }; }
+    if (p === 'custom' && cr) return { from: cr.from, to: cr.to };
+    return { from: todayStr, to: todayStr };
+  };
+
+  const load = async (p: Period = period, cr: DateRange | null = customRange) => {
     setLoading(true);
-    setTimeout(() => {
-      setSummary(mockSummary(p, cr ?? undefined));
-      setCategories(mockCategories());
-      setRecentOrders(mockRecentOrders());
-      setLoading(false);
-    }, 500);
+    const storeId = Number(getStoredStoreId() || 1);
+    const { from, to } = periodToDateRange(p, cr);
+    const res = await reportService.getSalesReport(storeId, p, from, to);
+    if (res) {
+      setSummary({
+        totalRevenue: res.totalRevenue, totalOrders: res.totalOrders,
+        totalDiscount: res.totalDiscount, netRevenue: res.netRevenue,
+        avgOrderValue: res.avgOrderValue, returnAmount: res.returnAmount, growth: res.growth,
+      });
+      setCategories(res.topCategories || []);
+      setRecentOrders((res.recentOrders || []).map((o: any) => ({
+        code: o.code, customer: o.customer ?? 'Khách lẻ', amount: o.amount ?? 0,
+        status: o.status ?? 'COMPLETED',
+        time: o.time?.substring(11, 16) || o.time || '',
+      })));
+      setRevenuePoints(res.chartData || []);
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -178,8 +142,9 @@ const ReportSalesPage: React.FC = () => {
     load('custom', range);
   };
 
-  const basePoints = period !== 'custom' ? REVENUE_POINTS[period] : REVENUE_POINTS['today'];
+  const basePoints = revenuePoints.length > 0 ? revenuePoints : [];
   const maxPoint   = Math.max(...basePoints.map(p => p.value), 1);
+
 
   return (
     <IonPage className="rpt-page">
@@ -335,7 +300,7 @@ const ReportSalesPage: React.FC = () => {
                 </button>
               </div>
               {recentOrders.map(order => {
-                const { label, cls } = STATUS_MAP[order.status];
+                const { label, cls } = getOrderStatus(order.status);
                 return (
                   <div
                     key={order.code}

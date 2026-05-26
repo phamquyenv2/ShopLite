@@ -38,4 +38,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     boolean existsByStoreIdAndReferenceTypeAndReferenceIdAndStatusIn(
             Long storeId, RefTypeEnum referenceType, Integer referenceId, List<PaymentStatusEnum> statuses);
+
+    List<Payment> findByStoreIdAndCreatedAtBetween(Long storeId, java.time.LocalDateTime from, java.time.LocalDateTime to);
 }

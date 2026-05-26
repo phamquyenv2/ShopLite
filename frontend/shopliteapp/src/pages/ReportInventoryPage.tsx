@@ -21,6 +21,8 @@ import {
 } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
 import DateRangePickerModal, { DateRange, rangeLabelOf } from '../components/DateRangePickerModal';
+import { reportService } from '../services/report.service';
+import { getStoredStoreId } from '../utils/Apis';
 import './Reports.css';
 
 /* ---------- helpers ---------- */
@@ -58,32 +60,6 @@ interface MovementItem {
   currentStock: number;
 }
 
-/* ---------- mock data ---------- */
-const mockSummary = (): InventorySummary => ({
-  totalSku:        148,
-  totalStock:      2_340,
-  totalValue:      284_500_000,
-  lowStockCount:   12,
-  outOfStockCount: 3,
-  newImportValue:  45_200_000,
-  soldUnits:       167,
-});
-
-const mockLowStock = (): LowStockItem[] => [
-  { name: 'Cà phê Arabica 500g',   sku: 'CF-001',  stock: 2,  minStock: 10  },
-  { name: 'Trà Ô Long túi lọc',    sku: 'TRA-008', stock: 3,  minStock: 15  },
-  { name: 'Đường cát trắng 1kg',   sku: 'DUG-003', stock: 1,  minStock: 20  },
-  { name: 'Nước khoáng 500ml',     sku: 'NUO-012', stock: 5,  minStock: 50  },
-  { name: 'Cốc dùng 1 lần',        sku: 'COC-002', stock: 8,  minStock: 100 },
-];
-
-const mockMovements = (): MovementItem[] => [
-  { name: 'Cà phê sữa đá',  sold: 42, imported:  0, adjusted:  0, currentStock: 86 },
-  { name: 'Bánh mì thịt',   sold: 35, imported: 50, adjusted:  0, currentStock: 63 },
-  { name: 'Nước cam ép',    sold: 28, imported: 30, adjusted: -2, currentStock: 44 },
-  { name: 'Trà đào cam sả', sold: 22, imported:  0, adjusted:  0, currentStock: 18 },
-  { name: 'Sandwich trứng', sold: 18, imported: 20, adjusted:  0, currentStock: 32 },
-];
 
 const PERIODS: { key: Exclude<Period, 'custom'>; label: string }[] = [
   { key: 'today', label: 'Hôm nay'   },
@@ -98,29 +74,56 @@ const ReportInventoryPage: React.FC = () => {
   const [customRange, setCustomRange] = useState<DateRange | null>(null);
   const [pickerOpen, setPickerOpen]   = useState(false);
   const [loading, setLoading]         = useState(false);
-  const [summary, setSummary]         = useState<InventorySummary>(mockSummary());
-  const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>(mockLowStock());
-  const [movements, setMovements]     = useState<MovementItem[]>(mockMovements());
+  const [summary, setSummary]         = useState<InventorySummary>({
+    totalSku: 0, totalStock: 0, totalValue: 0,
+    lowStockCount: 0, outOfStockCount: 0, newImportValue: 0, soldUnits: 0,
+  });
+  const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
+  const [movements, setMovements]     = useState<MovementItem[]>([]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'low' | 'out'>('all');
 
-  const load = () => {
+  const periodToDateRange = (p: Period, cr: DateRange | null): { from: string; to: string } => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    if (p === 'today') return { from: todayStr, to: todayStr };
+    if (p === 'week') { const d = new Date(); d.setDate(d.getDate() - 6); return { from: d.toISOString().split('T')[0], to: todayStr }; }
+    if (p === 'month') { const d = new Date(); d.setDate(d.getDate() - 29); return { from: d.toISOString().split('T')[0], to: todayStr }; }
+    if (p === 'custom' && cr) return { from: cr.from, to: cr.to };
+    return { from: todayStr, to: todayStr };
+  };
+
+  const load = async (p: Period = period, cr: DateRange | null = customRange) => {
     setLoading(true);
-    setTimeout(() => {
-      setSummary(mockSummary());
-      setLowStockItems(mockLowStock());
-      setMovements(mockMovements());
-      setLoading(false);
-    }, 500);
+    const storeId = Number(getStoredStoreId() || 1);
+    const { from, to } = periodToDateRange(p, cr);
+    const res = await reportService.getInventoryReport(storeId, from, to);
+    if (res) {
+      setSummary({
+        totalSku: res.totalSku,
+        totalStock: res.totalStock,
+        totalValue: res.totalValue,
+        lowStockCount: res.lowStockCount,
+        outOfStockCount: res.outOfStockCount,
+        newImportValue: res.newImportValue,
+        soldUnits: res.soldUnits,
+      });
+      setLowStockItems(res.lowStockItems || []);
+      setMovements((res.movements || []).map((m: any) => ({
+        name: m.name, sold: m.sold || 0, imported: m.imported || 0,
+        adjusted: m.adjusted || 0, currentStock: m.currentStock || 0,
+      })));
+    }
+    setLoading(false);
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, [period]);
+  useEffect(() => { load(period); }, [period]);
 
   const handleCustomConfirm = (range: DateRange) => {
     setCustomRange(range);
     setPeriod('custom');
     setPickerOpen(false);
-    load();
+    load('custom', range);
   };
 
   const stockHealth =

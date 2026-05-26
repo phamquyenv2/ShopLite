@@ -172,6 +172,10 @@ export const endpoints = {
     // BFF aggregate endpoints
     'dashboard-today': '/api/v1/dashboard/today',
     'sales-init': '/api/v1/sales/init',
+    // reports
+    'reports-end-of-day': '/api/v1/reports/end-of-day',
+    'reports-sales': '/api/v1/reports/sales',
+    'reports-inventory': '/api/v1/reports/inventory',
 } as const;
 
 const DEFAULT_BASE_URL = 'http://localhost:8080';
