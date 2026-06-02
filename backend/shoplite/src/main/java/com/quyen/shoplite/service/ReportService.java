@@ -23,6 +23,7 @@ public class ReportService {
     private final PaymentRepository paymentRepository;
     private final ProductRepository productRepository;
     private final OrderItemsRepository orderItemsRepository;
+    private final InventoryLogsRepository inventoryLogsRepository;
 
     // StatusEnum chỉ có: DRAFT, PENDING, PENDING_PAYMENT, COMPLETED, FAIL, CANCELLED
     private static final List<StatusEnum> PAID_STATUSES = Arrays.asList(StatusEnum.COMPLETED);
@@ -177,14 +178,27 @@ public class ReportService {
                         .build())
                 .collect(Collectors.toList());
 
-        // Chart data theo giờ (phân phối ước tính dựa trên tổng doanh thu)
+        // Chart data theo giờ
+        double[] hourBuckets = new double[6]; // 0: 0-10, 1: 10-12, 2: 12-14, 3: 14-16, 4: 16-18, 5: 18-24
+        for (Order o : orders) {
+            if (o.getCreatedAt() != null) {
+                int h = o.getCreatedAt().getHour();
+                if (h < 10) hourBuckets[0] += o.getTotalAmount();
+                else if (h < 12) hourBuckets[1] += o.getTotalAmount();
+                else if (h < 14) hourBuckets[2] += o.getTotalAmount();
+                else if (h < 16) hourBuckets[3] += o.getTotalAmount();
+                else if (h < 18) hourBuckets[4] += o.getTotalAmount();
+                else hourBuckets[5] += o.getTotalAmount();
+            }
+        }
+
         List<ResSalesReportDTO.RevenuePointDTO> chartData = new ArrayList<>();
-        chartData.add(ResSalesReportDTO.RevenuePointDTO.builder().label("08-10h").value(totalRevenue * 0.10).build());
-        chartData.add(ResSalesReportDTO.RevenuePointDTO.builder().label("10-12h").value(totalRevenue * 0.20).build());
-        chartData.add(ResSalesReportDTO.RevenuePointDTO.builder().label("12-14h").value(totalRevenue * 0.30).build());
-        chartData.add(ResSalesReportDTO.RevenuePointDTO.builder().label("14-16h").value(totalRevenue * 0.15).build());
-        chartData.add(ResSalesReportDTO.RevenuePointDTO.builder().label("16-18h").value(totalRevenue * 0.15).build());
-        chartData.add(ResSalesReportDTO.RevenuePointDTO.builder().label("18-20h").value(totalRevenue * 0.10).build());
+        chartData.add(ResSalesReportDTO.RevenuePointDTO.builder().label("08-10h").value(hourBuckets[0]).build());
+        chartData.add(ResSalesReportDTO.RevenuePointDTO.builder().label("10-12h").value(hourBuckets[1]).build());
+        chartData.add(ResSalesReportDTO.RevenuePointDTO.builder().label("12-14h").value(hourBuckets[2]).build());
+        chartData.add(ResSalesReportDTO.RevenuePointDTO.builder().label("14-16h").value(hourBuckets[3]).build());
+        chartData.add(ResSalesReportDTO.RevenuePointDTO.builder().label("16-18h").value(hourBuckets[4]).build());
+        chartData.add(ResSalesReportDTO.RevenuePointDTO.builder().label("18-20h").value(hourBuckets[5]).build());
 
         return ResSalesReportDTO.builder()
                 .totalRevenue(totalRevenue)
@@ -234,16 +248,62 @@ public class ReportService {
 
 
 
+        List<InventoryLogs> logs = inventoryLogsRepository.findByStoreIdAndCreatedAtBetween(storeId, from, to);
+        Map<Integer, ResInventoryReportDTO.MovementItemDTO> movementMap = new HashMap<>();
+
+        double newImportValue = 0;
+        int soldUnits = 0;
+
+        for (InventoryLogs log : logs) {
+            Product p = log.getProduct();
+            if (p == null) continue;
+            int pId = p.getId();
+
+            ResInventoryReportDTO.MovementItemDTO m = movementMap.getOrDefault(pId,
+                    ResInventoryReportDTO.MovementItemDTO.builder()
+                            .name(p.getName())
+                            .sold(0)
+                            .imported(0)
+                            .adjusted(0)
+                            .currentStock(p.getStock() != null ? p.getStock() : 0)
+                            .build()
+            );
+
+            int qtyIn = log.getQuantityIn() != null ? log.getQuantityIn() : 0;
+            int qtyOut = log.getQuantityOut() != null ? log.getQuantityOut() : 0;
+
+            switch (log.getType()) {
+                case SALE:
+                    m.setSold(m.getSold() + qtyOut);
+                    soldUnits += qtyOut;
+                    break;
+                case RETURN:
+                    m.setSold(m.getSold() - qtyIn);
+                    soldUnits -= qtyIn;
+                    break;
+                case IMPORT:
+                    m.setImported(m.getImported() + qtyIn);
+                    newImportValue += qtyIn * (p.getCostPrice() != null ? p.getCostPrice() : 0);
+                    break;
+                case ADJUST:
+                    m.setAdjusted(m.getAdjusted() + qtyIn - qtyOut);
+                    break;
+            }
+            movementMap.put(pId, m);
+        }
+
+        List<ResInventoryReportDTO.MovementItemDTO> movements = new ArrayList<>(movementMap.values());
+
         return ResInventoryReportDTO.builder()
                 .totalSku(totalSku)
                 .totalStock(totalStock)
                 .totalValue(totalValue)
                 .lowStockCount(lowStockCount)
                 .outOfStockCount(outOfStockCount)
-                .newImportValue(0)
-                .soldUnits(0)
+                .newImportValue(newImportValue)
+                .soldUnits(soldUnits)
                 .lowStockItems(lowStockItems)
-                .movements(Collections.emptyList())
+                .movements(movements)
                 .build();
     }
 }

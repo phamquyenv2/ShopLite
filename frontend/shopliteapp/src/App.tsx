@@ -8,6 +8,8 @@ import Register from './pages/Register';
 import Orders from './pages/Orders';
 import OrderCreate from './pages/OrderCreate';
 import OrderDetailPage from './pages/OrderDetailPage';
+import OrderReturnsPage from './pages/OrderReturnsPage';
+import OrderReturnCreatePage from './pages/OrderReturnCreatePage';
 import SalesPage from './pages/SalesPage';
 import DraftOrdersPage from './pages/DraftOrdersPage';
 import ProductsPage from './pages/ProductsPage';
@@ -131,6 +133,9 @@ const AppContent: React.FC = () => {
       <Route exact path="/orders/draft" render={() => <RequireAuth component={DraftOrdersPage} />} />
       <Route exact path="/orders/new" render={() => <RequireAuth component={OrderCreate} />} />
       <Route exact path="/orders/:id(\d+)" render={() => <RequireAuth component={OrderDetailPage} />} />
+
+      <Route exact path="/order-returns" render={() => <RequireAuth component={OrderReturnsPage} />} />
+      <Route exact path="/order-returns/new" render={() => <RequireAuth component={OrderReturnCreatePage} />} />
 
       <Route exact path="/sales" render={() => <RequireAuth component={SalesPage} />} />
       <Route exact path="/employees" render={() => <RequireAuth component={EmployeesPage} />} />

@@ -83,7 +83,7 @@ const ReportInventoryPage: React.FC = () => {
   });
   const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
   const [movements, setMovements]     = useState<MovementItem[]>([]);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'low' | 'out'>('all');
+
 
   const periodToDateRange = (p: Period, cr: DateRange | null): { from: string; to: string } => {
     const today = new Date();
@@ -228,13 +228,13 @@ const ReportInventoryPage: React.FC = () => {
               </div>
 
               <div className={`rpt-summary-card rpt-highlight-card ${summary.lowStockCount > 0 ? 'warning' : ''}`}>
-                <div className="rpt-card-label">⚠️ Sắp hết hàng</div>
+                <div className="rpt-card-label">Sắp hết hàng</div>
                 <div className="rpt-card-value compact warning">{fmtCount(summary.lowStockCount)}</div>
                 <div className="rpt-card-sub">mặt hàng</div>
               </div>
 
               <div className={`rpt-summary-card rpt-highlight-card ${summary.outOfStockCount > 0 ? 'danger' : ''}`}>
-                <div className="rpt-card-label">🚫 Hết hàng</div>
+                <div className="rpt-card-label">Hết hàng</div>
                 <div className="rpt-card-value compact danger">{fmtCount(summary.outOfStockCount)}</div>
                 <div className="rpt-card-sub">mặt hàng</div>
               </div>
@@ -254,8 +254,8 @@ const ReportInventoryPage: React.FC = () => {
                   />
                 </div>
                 <div className="rpt-stock-health-legend">
-                  <span>🟢 Bình thường: {summary.totalSku - summary.lowStockCount - summary.outOfStockCount} SKU</span>
-                  <span>🟡 Sắp hết: {summary.lowStockCount} &nbsp;•&nbsp; 🔴 Hết: {summary.outOfStockCount}</span>
+                  <span>Bình thường: {summary.totalSku - summary.lowStockCount - summary.outOfStockCount} SKU</span>
+                  <span>Sắp hết: {summary.lowStockCount} &nbsp;•&nbsp; Hết: {summary.outOfStockCount}</span>
                 </div>
               </div>
             </div>
@@ -297,22 +297,6 @@ const ReportInventoryPage: React.FC = () => {
                 <button className="rpt-section-link" onClick={() => history.push('/inventory-adjustments')}>
                   Kiểm kho <IonIcon icon={chevronForwardOutline} />
                 </button>
-              </div>
-
-              <div className="rpt-filter-row">
-                {([
-                  { key: 'all', label: 'Tất cả'    },
-                  { key: 'low', label: '⚠️ Sắp hết' },
-                  { key: 'out', label: '🚫 Hết hàng' },
-                ] as const).map(f => (
-                  <button
-                    key={f.key}
-                    className={`rpt-filter-chip ${activeFilter === f.key ? 'active' : ''}`}
-                    onClick={() => setActiveFilter(f.key)}
-                  >
-                    {f.label}
-                  </button>
-                ))}
               </div>
 
               {movements.map(m => (

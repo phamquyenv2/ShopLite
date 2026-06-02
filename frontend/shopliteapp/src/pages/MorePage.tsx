@@ -27,6 +27,7 @@ import {
   personOutline,
   receiptOutline,
   reorderThreeOutline,
+  returnUpBackOutline,
   statsChartOutline,
   storefrontOutline,
   timeOutline,
@@ -66,6 +67,7 @@ const routeByCode: Record<string, string> = {
   ITEM_SALES: '/sales',
   ITEM_ORDERS: '/orders',
   ITEM_ORDER_CREATE: '/orders/new',
+  ITEM_ORDER_RETURNS: '/order-returns',
   ITEM_FUND_LEDGER: '/fund-ledger',
   ITEM_PRODUCTS: '/products',
   ITEM_INVENTORY_ADJUSTMENTS: '/inventory-adjustments',
@@ -99,6 +101,7 @@ const fallbackGroups: StaticGroup[] = [
       { code: 'ITEM_ORDERS', label: 'Hóa đơn', route: '/orders', icon: receiptOutline, iconClass: 'icon-blue', apiPath: '/api/v1/orders' },
       { code: 'ITEM_ORDER_CREATE', label: 'Đặt hàng', route: '/orders/new', icon: bagOutline, iconClass: 'icon-blue', apiPath: '/api/v1/orders', method: 'POST' },
       { code: 'ITEM_FUND_LEDGER', label: 'Sổ quỹ', route: '/fund-ledger', icon: walletOutline, iconClass: 'icon-blue', apiPath: '/api/v1/fund-accounts' },
+      { code: 'ITEM_ORDER_RETURNS', label: 'Trả hàng', route: '/order-returns', icon: returnUpBackOutline, iconClass: 'icon-blue', apiPath: '/api/v1/orders' },
     ],
   },
   {

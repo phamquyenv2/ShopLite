@@ -1,0 +1,198 @@
+/* OrderReturnCreatePage.css */
+
+.ret-create-page { --background: #f4f6f9; }
+.ret-create-header { background: transparent; box-shadow: none !important; }
+.ret-create-header::after { display: none !important; }
+.ret-create-toolbar { --background: transparent; --border-width: 0; }
+.ret-create-content { --background: #f4f6f9; }
+
+.ret-top-card {
+    background: #fff;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    padding-bottom: 12px;
+}
+
+.rtn-title {
+    font-size: 19px;
+    font-weight: 600;
+    margin-left: 8px;
+    color: #111;
+}
+
+/* Step 1: Search Box */
+.ret-search-box {
+    margin: 0 16px;
+    background: #f1f5f9;
+    border-radius: 12px;
+    padding: 2px 4px;
+    display: flex;
+    align-items: center;
+}
+.ret-search-box ion-input {
+    --padding-start: 12px;
+    font-size: 16px;
+    font-weight: 500;
+}
+.ret-search-btn {
+    background: #0066FF;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+/* Error/Info Msg */
+.ret-info-msg {
+    margin: 20px;
+    text-align: center;
+    color: #64748b;
+    font-size: 15px;
+}
+.ret-error-msg {
+    color: #ea580c;
+    background: #fff7ed;
+    margin: 16px;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* Original Order Info Card */
+.ret-order-info {
+    background: #fff;
+    margin: 12px 16px;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.ret-info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+.ret-info-row:last-child { margin-bottom: 0; }
+.ret-info-label { color: #64748b; }
+.ret-info-val { font-weight: 600; color: #111; }
+
+/* Item List */
+.ret-section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111;
+    margin: 20px 16px 8px;
+}
+.ret-items-list {
+    background: #fff;
+    margin: 0 16px 100px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.ret-item {
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.ret-item:last-child { border-bottom: none; }
+.ret-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+.ret-item-name { font-weight: 600; color: #111; font-size: 15px; }
+.ret-item-price { font-weight: 600; color: #0066FF; font-size: 15px; }
+.ret-item-max { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+/* Qty control */
+.ret-qty-control {
+    display: flex;
+    align-items: center;
+    background: #f1f5f9;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+.ret-qty-btn {
+    background: transparent;
+    border: none;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #111;
+    font-size: 18px;
+}
+.ret-qty-input {
+    width: 40px;
+    text-align: center;
+    border: none;
+    background: transparent;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 0;
+}
+
+/* Condition toggle */
+.ret-condition-wrap {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+}
+.ret-cond-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 500;
+}
+.ret-cond-btn.active-resell {
+    background: #e0f2fe;
+    border-color: #38bdf8;
+    color: #0369a1;
+}
+.ret-cond-btn.active-defect {
+    background: #fee2e2;
+    border-color: #f87171;
+    color: #b91c1c;
+}
+
+/* Footer Checkout */
+.ret-footer {
+    background: #fff;
+    padding: 16px;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.05);
+}
+.ret-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.ret-total-label { font-size: 16px; font-weight: 600; color: #111; }
+.ret-total-val { font-size: 22px; font-weight: 700; color: #ea580c; }
+
+.ret-submit-btn {
+    width: 100%;
+    background: #0066FF;
+    color: #fff;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+}
+.ret-submit-btn:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+}
