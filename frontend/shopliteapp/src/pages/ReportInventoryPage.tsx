@@ -46,10 +46,13 @@ interface InventorySummary {
 }
 
 interface LowStockItem {
+  productId: number;
   name: string;
   sku: string;
   stock: number;
   minStock: number;
+  importPrice?: number;
+  imageUrl?: string;
 }
 
 interface MovementItem {
@@ -265,7 +268,7 @@ const ReportInventoryPage: React.FC = () => {
                   Nhập hàng <IonIcon icon={chevronForwardOutline} />
                 </button>
               </div>
-              {lowStockItems.map(item => {
+              {lowStockItems.slice(0, 5).map(item => {
                 const isOut = item.stock === 0;
                 return (
                   <div key={item.sku} className="rpt-row">
@@ -339,7 +342,10 @@ const ReportInventoryPage: React.FC = () => {
             <div className="rpt-quick-actions">
               <button
                 className="rpt-quick-btn primary"
-                onClick={() => history.push('/import-order/new')}
+                onClick={() => history.push({
+                  pathname: '/import-order/new',
+                  state: { prefillItems: lowStockItems }
+                })}
               >
                 <IonIcon icon={chevronForwardOutline} />
                 Tạo đơn nhập hàng

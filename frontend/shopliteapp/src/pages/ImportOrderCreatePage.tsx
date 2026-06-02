@@ -7,7 +7,7 @@ import {
     closeOutline, searchOutline, addOutline, informationCircleOutline, chevronBackOutline,
     chevronDownOutline, removeCircleOutline, addCircleOutline, trashOutline
 } from 'ionicons/icons';
-import { useParams } from 'react-router';
+import { useParams, useLocation } from 'react-router';
 import { importOrderService } from '../services/importOrder.service';
 import { supplierService } from '../services/supplier.service';
 import { productService } from '../services/product.service';
@@ -31,6 +31,7 @@ const fmt = (n: number) => n.toLocaleString('vi-VN');
 
 const ImportOrderCreatePage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const location = useLocation<{ prefillItems?: any[] }>();
     const isEditMode = Boolean(id);
     const ionRouter = useIonRouter();
     const { can } = useStorePermissions();
@@ -97,6 +98,17 @@ const ImportOrderCreatePage: React.FC = () => {
                 })) || []);
                 setDiscount(orderData.discount || 0);
                 if (orderData.note && orderData.note !== 'Lưu tạm') setNote(orderData.note);
+            } else if (location.state?.prefillItems) {
+                const items = location.state.prefillItems.map(item => ({
+                    productId: item.productId,
+                    name: item.name,
+                    sku: item.sku,
+                    quantity: item.minStock && item.stock < item.minStock ? item.minStock - item.stock : 1,
+                    importPrice: item.importPrice || 0,
+                    stock: item.stock,
+                    imageUrl: item.imageUrl || ''
+                }));
+                setCart(items);
             }
         } catch { /* */ }
     };
