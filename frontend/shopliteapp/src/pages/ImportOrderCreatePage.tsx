@@ -229,15 +229,16 @@ const ImportOrderCreatePage: React.FC = () => {
                         discount,
                         paidAmount,
                         paymentMethod,
-                        status: 'COMPLETED'
+                        status: 'PENDING'
                     };
+                    let saved;
                     if (isEditMode && id) {
-                        await importOrderService.update(id, payload);
-                        setToast('Cập nhật phiếu nhập thành công');
+                        saved = await importOrderService.update(id, payload);
                     } else {
-                        await importOrderService.create(payload);
-                        setToast('Tạo phiếu nhập thành công');
+                        saved = await importOrderService.create(payload);
                     }
+                    await importOrderService.sendToSupplier(saved.id);
+                    setToast('Đã gửi phiếu nhập cho nhà cung cấp');
                 }
             }
             setTimeout(() => ionRouter.goBack(), 500);

@@ -12,6 +12,8 @@ import './ImportOrderDetailPage.css';
 
 const statusMap: Record<string, { label: string; cls: string }> = {
     PENDING: { label: 'Phiếu tạm', cls: 'status-pending' },
+    WAITING_FOR_INSPECTION: { label: 'Chờ kiểm hàng', cls: 'status-pending' },
+    PENDING_DISCREPANCY_APPROVAL: { label: 'Chờ duyệt chênh lệch', cls: 'status-pending' },
     COMPLETED: { label: 'Đã nhập hàng', cls: 'status-completed' },
     CANCELLED: { label: 'Đã hủy', cls: 'status-cancelled' },
 };
@@ -24,8 +26,13 @@ const ImportOrderDetailPage: React.FC = () => {
     const { can } = useStorePermissions();
     const canUpdateImportOrder = can('/api/v1/import-orders/{id}', 'PUT');
     const canCreateImportReturn = can('/api/v1/import-return-orders', 'POST');
+    const canSendImportOrder = can('/api/v1/import-orders/{id}/send', 'POST');
+    const canInspectImportOrder = can('/api/v1/import-orders/{id}/inspect', 'POST');
+    const canApproveDiscrepancy = can('/api/v1/import-orders/{id}/approve-discrepancy', 'POST');
+    const canRejectDiscrepancy = can('/api/v1/import-orders/{id}/reject-discrepancy', 'POST');
     const [order, setOrder] = useState<ImportOrder | null>(null);
     const [loading, setLoading] = useState(false);
+    const [acting, setActing] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
 
     const loadData = async () => {
@@ -41,6 +48,18 @@ const ImportOrderDetailPage: React.FC = () => {
     };
 
     useIonViewWillEnter(() => { loadData(); });
+
+    const runAction = async (action: () => Promise<ImportOrder>, message: string) => {
+        setActing(true);
+        try {
+            setOrder(await action());
+            setToast(message);
+        } catch (err: any) {
+            setToast(err.message || 'Không thể cập nhật phiếu nhập');
+        } finally {
+            setActing(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -122,6 +141,14 @@ const ImportOrderDetailPage: React.FC = () => {
                                     <span>{fmt(item.importPrice)} x {fmt(item.quantity)}</span>
                                     <span className="iod-item-total">{fmt(item.subTotal || item.importPrice * item.quantity)}</span>
                                 </div>
+                                {item.receivedQuantity !== undefined && (
+                                    <div className="iod-item-calc">
+                                        <span>Thực nhận: {fmt(item.receivedQuantity)}</span>
+                                        <span className="iod-item-total">
+                                            Lệch: {(item.discrepancyQuantity ?? 0) > 0 ? '+' : ''}{fmt(item.discrepancyQuantity)}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}
@@ -171,6 +198,42 @@ const ImportOrderDetailPage: React.FC = () => {
                     </div>
                 </div>
             </IonContent>
+
+            {canSendImportOrder && order.status === 'PENDING' && (
+                <IonFooter className="ion-no-border">
+                    <div className="iod-footer-container">
+                        <button className="iod-btn-primary" disabled={acting} onClick={() => runAction(
+                            () => importOrderService.sendToSupplier(order.id),
+                            'Đã gửi phiếu cho nhà cung cấp'
+                        )}>Gửi nhà cung cấp</button>
+                    </div>
+                </IonFooter>
+            )}
+
+            {canInspectImportOrder && order.status === 'WAITING_FOR_INSPECTION' && (
+                <IonFooter className="ion-no-border">
+                    <div className="iod-footer-container">
+                        <button className="iod-btn-primary" onClick={() => ionRouter.push(`/import-orders/${order.id}/inspect`)}>
+                            Bắt đầu kiểm hàng
+                        </button>
+                    </div>
+                </IonFooter>
+            )}
+
+            {(canApproveDiscrepancy || canRejectDiscrepancy) && order.status === 'PENDING_DISCREPANCY_APPROVAL' && (
+                <IonFooter className="ion-no-border">
+                    <div className="iod-footer-container">
+                        {canRejectDiscrepancy && <button className="iod-btn-outline" disabled={acting} onClick={() => runAction(
+                            () => importOrderService.rejectDiscrepancy(order.id),
+                            'Đã yêu cầu nhân viên kho kiểm lại'
+                        )}>Kiểm lại</button>}
+                        {canApproveDiscrepancy && <button className="iod-btn-primary" disabled={acting} onClick={() => runAction(
+                            () => importOrderService.approveDiscrepancy(order.id),
+                            'Đã duyệt chênh lệch và cập nhật tồn kho'
+                        )}>Duyệt chênh lệch</button>}
+                    </div>
+                </IonFooter>
+            )}
 
             {canCreateImportReturn && order.status === 'COMPLETED' && order.returnStatus !== 'FULL_RETURNED' && (
                 <IonFooter className="iod-action-footer ion-no-border">

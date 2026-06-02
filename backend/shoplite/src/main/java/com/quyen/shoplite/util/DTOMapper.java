@@ -288,6 +288,13 @@ public class DTOMapper {
         ResImportItemDTO dto = new ResImportItemDTO();
         dto.setId(item.getId());
         dto.setQuantity(item.getQuantity());
+        dto.setReceivedQuantity(item.getReceivedQuantity());
+        if (item.getReceivedQuantity() != null) {
+            int discrepancy = item.getReceivedQuantity() - item.getQuantity();
+            dto.setDiscrepancyQuantity(discrepancy);
+            dto.setDiscrepancyType(discrepancy == 0 ? "MATCHED" : discrepancy < 0 ? "SHORTAGE" : "EXCESS");
+        }
+        dto.setInspectionNote(item.getInspectionNote());
         dto.setReturnedQuantity(item.getReturnedQuantity());
         dto.setImportPrice(item.getImportPrice());
         dto.setSubTotal(item.getSubTotal());
@@ -314,6 +321,13 @@ public class DTOMapper {
         dto.setReturnStatus(importOrder.getReturnStatus());
         dto.setNote(importOrder.getNote());
         dto.setCreatedAt(importOrder.getCreatedAt());
+        dto.setSentAt(importOrder.getSentAt());
+        dto.setInspectedAt(importOrder.getInspectedAt());
+        dto.setApprovedAt(importOrder.getApprovedAt());
+        dto.setStockAppliedAt(importOrder.getStockAppliedAt());
+        dto.setInspectedBy(importOrder.getInspectedBy());
+        dto.setApprovedBy(importOrder.getApprovedBy());
+        dto.setDiscrepancyNote(importOrder.getDiscrepancyNote());
         if (importOrder.getSupplier() != null) {
             dto.setSupplierId(importOrder.getSupplier().getId());
             dto.setSupplierName(importOrder.getSupplier().getName());

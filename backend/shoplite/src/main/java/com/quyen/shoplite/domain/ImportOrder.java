@@ -55,4 +55,25 @@ public class ImportOrder {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "sent_at")
+    private LocalDateTime sentAt;
+
+    @Column(name = "inspected_at")
+    private LocalDateTime inspectedAt;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    @Column(name = "stock_applied_at")
+    private LocalDateTime stockAppliedAt;
+
+    @Column(name = "inspected_by", length = 100)
+    private String inspectedBy;
+
+    @Column(name = "approved_by", length = 100)
+    private String approvedBy;
+
+    @Column(name = "discrepancy_note", length = 1000)
+    private String discrepancyNote;
 }

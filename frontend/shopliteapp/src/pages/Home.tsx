@@ -147,6 +147,12 @@ const Home: React.FC = () => {
     }
   };
 
+  const openNotificationReference = (notification: Notification) => {
+    if (!notification.referenceId || notification.type === 'STORE_INVITATION') return;
+    setNotificationOpen(false);
+    history.push(`/import-orders/${notification.referenceId}`);
+  };
+
   const loadData = async () => {
     try {
       const dashboardStart = nowMs();
@@ -364,7 +370,7 @@ const Home: React.FC = () => {
               const dateDisplay = `${timeStr} ${isToday ? 'Hôm nay' : dateObj.toLocaleDateString('vi-VN')}`;
 
               return (
-                <div className="noti-item" key={item.id}>
+                <div className="noti-item" key={item.id} onClick={() => openNotificationReference(item)}>
                   <div className="noti-icon-wrap">
                     <div className="noti-icon-bg">
                       <IonIcon icon={notificationsIcon} className="noti-icon" />

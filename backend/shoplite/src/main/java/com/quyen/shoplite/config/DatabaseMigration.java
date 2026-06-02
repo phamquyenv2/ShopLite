@@ -27,6 +27,7 @@ public class DatabaseMigration {
         migrateStoreScopedTables();
         dropOfficeScheduleColumns();
         migrateStoreInvitationsOffice();
+        migrateImportInspection();
     }
 
     private void migrateStoreScopedTables() {
@@ -122,6 +123,20 @@ public class DatabaseMigration {
                 ADD CONSTRAINT fk_store_invitations_office
                 FOREIGN KEY (office_id) REFERENCES offices(id)
                 """);
+    }
+
+    private void migrateImportInspection() {
+        executeIgnoringFailure("ALTER TABLE import_orders MODIFY COLUMN status VARCHAR(50) NOT NULL");
+        executeIgnoringFailure("ALTER TABLE notifications MODIFY COLUMN type VARCHAR(50) NOT NULL");
+        executeIgnoringFailure("ALTER TABLE import_items ADD COLUMN received_quantity INT NULL");
+        executeIgnoringFailure("ALTER TABLE import_items ADD COLUMN inspection_note VARCHAR(500) NULL");
+        executeIgnoringFailure("ALTER TABLE import_orders ADD COLUMN sent_at DATETIME NULL");
+        executeIgnoringFailure("ALTER TABLE import_orders ADD COLUMN inspected_at DATETIME NULL");
+        executeIgnoringFailure("ALTER TABLE import_orders ADD COLUMN approved_at DATETIME NULL");
+        executeIgnoringFailure("ALTER TABLE import_orders ADD COLUMN stock_applied_at DATETIME NULL");
+        executeIgnoringFailure("ALTER TABLE import_orders ADD COLUMN inspected_by VARCHAR(100) NULL");
+        executeIgnoringFailure("ALTER TABLE import_orders ADD COLUMN approved_by VARCHAR(100) NULL");
+        executeIgnoringFailure("ALTER TABLE import_orders ADD COLUMN discrepancy_note VARCHAR(1000) NULL");
     }
 
     private void executeIgnoringFailure(String sql) {

@@ -1,5 +1,5 @@
 import { authApis, endpoints, ApiError } from '../utils/Apis';
-import type { ImportOrder, ImportOrderUpsert } from '../api/types';
+import type { ImportOrder, ImportOrderUpsert, InspectImportOrderPayload } from '../api/types';
 
 export const importOrderService = {
     async getAll(): Promise<ImportOrder[]> {
@@ -44,6 +44,31 @@ export const importOrderService = {
             return res.data?.data;
         } catch (error: any) {
             throw new ApiError(error.response?.data?.message || 'Không thể cập nhật trạng thái', error.response || { status: 500, data: null, headers: new Headers() });
+        }
+    },
+
+    async sendToSupplier(id: number | string): Promise<ImportOrder> {
+        return this.postAction(id, 'send');
+    },
+
+    async inspect(id: number | string, data: InspectImportOrderPayload): Promise<ImportOrder> {
+        return this.postAction(id, 'inspect', data);
+    },
+
+    async approveDiscrepancy(id: number | string, note?: string): Promise<ImportOrder> {
+        return this.postAction(id, 'approve-discrepancy', { note });
+    },
+
+    async rejectDiscrepancy(id: number | string, note?: string): Promise<ImportOrder> {
+        return this.postAction(id, 'reject-discrepancy', { note });
+    },
+
+    async postAction(id: number | string, action: string, data?: unknown): Promise<ImportOrder> {
+        try {
+            const res = await authApis().post<any>(`${endpoints['import-orders']}/${id}/${action}`, data);
+            return res.data?.data;
+        } catch (error: any) {
+            throw new ApiError(error.response?.data?.message || 'Không thể cập nhật phiếu nhập', error.response || { status: 500, data: null, headers: new Headers() });
         }
     },
 

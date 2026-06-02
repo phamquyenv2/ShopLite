@@ -14,6 +14,8 @@ import './ImportOrdersPage.css';
 
 const statusLabel: Record<string, string> = {
     PENDING: 'Chờ nhập',
+    WAITING_FOR_INSPECTION: 'Chờ kiểm hàng',
+    PENDING_DISCREPANCY_APPROVAL: 'Chờ duyệt chênh lệch',
     COMPLETED: 'Đã nhập hàng',
     CANCELLED: 'Đã hủy',
 };
@@ -130,11 +132,14 @@ const ImportOrdersPage: React.FC = () => {
                                             </div>
                                             <div className="io-item-meta">
                                                 <span>{time} • {code}</span>
-                                                {o.status === 'PENDING' ? (
-                                                    <span className="io-badge-draft">Phiếu tạm</span>
-                                                ) : (
+                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                    {o.status && (
+                                                        <span className={`io-badge io-badge-${o.status.toLowerCase()}`}>
+                                                            {statusLabel[o.status] || o.status}
+                                                        </span>
+                                                    )}
                                                     <span className="io-item-payment">Tiền mặt</span>
-                                                )}
+                                                </div>
                                             </div>
                                             <div className="io-item-qty">{itemCount} mặt hàng • Số lượng: {fmt(qtyTotal)}</div>
                                             <div className="io-item-names">{itemNames}</div>

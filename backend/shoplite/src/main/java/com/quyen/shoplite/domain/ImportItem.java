@@ -36,4 +36,10 @@ public class ImportItem {
     @Column(name = "returned_quantity")
     @Builder.Default
     private Integer returnedQuantity = 0;
+
+    @Column(name = "received_quantity")
+    private Integer receivedQuantity;
+
+    @Column(name = "inspection_note", length = 500)
+    private String inspectionNote;
 }

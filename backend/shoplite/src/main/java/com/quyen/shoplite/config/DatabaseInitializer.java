@@ -296,6 +296,10 @@ public class DatabaseInitializer implements CommandLineRunner {
                 perm("Update import order", "/api/v1/import-orders/{id}", "PUT", "IMPORT_ORDERS"),
                 perm("Update import order status", "/api/v1/import-orders/{id}/status", "PUT", "IMPORT_ORDERS"),
                 perm("Pay import order", "/api/v1/import-orders/{id}/pay", "POST", "IMPORT_ORDERS"),
+                perm("Send import order to supplier", "/api/v1/import-orders/{id}/send", "POST", "IMPORT_ORDERS"),
+                perm("Inspect import order", "/api/v1/import-orders/{id}/inspect", "POST", "IMPORT_ORDERS"),
+                perm("Approve import discrepancy", "/api/v1/import-orders/{id}/approve-discrepancy", "POST", "IMPORT_ORDERS"),
+                perm("Reject import discrepancy", "/api/v1/import-orders/{id}/reject-discrepancy", "POST", "IMPORT_ORDERS"),
                 // IMPORT RETURN ORDERS
                 perm("Create import return", "/api/v1/import-return-orders", "POST", "IMPORT_RETURN_ORDERS"),
                 perm("View import returns", "/api/v1/import-return-orders", "GET", "IMPORT_RETURN_ORDERS"),
@@ -396,7 +400,9 @@ public class DatabaseInitializer implements CommandLineRunner {
                 .filter(p -> p.getApiPath().startsWith("/api/v1/auth")
                         || p.getApiPath().startsWith("/api/v1/products")
                         || ("GET".equals(p.getMethod()) && (p.getApiPath().startsWith("/api/v1/categories") || p.getApiPath().startsWith("/api/v1/units")))
-                        || p.getApiPath().startsWith("/api/v1/import-orders")
+                        || (p.getApiPath().equals("/api/v1/import-orders") && "GET".equals(p.getMethod()))
+                        || (p.getApiPath().equals("/api/v1/import-orders/{id}") && "GET".equals(p.getMethod()))
+                        || p.getApiPath().equals("/api/v1/import-orders/{id}/inspect")
                         || p.getApiPath().startsWith("/api/v1/import-return-orders")
                         || p.getApiPath().startsWith("/api/v1/inventory")
                         || p.getApiPath().startsWith("/api/v1/suppliers")

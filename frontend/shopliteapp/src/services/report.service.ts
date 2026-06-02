@@ -55,10 +55,13 @@ export interface ResSalesReportDTO {
 }
 
 export interface LowStockItemDTO {
+  productId: number;
   name: string;
   sku: string;
   stock: number;
   minStock: number;
+  importPrice?: number;
+  imageUrl?: string;
 }
 
 export interface MovementItemDTO {

@@ -382,7 +382,7 @@ export type StoreInvitation = {
 
 export type Notification = {
     id: number;
-    type: 'STORE_INVITATION';
+    type: 'STORE_INVITATION' | 'IMPORT_ORDER_INSPECTION' | 'IMPORT_ORDER_DISCREPANCY_APPROVAL';
     title: string;
     message: string;
     referenceId?: number | null;
@@ -430,11 +430,15 @@ export type Supplier = {
 };
 
 export type ImportItem = {
-    id?: number;
+    id: number;
     productId: number;
     productName?: string;
     productSku?: string;
     quantity: number;
+    receivedQuantity?: number;
+    discrepancyQuantity?: number;
+    discrepancyType?: 'MATCHED' | 'SHORTAGE' | 'EXCESS';
+    inspectionNote?: string;
     returnedQuantity?: number;
     importPrice: number;
     subTotal?: number;
@@ -450,10 +454,17 @@ export type ImportOrder = {
     discount?: number;
     totalAmount?: number;
     amountPaid?: number;
-    status: 'PENDING' | 'PENDING_PAYMENT' | 'COMPLETED' | 'CANCELLED';
+    status: 'PENDING' | 'WAITING_FOR_INSPECTION' | 'PENDING_DISCREPANCY_APPROVAL' | 'PENDING_PAYMENT' | 'COMPLETED' | 'CANCELLED';
     returnStatus?: 'UNRETURNED' | 'PARTIAL_RETURNED' | 'FULL_RETURNED';
     note?: string;
     createdAt?: string;
+    sentAt?: string;
+    inspectedAt?: string;
+    approvedAt?: string;
+    stockAppliedAt?: string;
+    inspectedBy?: string;
+    approvedBy?: string;
+    discrepancyNote?: string;
     items?: ImportItem[];
 };
 
@@ -465,7 +476,16 @@ export type ImportOrderUpsert = {
     note?: string;
     paidAmount?: number;
     paymentMethod?: string;
-    status?: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+    status?: 'PENDING' | 'CANCELLED';
+};
+
+export type InspectImportOrderPayload = {
+    note?: string;
+    items: {
+        importItemId: number;
+        receivedQuantity: number;
+        note?: string;
+    }[];
 };
 
 export type ImportReturnItem = {

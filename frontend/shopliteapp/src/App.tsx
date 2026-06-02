@@ -26,6 +26,7 @@ import OfficesPage from './pages/OfficesPage';
 import ImportOrdersPage from './pages/ImportOrdersPage';
 import ImportOrderCreatePage from './pages/ImportOrderCreatePage';
 import ImportOrderDetailPage from './pages/ImportOrderDetailPage';
+import ImportOrderInspectionPage from './pages/ImportOrderInspectionPage';
 import InventoryAdjustmentsPage from './pages/InventoryAdjustmentsPage';
 import InventoryAdjustmentCreatePage from './pages/InventoryAdjustmentCreatePage';
 import InventoryAdjustmentDetailPage from './pages/InventoryAdjustmentDetailPage';
@@ -146,6 +147,7 @@ const AppContent: React.FC = () => {
       <Route exact path="/import-order/new" render={() => <RequireAuth component={ImportOrderCreatePage} />} />
       <Route exact path="/import-order/edit/:id" render={() => <RequireAuth component={ImportOrderCreatePage} />} />
       <Route exact path="/import-orders/:id" render={() => <RequireAuth component={ImportOrderDetailPage} />} />
+      <Route exact path="/import-orders/:id/inspect" render={() => <RequireAuth component={ImportOrderInspectionPage} />} />
 
       <Route exact path="/inventory-adjustments" render={() => <RequireAuth component={InventoryAdjustmentsPage} />} />
       <Route exact path="/inventory-adjustment/new" render={() => <RequireAuth component={InventoryAdjustmentCreatePage} />} />
