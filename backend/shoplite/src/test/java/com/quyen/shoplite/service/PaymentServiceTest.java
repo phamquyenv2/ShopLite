@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -72,10 +71,10 @@ class PaymentServiceTest {
         req.setAmount(BigDecimal.valueOf(100.0));
 
         when(currentStoreService.getCurrentStore()).thenReturn(testStore());
-        when(paymentRepository.existsByStoreIdAndReferenceTypeAndReferenceIdAndStatusIn(
-                1L, RefTypeEnum.ORDER, orderId,
-                List.of(PaymentStatusEnum.PENDING, PaymentStatusEnum.COMPLETED)))
-                .thenReturn(true);
+        Payment completedPayment = new Payment();
+        completedPayment.setStatus(PaymentStatusEnum.COMPLETED);
+        when(paymentRepository.findAllByStoreIdAndReferenceTypeAndReferenceId(
+                1L, RefTypeEnum.ORDER, orderId)).thenReturn(List.of(completedPayment));
 
         assertThrows(IdInvalidException.class, () -> paymentService.createPaymentSession(req));
     }
@@ -89,8 +88,6 @@ class PaymentServiceTest {
         req.setAmount(BigDecimal.valueOf(100.0));
 
         when(currentStoreService.getCurrentStore()).thenReturn(testStore());
-        when(paymentRepository.existsByStoreIdAndReferenceTypeAndReferenceIdAndStatusIn(
-                any(), any(), any(), any())).thenReturn(false);
 
         PaymentProvider mockProvider = org.mockito.Mockito.mock(PaymentProvider.class);
         when(paymentProviderFactory.getProvider(PaymentMethodEnum.EWALLET)).thenReturn(mockProvider);
