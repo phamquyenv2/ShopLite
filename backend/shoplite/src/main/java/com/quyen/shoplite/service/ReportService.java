@@ -220,17 +220,19 @@ public class ReportService {
             if (stock == 0) {
                 outOfStockCount++;
                 lowStockItems.add(ResInventoryReportDTO.LowStockItemDTO.builder()
-                        .name(p.getName()).sku(p.getSku()).stock(stock).minStock(minStock).build());
+                        .productId(p.getId())
+                        .name(p.getName()).sku(p.getSku()).stock(stock).minStock(minStock)
+                        .importPrice(p.getCostPrice()).imageUrl(p.getImage()).build());
             } else if (stock <= minStock) {
                 lowStockCount++;
                 lowStockItems.add(ResInventoryReportDTO.LowStockItemDTO.builder()
-                        .name(p.getName()).sku(p.getSku()).stock(stock).minStock(minStock).build());
+                        .productId(p.getId())
+                        .name(p.getName()).sku(p.getSku()).stock(stock).minStock(minStock)
+                        .importPrice(p.getCostPrice()).imageUrl(p.getImage()).build());
             }
         }
 
-        if (lowStockItems.size() > 5) {
-            lowStockItems = lowStockItems.subList(0, 5);
-        }
+
 
         return ResInventoryReportDTO.builder()
                 .totalSku(totalSku)

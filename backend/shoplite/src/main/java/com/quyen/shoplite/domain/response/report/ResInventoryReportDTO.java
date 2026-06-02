@@ -27,10 +27,13 @@ public class ResInventoryReportDTO {
     @AllArgsConstructor
     @Builder
     public static class LowStockItemDTO {
+        private Integer productId;
         private String name;
         private String sku;
         private int stock;
         private int minStock;
+        private Double importPrice;
+        private String imageUrl;
     }
 
     @Getter
