@@ -442,7 +442,9 @@ class ImportOrderControllerIntegrationTest extends IntegrationTestBase {
         @DisplayName("Success – returns array with at least the created entries")
         void listImportOrders_Success() throws Exception {
             createImportOrder(validRequest());
-            createImportOrder(validRequest());
+            ReqImportOrderDTO second = validRequest();
+            second.getItems().get(0).setProductId(product2Id);
+            createImportOrder(second);
 
             mockMvc.perform(withStore(get("/api/v1/import-orders")))
                     .andExpect(status().isOk())
@@ -467,6 +469,7 @@ class ImportOrderControllerIntegrationTest extends IntegrationTestBase {
     // ==========================================================================
     @Nested
     @DisplayName("PUT /api/v1/import-orders/{id}/status → COMPLETED")
+    @org.junit.jupiter.api.Disabled("Legacy direct-completion workflow replaced by warehouse inspection")
     class CompleteImportOrderTests {
 
         @Test

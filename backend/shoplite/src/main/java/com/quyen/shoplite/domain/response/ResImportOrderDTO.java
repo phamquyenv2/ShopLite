@@ -25,6 +25,13 @@ public class ResImportOrderDTO {
     private ImportReturnStatusEnum returnStatus;
     private String note;
     private LocalDateTime createdAt;
+    private LocalDateTime sentAt;
+    private LocalDateTime inspectedAt;
+    private LocalDateTime approvedAt;
+    private LocalDateTime stockAppliedAt;
+    private String inspectedBy;
+    private String approvedBy;
+    private String discrepancyNote;
 
     /** Chi tiết từng sản phẩm nhập */
     private List<ResImportItemDTO> items;

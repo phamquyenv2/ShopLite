@@ -11,6 +11,10 @@ public class ResImportItemDTO {
     private String productName;
     private String productSku;
     private Integer quantity;
+    private Integer receivedQuantity;
+    private Integer discrepancyQuantity;
+    private String discrepancyType;
+    private String inspectionNote;
     private Integer returnedQuantity;
     private Double importPrice;
     private Double subTotal;

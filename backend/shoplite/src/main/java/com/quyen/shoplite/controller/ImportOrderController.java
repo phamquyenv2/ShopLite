@@ -4,6 +4,8 @@ import com.quyen.shoplite.service.ImportOrderService;
 import com.quyen.shoplite.util.annotation.ApiMessage;
 
 import com.quyen.shoplite.domain.request.ReqImportOrderDTO;
+import com.quyen.shoplite.domain.request.ReqImportOrderDecisionDTO;
+import com.quyen.shoplite.domain.request.ReqInspectImportOrderDTO;
 import com.quyen.shoplite.domain.request.ReqUpdateImportOrderStatusDTO;
 import com.quyen.shoplite.domain.response.ResImportOrderDTO;
 import jakarta.validation.Valid;
@@ -57,6 +59,37 @@ public class ImportOrderController {
             @PathVariable("id") @Positive(message = " must be greater than 0") Integer id,
             @Valid @RequestBody ReqUpdateImportOrderStatusDTO req) {
         return ResponseEntity.ok(importOrderService.updateStatus(id, req.getStatus()));
+    }
+
+    @PostMapping("/{id}/send")
+    @ApiMessage("Send import order to supplier success")
+    public ResponseEntity<ResImportOrderDTO> sendToSupplier(
+            @PathVariable("id") @Positive(message = " must be greater than 0") Integer id) {
+        return ResponseEntity.ok(importOrderService.sendToSupplier(id));
+    }
+
+    @PostMapping("/{id}/inspect")
+    @ApiMessage("Inspect import order success")
+    public ResponseEntity<ResImportOrderDTO> inspect(
+            @PathVariable("id") @Positive(message = " must be greater than 0") Integer id,
+            @Valid @RequestBody ReqInspectImportOrderDTO req) {
+        return ResponseEntity.ok(importOrderService.inspect(id, req));
+    }
+
+    @PostMapping("/{id}/approve-discrepancy")
+    @ApiMessage("Approve import order discrepancy success")
+    public ResponseEntity<ResImportOrderDTO> approveDiscrepancy(
+            @PathVariable("id") @Positive(message = " must be greater than 0") Integer id,
+            @RequestBody(required = false) ReqImportOrderDecisionDTO req) {
+        return ResponseEntity.ok(importOrderService.approveDiscrepancy(id, req));
+    }
+
+    @PostMapping("/{id}/reject-discrepancy")
+    @ApiMessage("Reject import order discrepancy success")
+    public ResponseEntity<ResImportOrderDTO> rejectDiscrepancy(
+            @PathVariable("id") @Positive(message = " must be greater than 0") Integer id,
+            @RequestBody(required = false) ReqImportOrderDecisionDTO req) {
+        return ResponseEntity.ok(importOrderService.rejectDiscrepancy(id, req));
     }
 
     /**

@@ -176,14 +176,18 @@
     color: #64748b;
 }
 
-.io-badge-draft {
-    background: #FFEDD5; /* light orange */
-    color: #C2410C; /* dark orange */
+.io-badge {
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 11px;
     font-weight: 500;
 }
+
+.io-badge-pending { background: #FFEDD5; color: #C2410C; }
+.io-badge-waiting_for_inspection { background: #FEF3C7; color: #D97706; }
+.io-badge-pending_discrepancy_approval { background: #E0E7FF; color: #4338CA; }
+.io-badge-completed { background: #DCFCE7; color: #15803D; }
+.io-badge-cancelled { background: #FEE2E2; color: #B91C1C; }
 
 .io-item-qty {
     font-size: 13px;

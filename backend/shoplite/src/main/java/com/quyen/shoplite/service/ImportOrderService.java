@@ -1,18 +1,16 @@
 package com.quyen.shoplite.service;
 
+import com.quyen.shoplite.domain.*;
+import com.quyen.shoplite.domain.request.*;
+import com.quyen.shoplite.domain.response.ResImportOrderDTO;
 import com.quyen.shoplite.repository.*;
 import com.quyen.shoplite.util.DTOMapper;
+import com.quyen.shoplite.util.SecurityUtil;
 import com.quyen.shoplite.util.constant.ImportOrderStatusEnum;
 import com.quyen.shoplite.util.constant.PaymentMethodEnum;
 import com.quyen.shoplite.util.constant.RefTypeEnum;
 import com.quyen.shoplite.util.constant.TypeInventoryEnum;
 import com.quyen.shoplite.util.error.IdInvalidException;
-
-import com.quyen.shoplite.domain.*;
-import com.quyen.shoplite.domain.request.ReqImportItemDTO;
-import com.quyen.shoplite.domain.request.ReqImportOrderDTO;
-import com.quyen.shoplite.domain.request.ReqPaymentDTO;
-import com.quyen.shoplite.domain.response.ResImportOrderDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,9 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,316 +33,307 @@ public class ImportOrderService {
     private final InventoryLogsRepository inventoryLogsRepository;
     private final PaymentService paymentService;
     private final CurrentStoreService currentStoreService;
-
-    // ==================== CREATE ====================
+    private final ImportOrderNotificationService importOrderNotificationService;
 
     @Transactional
     public ResImportOrderDTO create(ReqImportOrderDTO req) {
         Store store = currentStoreService.getCurrentStore();
-        Long storeId = store.getId();
-        // 1. Verify supplier exists
-        Supplier supplier = supplierRepository.findByIdAndStoreId(req.getSupplierId(), storeId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy Supplier id=" + req.getSupplierId()));
+        validateProductsNotInUnfinishedOrders(req.getItems(), store.getId(), -1);
+        Supplier supplier = findSupplier(req.getSupplierId(), store.getId());
+        List<ImportItem> items = buildItems(req.getItems(), store.getId(), null);
+        double totalAmount = calculateTotal(items, req.getTax(), req.getDiscount());
 
-        // 2. Validate each item product & compute subtotals
-        List<ImportItem> itemsToSave = new ArrayList<>();
-        double subtotalSum = 0.0;
-
-        for (ReqImportItemDTO itemReq : req.getItems()) {
-            Product product = productRepository.findByIdAndStoreIdAndIsDeletedFalse(itemReq.getProductId(), storeId)
-                    .orElseThrow(() -> new IdInvalidException(
-                            "Không tìm thấy Product id=" + itemReq.getProductId()));
-
-            double subTotal = itemReq.getImportPrice() * itemReq.getQuantity();
-            subtotalSum += subTotal;
-
-            itemsToSave.add(ImportItem.builder()
-                    .product(product)
-                    .quantity(itemReq.getQuantity())
-                    .importPrice(itemReq.getImportPrice())
-                    .subTotal(subTotal)
-                    .build());
-        }
-
-        // 3. Compute total = sum(subtotals) + tax - discount
-        double tax = req.getTax() != null ? req.getTax() : 0.0;
-        double discount = req.getDiscount() != null ? req.getDiscount() : 0.0;
-        double totalAmount = subtotalSum + tax - discount;
-
-        if (totalAmount < 0) {
-            throw new IdInvalidException("Tổng tiền đơn nhập không được âm");
-        }
-
-        Double paidAmount = req.getPaidAmount() != null ? req.getPaidAmount() : 0.0;
-        ImportOrderStatusEnum status = req.getStatus() != null ? req.getStatus() : ImportOrderStatusEnum.PENDING;
-
-        // 4. Save ImportOrder
-        ImportOrder importOrder = ImportOrder.builder()
+        ImportOrder order = ImportOrder.builder()
                 .store(store)
                 .supplier(supplier)
-                .tax(tax)
-                .discount(discount)
+                .tax(orZero(req.getTax()))
+                .discount(orZero(req.getDiscount()))
                 .totalAmount(totalAmount)
-                .amountPaid(paidAmount)
-                .status(status)
+                .amountPaid(orZero(req.getPaidAmount()))
+                .status(ImportOrderStatusEnum.PENDING)
                 .note(req.getNote())
                 .createdAt(LocalDateTime.now())
                 .build();
-        ImportOrder savedOrder = importOrderRepository.save(importOrder);
-
-        // 5. Save ImportItems (link to saved order)
-        for (ImportItem item : itemsToSave) {
-            item.setImportOrder(savedOrder);
-        }
-        List<ImportItem> savedItems = importItemRepository.saveAll(itemsToSave);
-
-        // 6. Handle COMPLETED status on creation
-        if (status == ImportOrderStatusEnum.COMPLETED) {
-            // Bước 1: Cập nhật stock và chuyển sang PENDING_PAYMENT
-            // → Nếu payment bị lỗi sau đây, order vẫn ở PENDING_PAYMENT (không rollback stock)
-            processCompletedImportOrder(savedOrder, savedItems);
-            savedOrder.setStatus(ImportOrderStatusEnum.PENDING_PAYMENT);
-            savedOrder = importOrderRepository.save(savedOrder);
-
-            // Bước 2: Tạo Payment → nếu được thì chuyển sang COMPLETED
-            if (paidAmount > 0 && req.getFundAccountId() != null) {
-                createImportPayment(savedOrder, paidAmount, req.getPaymentMethod(), req.getFundAccountId());
-            }
-            savedOrder.setStatus(ImportOrderStatusEnum.COMPLETED);
-            savedOrder = importOrderRepository.save(savedOrder);
-
-            log.info("[ImportOrder] Completed import order upon creation id={}, total={}, paid={}",
-                    savedOrder.getId(), savedOrder.getTotalAmount(), paidAmount);
-        }
-
-        return DTOMapper.toResImportOrderDTO(savedOrder, savedItems);
+        ImportOrder saved = importOrderRepository.save(order);
+        items.forEach(item -> item.setImportOrder(saved));
+        return DTOMapper.toResImportOrderDTO(saved, importItemRepository.saveAll(items));
     }
-
-    // ==================== UPDATE ====================
 
     @Transactional
     public ResImportOrderDTO update(Integer id, ReqImportOrderDTO req) {
         Long storeId = currentStoreService.getCurrentStoreId();
+        validateProductsNotInUnfinishedOrders(req.getItems(), storeId, id);
         ImportOrder order = importOrderRepository.findByIdAndStoreId(id, storeId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy ImportOrder id=" + id));
+                .orElseThrow(() -> new IdInvalidException("Khong tim thay ImportOrder id=" + id));
+        requireStatus(order, ImportOrderStatusEnum.PENDING);
 
-        if (order.getStatus() != ImportOrderStatusEnum.PENDING) {
-            throw new IdInvalidException("Chỉ có thể sửa đơn nhập khi đang ở trạng thái phiếu tạm (PENDING)");
-        }
-
-        Supplier supplier = supplierRepository.findByIdAndStoreId(req.getSupplierId(), storeId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy Supplier id=" + req.getSupplierId()));
-
-        // Delete old items
         List<ImportItem> oldItems = importItemRepository.findByImportOrder_Id(id);
         importItemRepository.deleteAll(oldItems);
+        List<ImportItem> items = buildItems(req.getItems(), storeId, order);
 
-        // Process new items
-        List<ImportItem> itemsToSave = new ArrayList<>();
-        double subtotalSum = 0.0;
-
-        for (ReqImportItemDTO itemReq : req.getItems()) {
-            Product product = productRepository.findByIdAndStoreIdAndIsDeletedFalse(itemReq.getProductId(), storeId)
-                    .orElseThrow(() -> new IdInvalidException(
-                            "Không tìm thấy Product id=" + itemReq.getProductId()));
-
-            double subTotal = itemReq.getImportPrice() * itemReq.getQuantity();
-            subtotalSum += subTotal;
-
-            itemsToSave.add(ImportItem.builder()
-                    .product(product)
-                    .quantity(itemReq.getQuantity())
-                    .importPrice(itemReq.getImportPrice())
-                    .subTotal(subTotal)
-                    .importOrder(order)
-                    .build());
-        }
-
-        double tax = req.getTax() != null ? req.getTax() : 0.0;
-        double discount = req.getDiscount() != null ? req.getDiscount() : 0.0;
-        double totalAmount = subtotalSum + tax - discount;
-
-        if (totalAmount < 0) {
-            throw new IdInvalidException("Tổng tiền đơn nhập không được âm");
-        }
-
-        Double paidAmount = req.getPaidAmount() != null ? req.getPaidAmount() : 0.0;
-        ImportOrderStatusEnum status = req.getStatus() != null ? req.getStatus() : ImportOrderStatusEnum.PENDING;
-
-        order.setSupplier(supplier);
-        order.setTax(tax);
-        order.setDiscount(discount);
-        order.setTotalAmount(totalAmount);
-        order.setAmountPaid(paidAmount);
-        order.setStatus(status);
+        order.setSupplier(findSupplier(req.getSupplierId(), storeId));
+        order.setTax(orZero(req.getTax()));
+        order.setDiscount(orZero(req.getDiscount()));
+        order.setTotalAmount(calculateTotal(items, req.getTax(), req.getDiscount()));
+        order.setAmountPaid(orZero(req.getPaidAmount()));
         order.setNote(req.getNote());
-        
-        ImportOrder savedOrder = importOrderRepository.save(order);
-        List<ImportItem> savedItems = importItemRepository.saveAll(itemsToSave);
-
-        // Handle COMPLETED status on update
-        if (status == ImportOrderStatusEnum.COMPLETED) {
-            // Bước 1: Cập nhật stock + chuyển PENDING_PAYMENT
-            processCompletedImportOrder(savedOrder, savedItems);
-            savedOrder.setStatus(ImportOrderStatusEnum.PENDING_PAYMENT);
-            savedOrder = importOrderRepository.save(savedOrder);
-
-            // Bước 2: Payment → COMPLETED
-            if (paidAmount > 0 && req.getFundAccountId() != null) {
-                createImportPayment(savedOrder, paidAmount, req.getPaymentMethod(), req.getFundAccountId());
-            }
-            savedOrder.setStatus(ImportOrderStatusEnum.COMPLETED);
-            savedOrder = importOrderRepository.save(savedOrder);
-
-            log.info("[ImportOrder] Completed import order upon update id={}, total={}, paid={}",
-                    savedOrder.getId(), savedOrder.getTotalAmount(), paidAmount);
-        }
-
-        return DTOMapper.toResImportOrderDTO(savedOrder, savedItems);
+        return DTOMapper.toResImportOrderDTO(importOrderRepository.save(order), importItemRepository.saveAll(items));
     }
-
-    // ==================== FIND ALL ====================
 
     public List<ResImportOrderDTO> findAll() {
         Long storeId = currentStoreService.getCurrentStoreId();
         List<ImportOrder> orders = importOrderRepository.findAllByStoreIdOrderByCreatedAtDesc(storeId);
-        List<Integer> orderIds = orders.stream().map(ImportOrder::getId).toList();
-        Map<Integer, List<ImportItem>> itemsMap = importItemRepository.findByImportOrder_IdIn(orderIds)
+        Map<Integer, List<ImportItem>> itemsByOrderId = importItemRepository
+                .findByImportOrder_IdIn(orders.stream().map(ImportOrder::getId).toList())
                 .stream()
                 .collect(Collectors.groupingBy(item -> item.getImportOrder().getId()));
         return orders.stream()
-                .map(order -> DTOMapper.toResImportOrderDTO(
-                        order,
-                        itemsMap.getOrDefault(order.getId(), List.of())))
+                .map(order -> DTOMapper.toResImportOrderDTO(order, itemsByOrderId.getOrDefault(order.getId(), List.of())))
                 .toList();
     }
-
-    // ==================== FIND BY ID ====================
 
     public ResImportOrderDTO findById(Integer id) {
         Long storeId = currentStoreService.getCurrentStoreId();
         ImportOrder order = importOrderRepository.findByIdAndStoreId(id, storeId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy ImportOrder id=" + id));
-        List<ImportItem> items = importItemRepository.findByImportOrder_Id(id);
-        return DTOMapper.toResImportOrderDTO(order, items);
+                .orElseThrow(() -> new IdInvalidException("Khong tim thay ImportOrder id=" + id));
+        return toResponse(order);
     }
-
-    // ==================== UPDATE STATUS ====================
-
-    @Transactional
-    public ResImportOrderDTO updateStatus(Integer id, ImportOrderStatusEnum newStatus) {
-        Long storeId = currentStoreService.getCurrentStoreId();
-        ImportOrder order = importOrderRepository.findByIdAndStoreIdWithLock(id, storeId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy ImportOrder id=" + id));
-
-        ImportOrderStatusEnum currentStatus = order.getStatus();
-
-        if (currentStatus == ImportOrderStatusEnum.CANCELLED) {
-            throw new IdInvalidException("Đơn nhập đã bị huỷ, không thể thay đổi trạng thái");
-        }
-        if (currentStatus == ImportOrderStatusEnum.COMPLETED) {
-            throw new IdInvalidException("Đơn nhập đã hoàn tất, không thể thay đổi trạng thái");
-        }
-
-        order.setStatus(newStatus);
-        ImportOrder savedOrder = importOrderRepository.save(order);
-
-        if (newStatus == ImportOrderStatusEnum.COMPLETED) {
-            List<ImportItem> items = importItemRepository.findByImportOrder_Id(id);
-            processCompletedImportOrder(savedOrder, items);
-
-            // Tạo Payment cho toàn bộ totalAmount khi hoàn tất qua updateStatus
-            // NOTE: fundAccountId cần được truyền từ frontend — tạm không tạo Payment ở đây
-            // Việc tạo Payment sẽ do frontend gọi POST /api/v1/payment riêng
-
-            log.info("[ImportOrder] Completed import order id={}, total={}, items={}",
-                    id, savedOrder.getTotalAmount(), items.size());
-        }
-
-        return DTOMapper.toResImportOrderDTO(savedOrder,
-                importItemRepository.findByImportOrder_Id(id));
-    }
-
-    // ==================== PAY ONLY (Retry) ====================
 
     /**
-     * Thực hiện payment cho đơn đang ở PENDING_PAYMENT.
-     * Không update stock (stock đã được cập nhật ở bước confirm trước đó).
-     * Idempotent: gọi lại nhiều lần cũng chỉ tạo 1 payment.
+     * Kept for compatibility with old clients. Workflow transitions use explicit endpoints.
+     */
+    @Transactional
+    public ResImportOrderDTO updateStatus(Integer id, ImportOrderStatusEnum newStatus) {
+        ImportOrder order = findLockedOrder(id);
+        if (order.getStatus() == ImportOrderStatusEnum.CANCELLED) {
+            throw new IdInvalidException("Phieu nhap da bi huỷ, khong the thay doi trang thai");
+        }
+        if (order.getStatus() == ImportOrderStatusEnum.COMPLETED) {
+            throw new IdInvalidException("Phieu nhap da ket thuc, khong the thay doi trang thai");
+        }
+        if (newStatus != ImportOrderStatusEnum.CANCELLED) {
+            throw new IdInvalidException("Chi co the huy phieu qua endpoint status");
+        }
+        order.setStatus(ImportOrderStatusEnum.CANCELLED);
+        return toResponse(importOrderRepository.save(order));
+    }
+
+    @Transactional
+    public ResImportOrderDTO sendToSupplier(Integer id) {
+        ImportOrder order = findLockedOrder(id);
+        requireStatus(order, ImportOrderStatusEnum.PENDING);
+        order.setStatus(ImportOrderStatusEnum.WAITING_FOR_INSPECTION);
+        order.setSentAt(LocalDateTime.now());
+        ImportOrder saved = importOrderRepository.save(order);
+        importOrderNotificationService.notifyWarehouseInspectionRequired(saved, false);
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public ResImportOrderDTO inspect(Integer id, ReqInspectImportOrderDTO req) {
+        ImportOrder order = findLockedOrder(id);
+        requireStatus(order, ImportOrderStatusEnum.WAITING_FOR_INSPECTION);
+        List<ImportItem> items = importItemRepository.findByImportOrder_Id(id);
+        Map<Integer, ImportItem> itemsById = items.stream()
+                .collect(Collectors.toMap(ImportItem::getId, item -> item));
+
+        if (req.getItems().size() != items.size()) {
+            throw new IdInvalidException("Phai kiem nhan day du tat ca mat hang trong phieu");
+        }
+
+        boolean hasDiscrepancy = false;
+        Set<Integer> inspectedIds = new HashSet<>();
+        for (ReqInspectImportItemDTO inspected : req.getItems()) {
+            ImportItem item = itemsById.get(inspected.getImportItemId());
+            if (item == null || !inspectedIds.add(inspected.getImportItemId())) {
+                throw new IdInvalidException("Danh sach mat hang kiem nhan khong hop le");
+            }
+            item.setReceivedQuantity(inspected.getReceivedQuantity());
+            item.setInspectionNote(inspected.getNote());
+            hasDiscrepancy |= !item.getQuantity().equals(inspected.getReceivedQuantity());
+        }
+        importItemRepository.saveAll(items);
+
+        order.setInspectedAt(LocalDateTime.now());
+        order.setInspectedBy(SecurityUtil.requireCurrentUserLogin());
+        order.setDiscrepancyNote(req.getNote());
+        if (hasDiscrepancy) {
+            order.setStatus(ImportOrderStatusEnum.PENDING_DISCREPANCY_APPROVAL);
+            importOrderNotificationService.notifyManagerDiscrepancyApprovalRequired(order);
+        } else {
+            applyReceivedStock(order, items);
+            order.setStatus(ImportOrderStatusEnum.COMPLETED);
+        }
+        return toResponse(importOrderRepository.save(order));
+    }
+
+    @Transactional
+    public ResImportOrderDTO approveDiscrepancy(Integer id, ReqImportOrderDecisionDTO req) {
+        ImportOrder order = findLockedOrder(id);
+        requireStatus(order, ImportOrderStatusEnum.PENDING_DISCREPANCY_APPROVAL);
+        applyReceivedStock(order, importItemRepository.findByImportOrder_Id(id));
+        order.setStatus(ImportOrderStatusEnum.COMPLETED);
+        order.setApprovedAt(LocalDateTime.now());
+        order.setApprovedBy(SecurityUtil.requireCurrentUserLogin());
+        applyDecisionNote(order, req);
+        return toResponse(importOrderRepository.save(order));
+    }
+
+    @Transactional
+    public ResImportOrderDTO rejectDiscrepancy(Integer id, ReqImportOrderDecisionDTO req) {
+        ImportOrder order = findLockedOrder(id);
+        requireStatus(order, ImportOrderStatusEnum.PENDING_DISCREPANCY_APPROVAL);
+        List<ImportItem> items = importItemRepository.findByImportOrder_Id(id);
+        items.forEach(item -> {
+            item.setReceivedQuantity(null);
+            item.setInspectionNote(null);
+        });
+        importItemRepository.saveAll(items);
+        order.setStatus(ImportOrderStatusEnum.WAITING_FOR_INSPECTION);
+        order.setInspectedAt(null);
+        order.setInspectedBy(null);
+        applyDecisionNote(order, req);
+        ImportOrder saved = importOrderRepository.save(order);
+        importOrderNotificationService.notifyWarehouseInspectionRequired(saved, true);
+        return toResponse(saved);
+    }
+
+    /**
+     * Legacy retry endpoint for orders that already entered PENDING_PAYMENT before this workflow existed.
      */
     @Transactional
     public ResImportOrderDTO payOnly(Integer id, ReqImportOrderDTO req) {
-        Long storeId = currentStoreService.getCurrentStoreId();
-        ImportOrder order = importOrderRepository.findByIdAndStoreIdWithLock(id, storeId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy ImportOrder id=" + id));
-
-        if (order.getStatus() != ImportOrderStatusEnum.PENDING_PAYMENT) {
-            throw new IdInvalidException(
-                "Chỉ có thể thanh toán lại cho đơn đang ở trạng thái PENDING_PAYMENT, " +
-                "hiện tại: " + order.getStatus());
+        ImportOrder order = findLockedOrder(id);
+        requireStatus(order, ImportOrderStatusEnum.PENDING_PAYMENT);
+        double paidAmount = orZero(req.getPaidAmount());
+        if (paidAmount <= 0 || req.getFundAccountId() == null) {
+            throw new IdInvalidException("So tien va tai khoan thanh toan khong hop le");
         }
-
-        double paidAmount = req.getPaidAmount() != null ? req.getPaidAmount() : 0.0;
-        if (paidAmount <= 0) {
-            throw new IdInvalidException("Số tiền thanh toán phải lớn hơn 0");
-        }
-        if (req.getFundAccountId() == null) {
-            throw new IdInvalidException("Vui lòng chọn tài khoản thanh toán");
-        }
-
         createImportPayment(order, paidAmount, req.getPaymentMethod(), req.getFundAccountId());
-
         order.setAmountPaid(paidAmount);
         order.setStatus(ImportOrderStatusEnum.COMPLETED);
-        ImportOrder saved = importOrderRepository.save(order);
-
-        log.info("[ImportOrder] payOnly completed for id={}, paid={}", id, paidAmount);
-        return DTOMapper.toResImportOrderDTO(saved, importItemRepository.findByImportOrder_Id(id));
+        return toResponse(importOrderRepository.save(order));
     }
 
-    // ==================== PRIVATE HELPERS ====================
-
-    private void processCompletedImportOrder(ImportOrder savedOrder, List<ImportItem> items) {
+    private void applyReceivedStock(ImportOrder order, List<ImportItem> items) {
+        if (order.getStockAppliedAt() != null) {
+            throw new IdInvalidException("Ton kho cua phieu nhap da duoc cap nhat");
+        }
         for (ImportItem item : items) {
-            Product product = productRepository.findByIdAndStoreIdWithLock(item.getProduct().getId(), savedOrder.getStore().getId())
-                    .orElseThrow(() -> new IdInvalidException(
-                            "Không tìm thấy Product id=" + item.getProduct().getId()));
-            int addedQty = item.getQuantity();
-            int newStock = product.getStock() + addedQty;
+            if (item.getReceivedQuantity() == null) {
+                throw new IdInvalidException("Phieu nhap chua duoc kiem nhan day du");
+            }
+            Product product = productRepository
+                    .findByIdAndStoreIdWithLock(item.getProduct().getId(), order.getStore().getId())
+                    .orElseThrow(() -> new IdInvalidException("Khong tim thay Product id=" + item.getProduct().getId()));
+            int newStock = product.getStock() + item.getReceivedQuantity();
             product.setStock(newStock);
             productRepository.save(product);
-
             inventoryLogsRepository.save(InventoryLogs.builder()
-                    .store(savedOrder.getStore())
+                    .store(order.getStore())
                     .product(product)
                     .importItem(item)
-                    .quantityIn(addedQty)
+                    .quantityIn(item.getReceivedQuantity())
                     .balanceAfter(newStock)
                     .currentStock(newStock)
                     .type(TypeInventoryEnum.IMPORT)
                     .createdAt(LocalDateTime.now())
                     .build());
         }
+        order.setStockAppliedAt(LocalDateTime.now());
     }
 
-    /**
-     * Tạo Payment cho ImportOrder thông qua PaymentService (qua Payment → Transaction → FundAccount).
-     */
-    private void createImportPayment(ImportOrder importOrder, double paidAmount,
-                                     String paymentMethodStr, Integer fundAccountId) {
-        PaymentMethodEnum method = PaymentMethodEnum.CASH;
-        if (paymentMethodStr != null) {
-            try {
-                method = PaymentMethodEnum.valueOf(paymentMethodStr);
-            } catch (IllegalArgumentException ignored) {}
+    private List<ImportItem> buildItems(List<ReqImportItemDTO> requests, Long storeId, ImportOrder order) {
+        List<ImportItem> items = new ArrayList<>();
+        for (ReqImportItemDTO request : requests) {
+            Product product = productRepository.findByIdAndStoreIdAndIsDeletedFalse(request.getProductId(), storeId)
+                    .orElseThrow(() -> new IdInvalidException("Khong tim thay Product id=" + request.getProductId()));
+            items.add(ImportItem.builder()
+                    .importOrder(order)
+                    .product(product)
+                    .quantity(request.getQuantity())
+                    .importPrice(request.getImportPrice())
+                    .subTotal(request.getImportPrice() * request.getQuantity())
+                    .build());
         }
+        return items;
+    }
 
-        ReqPaymentDTO paymentReq = new ReqPaymentDTO();
-        paymentReq.setReferenceType(RefTypeEnum.IMPORT_ORDER);
-        paymentReq.setReferenceId(importOrder.getId());
-        paymentReq.setPaymentMethod(method);
-        paymentReq.setAmount(BigDecimal.valueOf(paidAmount));
-        paymentReq.setFundAccountId(fundAccountId);
-        paymentService.createPaymentSession(paymentReq);
+    private void validateProductsNotInUnfinishedOrders(List<ReqImportItemDTO> items, Long storeId, Integer excludeOrderId) {
+        if (items == null || items.isEmpty()) return;
+        List<Integer> reqProductIds = items.stream()
+                .map(ReqImportItemDTO::getProductId)
+                .toList();
+
+        List<ImportOrderStatusEnum> completedStatuses = List.of(
+                ImportOrderStatusEnum.COMPLETED,
+                ImportOrderStatusEnum.CANCELLED
+        );
+
+        List<Integer> conflictingIds = importItemRepository.findProductIdsInUnfinishedOrders(
+                storeId, reqProductIds, completedStatuses, excludeOrderId
+        );
+
+        if (!conflictingIds.isEmpty()) {
+            throw new IdInvalidException("Sản phẩm ID " + conflictingIds.get(0) + " đang tồn tại trong một phiếu nhập chưa hoàn thành (chờ kiểm hàng/duyệt chênh lệch). Vui lòng hoàn tất phiếu cũ trước.");
+        }
+    }
+
+    private double calculateTotal(List<ImportItem> items, Double tax, Double discount) {
+        double total = items.stream().mapToDouble(ImportItem::getSubTotal).sum() + orZero(tax) - orZero(discount);
+        if (total < 0) {
+            throw new IdInvalidException("Tong tien don nhap khong duoc am (âm)");
+        }
+        return total;
+    }
+
+    private Supplier findSupplier(Integer supplierId, Long storeId) {
+        return supplierRepository.findByIdAndStoreId(supplierId, storeId)
+                .orElseThrow(() -> new IdInvalidException("Khong tim thay Supplier id=" + supplierId));
+    }
+
+    private ImportOrder findLockedOrder(Integer id) {
+        Long storeId = currentStoreService.getCurrentStoreId();
+        return importOrderRepository.findByIdAndStoreIdWithLock(id, storeId)
+                .orElseThrow(() -> new IdInvalidException("Khong tim thay ImportOrder id=" + id));
+    }
+
+    private void requireStatus(ImportOrder order, ImportOrderStatusEnum expected) {
+        if (order.getStatus() != expected) {
+            throw new IdInvalidException("Trang thai phieu nhap khong hop le. Can " + expected
+                    + ", hien tai: " + order.getStatus());
+        }
+    }
+
+    private ResImportOrderDTO toResponse(ImportOrder order) {
+        return DTOMapper.toResImportOrderDTO(order, importItemRepository.findByImportOrder_Id(order.getId()));
+    }
+
+    private void applyDecisionNote(ImportOrder order, ReqImportOrderDecisionDTO req) {
+        if (req != null && req.getNote() != null && !req.getNote().isBlank()) {
+            order.setDiscrepancyNote(req.getNote());
+        }
+    }
+
+    private double orZero(Double value) {
+        return value != null ? value : 0.0;
+    }
+
+    private void createImportPayment(ImportOrder order, double paidAmount, String methodValue, Integer fundAccountId) {
+        PaymentMethodEnum method = PaymentMethodEnum.CASH;
+        if (methodValue != null) {
+            try {
+                method = PaymentMethodEnum.valueOf(methodValue);
+            } catch (IllegalArgumentException ignored) {
+                log.warn("Unknown import payment method {}, using CASH", methodValue);
+            }
+        }
+        ReqPaymentDTO payment = new ReqPaymentDTO();
+        payment.setReferenceType(RefTypeEnum.IMPORT_ORDER);
+        payment.setReferenceId(order.getId());
+        payment.setPaymentMethod(method);
+        payment.setAmount(BigDecimal.valueOf(paidAmount));
+        payment.setFundAccountId(fundAccountId);
+        paymentService.createPaymentSession(payment);
     }
 }

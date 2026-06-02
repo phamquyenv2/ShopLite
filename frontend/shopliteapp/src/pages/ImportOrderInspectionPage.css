@@ -1,0 +1,111 @@
+.io-insp-page {
+    --background: #f4f6f9;
+}
+.io-insp-header {
+    background: #fff;
+    box-shadow: none !important;
+}
+.io-insp-header.header-md {
+    box-shadow: none !important;
+}
+.io-insp-header::after {
+    display: none !important;
+}
+.io-insp-toolbar {
+    --background: #fff;
+    --border-width: 0;
+}
+.io-insp-title {
+    text-align: left;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111;
+    margin-left: -8px;
+}
+.io-insp-content {
+    --background: #f4f6f9;
+}
+.io-insp-subtitle {
+    margin: 16px;
+    color: #64748b;
+    font-size: 14px;
+}
+.io-insp-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 0 16px 12px;
+}
+.io-insp-item-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+}
+.io-insp-item-sku {
+    color: #64748b;
+    font-size: 13px;
+    margin-top: 4px;
+}
+.io-insp-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+}
+.io-insp-label {
+    font-size: 14px;
+    color: #111;
+}
+.io-insp-input {
+    width: 90px;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    text-align: right;
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.io-insp-input:focus {
+    border-color: #0066FF;
+}
+.io-insp-status {
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 500;
+}
+.io-insp-status.match {
+    color: #16a34a;
+}
+.io-insp-status.diff {
+    color: #ea580c;
+}
+.io-insp-footer {
+    background: #fff;
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.03);
+}
+.io-insp-btn {
+    flex: 1;
+    background: #0066FF;
+    border: none;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 14px 0;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.2s;
+}
+.io-insp-btn:active {
+    background: #005ce6;
+}
+.io-insp-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
