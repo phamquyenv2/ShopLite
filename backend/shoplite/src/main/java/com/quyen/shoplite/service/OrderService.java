@@ -48,7 +48,7 @@ public class OrderService {
 
     private ResOrderDTO toOrderDTOWithPayment(Order order) {
         ResOrderDTO dto = DTOMapper.toResOrderDTO(order);
-        paymentRepository.findByStoreIdAndReferenceTypeAndReferenceId(order.getStore().getId(), RefTypeEnum.ORDER, order.getId())
+        paymentRepository.findFirstByStoreIdAndReferenceTypeAndReferenceIdOrderByIdDesc(order.getStore().getId(), RefTypeEnum.ORDER, order.getId())
                 .map(Payment::getPaymentMethod)
                 .ifPresent(dto::setPaymentMethod);
         return dto;

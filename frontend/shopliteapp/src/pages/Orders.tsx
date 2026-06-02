@@ -40,6 +40,20 @@ const STATUS_VI: Record<string, string> = {
     COMPLETED: 'Hoàn thành',
     FAIL: 'Thất bại',
     CANCELLED: 'Đã huỷ',
+    PARTIAL_RETURNED: 'Trả 1 phần',
+    FULL_RETURNED: 'Đã trả hết',
+};
+
+const getBadgeClass = (status?: string) => {
+    switch (status) {
+        case 'COMPLETED': return 'ord-badge-done';
+        case 'DRAFT': return 'ord-badge-draft';
+        case 'CANCELLED': return 'ord-badge-cancelled';
+        case 'FAIL': return 'ord-badge-cancelled';
+        case 'PARTIAL_RETURNED':
+        case 'FULL_RETURNED': return 'ord-badge-returned';
+        default: return 'ord-badge-pending';
+    }
 };
 
 // ─── Filter Types ───────────────────────────────────────────────────────────────
@@ -351,7 +365,12 @@ const Orders: React.FC = () => {
                                             </div>
                                             <div className="ord-item-meta">
                                                 <span>{timeStr} · {code}</span>
-                                                <span className="ord-item-payment">
+                                                <span className="ord-item-payment" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    {o.status && (
+                                                        <span className={getBadgeClass(o.status)}>
+                                                            {STATUS_VI[o.status] || o.status}
+                                                        </span>
+                                                    )}
                                                     {o.paymentMethod ? PAYMENT_LABEL[o.paymentMethod] ?? o.paymentMethod : 'Chưa thanh toán'}
                                                 </span>
                                             </div>

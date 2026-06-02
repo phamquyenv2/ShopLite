@@ -66,12 +66,18 @@ public class PaymentService {
     public ResPaymentDTO createPaymentSession(ReqPaymentDTO req) {
         Store store = currentStoreService.getCurrentStore();
         Long storeId = store.getId();
-        // Validate: chưa có payment PENDING/COMPLETED cho reference này
-        boolean hasActive = paymentRepository.existsByStoreIdAndReferenceTypeAndReferenceIdAndStatusIn(
-                storeId, req.getReferenceType(), req.getReferenceId(),
-                List.of(PaymentStatusEnum.PENDING, PaymentStatusEnum.COMPLETED));
-        if (hasActive) {
-            throw new IdInvalidException("Đã tồn tại payment cho " + req.getReferenceType() + " id=" + req.getReferenceId());
+        // Validate: chưa có payment COMPLETED cho reference này, nếu có PENDING thì CANCEL
+        List<Payment> existingPayments = paymentRepository.findAllByStoreIdAndReferenceTypeAndReferenceId(
+                storeId, req.getReferenceType(), req.getReferenceId());
+        
+        for (Payment ep : existingPayments) {
+            if (ep.getStatus() == PaymentStatusEnum.COMPLETED) {
+                throw new IdInvalidException("Đơn hàng này đã được thanh toán hoàn tất.");
+            }
+            if (ep.getStatus() == PaymentStatusEnum.PENDING) {
+                ep.setStatus(PaymentStatusEnum.CANCELLED);
+                paymentRepository.save(ep);
+            }
         }
 
         PaymentProvider provider = paymentProviderFactory.getProvider(req.getPaymentMethod());
@@ -199,7 +205,7 @@ public class PaymentService {
         }
 
         // Tìm payment qua polymorphic reference
-        Payment payment = paymentRepository.findByStoreIdAndReferenceTypeAndReferenceId(
+        Payment payment = paymentRepository.findFirstByStoreIdAndReferenceTypeAndReferenceIdOrderByIdDesc(
                 order.getStore().getId(), RefTypeEnum.ORDER, orderId).orElse(null);
         if (payment == null) {
             log.error("Payment not found for order {}", orderId);
@@ -244,7 +250,7 @@ public class PaymentService {
      */
     public ResPaymentDTO findByReference(RefTypeEnum referenceType, Integer referenceId) {
         Long storeId = currentStoreService.getCurrentStoreId();
-        Payment payment = paymentRepository.findByStoreIdAndReferenceTypeAndReferenceId(storeId, referenceType, referenceId)
+        Payment payment = paymentRepository.findFirstByStoreIdAndReferenceTypeAndReferenceIdOrderByIdDesc(storeId, referenceType, referenceId)
                 .orElseThrow(() -> new IdInvalidException(
                         "Không tìm thấy thanh toán cho " + referenceType + " id=" + referenceId));
         return DTOMapper.toResPaymentDTO(payment);

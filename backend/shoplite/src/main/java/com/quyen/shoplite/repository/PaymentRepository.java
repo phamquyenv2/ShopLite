@@ -30,7 +30,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
     boolean existsByReferenceTypeAndReferenceIdAndStatusIn(
             RefTypeEnum referenceType, Integer referenceId, List<PaymentStatusEnum> statuses);
 
-    Optional<Payment> findByStoreIdAndReferenceTypeAndReferenceId(
+    Optional<Payment> findFirstByStoreIdAndReferenceTypeAndReferenceIdOrderByIdDesc(
             Long storeId, RefTypeEnum referenceType, Integer referenceId);
 
     List<Payment> findAllByStoreIdAndReferenceTypeAndReferenceId(

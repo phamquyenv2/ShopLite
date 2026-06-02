@@ -67,9 +67,9 @@ const PERIODS: { key: Exclude<Period, 'custom'>; label: string }[] = [
 ];
 
 const PAYMENT_ROWS = [
-  { key: 'cash',    label: 'Tiền mặt',     emoji: '💵', cls: ''       },
-  { key: 'bank',    label: 'Chuyển khoản', emoji: '🏦', cls: 'green'  },
-  { key: 'ewallet', label: 'Ví điện tử',   emoji: '📱', cls: 'orange' },
+  { key: 'cash',    label: 'Tiền mặt',     emoji: '', cls: ''       },
+  { key: 'bank',    label: 'Chuyển khoản', emoji: '', cls: 'green'  },
+  { key: 'ewallet', label: 'Ví điện tử',   emoji: '', cls: 'orange' },
 ] as const;
 
 /* ============================================================ */

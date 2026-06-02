@@ -594,6 +594,8 @@ public class DatabaseInitializer implements CommandLineRunner {
                 permission("/api/v1/orders", "POST"));
         ensureMenu("ITEM_FUND_LEDGER", "So quy", "/fund-ledger", "walletOutline", MenuType.ITEM, transactionGroup, 214,
                 permission("/api/v1/fund-accounts", "GET"));
+        ensureMenu("ITEM_ORDER_RETURNS", "Trả hàng", "/order-returns", "returnUpBackOutline", MenuType.ITEM, transactionGroup, 215,
+                permission("/api/v1/orders", "GET"));
 
         Menu productGroup = ensureMenu("GROUP_PRODUCTS", "Hang hoa", "/more#products", "archiveOutline", MenuType.GROUP, more, 220);
         ensureMenu("ITEM_PRODUCTS", "Hang hoa", "/products", "archiveOutline", MenuType.ITEM, productGroup, 221,

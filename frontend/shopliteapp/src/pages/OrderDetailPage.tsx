@@ -53,6 +53,7 @@ const OrderDetailPage: React.FC = () => {
     const [toast, setToast] = useState<string | null>(null);
     const [showActionSheet, setShowActionSheet] = useState(false);
     const [showCancelAlert, setShowCancelAlert] = useState(false);
+    const [showPaymentSheet, setShowPaymentSheet] = useState(false);
 
     const loadOrder = async () => {
         setLoading(true);
@@ -83,6 +84,26 @@ const OrderDetailPage: React.FC = () => {
             console.error(e);
             setToast(e.message || 'Không thể huỷ hoá đơn');
             setLoading(false); // only toggle off if failed, otherwise loadOrder handles it
+        }
+    };
+
+    const handlePayment = async (method: string) => {
+        if (!order) return;
+        setShowPaymentSheet(false);
+        setLoading(true);
+        try {
+            await authApis().post(endpoints['order-payments'](id), {
+                paymentMethod: method,
+                amount: order.totalAmount
+            });
+            setToast('Đã thu tiền thành công');
+            setTimeout(() => {
+                ionRouter.goBack();
+            }, 500);
+        } catch (e: any) {
+            console.error(e);
+            setToast(e.message || 'Không thể tạo thanh toán');
+            setLoading(false);
         }
     };
 
@@ -223,7 +244,26 @@ const OrderDetailPage: React.FC = () => {
                 </div>
             </IonContent>
 
-            {canUpdateOrder && (
+            {order.status === 'PENDING_PAYMENT' && (
+                <div className="ord-detail-footer" style={{ display: 'flex', gap: '12px', padding: '16px', background: '#fff', boxShadow: '0 -4px 16px rgba(0,0,0,0.05)' }}>
+                    {canCancelOrder && (
+                        <button 
+                            style={{ flex: 1, padding: '14px', borderRadius: '12px', background: '#fee2e2', color: '#ef4444', fontWeight: 600, border: 'none', fontSize: '15px' }}
+                            onClick={() => setShowCancelAlert(true)}
+                        >
+                            Huỷ Đơn
+                        </button>
+                    )}
+                    <button 
+                        style={{ flex: 1.5, padding: '14px', borderRadius: '12px', background: '#0066FF', color: '#fff', fontWeight: 600, border: 'none', fontSize: '15px' }}
+                        onClick={() => setShowPaymentSheet(true)}
+                    >
+                        Thu Tiền
+                    </button>
+                </div>
+            )}
+
+            {canUpdateOrder && order.status === 'DRAFT' && (
                 <div className="ord-detail-footer">
                     <IonButton className="ord-btn-update" expand="block" fill="clear" onClick={() => setToast('Tính năng đang phát triển')}>
                         <IonIcon icon={documentTextOutline} />
@@ -254,6 +294,29 @@ const OrderDetailPage: React.FC = () => {
                             <IonIcon icon={trashOutline} /> Huỷ hoá đơn
                         </button>
                     )}
+                </div>
+            </IonModal>
+
+            <IonModal 
+                isOpen={showPaymentSheet} 
+                onDidDismiss={() => setShowPaymentSheet(false)}
+                initialBreakpoint={0.35}
+                breakpoints={[0, 0.35]}
+                className="ord-action-modal"
+            >
+                <div className="ord-action-sheet-content">
+                    <div style={{ padding: '16px', fontWeight: 600, fontSize: '16px', borderBottom: '1px solid #f1f5f9' }}>
+                        Chọn phương thức thanh toán
+                    </div>
+                    <button className="ord-action-item" onClick={() => handlePayment('CASH')}>
+                        Tiền mặt
+                    </button>
+                    <button className="ord-action-item" onClick={() => handlePayment('BANK_TRANSFER')}>
+                        Chuyển khoản
+                    </button>
+                    <button className="ord-action-item" onClick={() => handlePayment('EWALLET')}>
+                        Ví điện tử (MoMo, ZaloPay)
+                    </button>
                 </div>
             </IonModal>
 
