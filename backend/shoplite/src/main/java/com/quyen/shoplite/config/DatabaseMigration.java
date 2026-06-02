@@ -17,7 +17,7 @@ public class DatabaseMigration {
     @EventListener(ApplicationReadyEvent.class)
     public void migrate() {
         try {
-            jdbcTemplate.execute("ALTER TABLE payments MODIFY COLUMN method VARCHAR(50)");
+            jdbcTemplate.execute("ALTER TABLE payments MODIFY COLUMN payment_method VARCHAR(50)");
             jdbcTemplate.execute("ALTER TABLE payments MODIFY COLUMN status VARCHAR(50)");
             log.info("Successfully altered payments table lengths");
         } catch (Exception e) {
