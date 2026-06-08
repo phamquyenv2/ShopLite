@@ -12,7 +12,7 @@ import com.quyen.shoplite.util.error.IdInvalidException;
 
 import com.quyen.shoplite.domain.FundAccount;
 import com.quyen.shoplite.domain.Order;
-import com.quyen.shoplite.domain.OrderCompletedEvent;
+import com.quyen.shoplite.event.OrderCompletedEvent;
 import com.quyen.shoplite.domain.Payment;
 import com.quyen.shoplite.domain.Store;
 import com.quyen.shoplite.domain.request.ReqPaymentDTO;

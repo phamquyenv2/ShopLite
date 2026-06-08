@@ -340,7 +340,7 @@ const Home: React.FC = () => {
             className={`tab-item ${item.active ? 'active' : ''}`}
             role="button"
             tabIndex={0}
-            onClick={() => !item.active && history.push(item.route)}
+            onClick={() => !item.active && history.replace(item.route)}
           >
             <IonIcon icon={item.icon} />
             <span>{item.label}</span>

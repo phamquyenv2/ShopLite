@@ -12,6 +12,8 @@ import com.quyen.shoplite.domain.request.ReqOrderDTO;
 import com.quyen.shoplite.domain.request.ReqOrderItemDTO;
 import com.quyen.shoplite.domain.response.ResOrderDTO;
 import com.quyen.shoplite.domain.response.ResOrderItemDTO;
+import com.quyen.shoplite.event.OrderConfirmedEvent;
+import com.quyen.shoplite.event.OrderCancelledEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -223,33 +225,8 @@ public class OrderService {
             throw new IdInvalidException("Đơn hàng không có sản phẩm");
         }
 
-        // Deduct stock with pessimistic lock
-        for (OrderItems item : items) {
-            Product product = productRepository.findByIdAndStoreIdWithLock(item.getProduct().getId(), storeId)
-                    .orElseThrow(() -> new IdInvalidException(
-                            "Không tìm thấy Product id=" + item.getProduct().getId()));
-
-            if (product.getStock() < item.getQuantity()) {
-                throw new IdInvalidException(
-                        "Sản phẩm '" + product.getName() + "' không đủ tồn kho (còn "
-                        + product.getStock() + ", cần " + item.getQuantity() + ")");
-            }
-
-            int newStock = product.getStock() - item.getQuantity().intValue();
-            product.setStock(newStock);
-            productRepository.save(product);
-
-            inventoryLogsRepository.save(InventoryLogs.builder()
-                    .store(order.getStore())
-                    .product(product)
-                    .orderItem(item)
-                    .quantityOut(item.getQuantity().intValue())
-                    .balanceAfter(newStock)
-                    .currentStock(newStock)
-                    .type(TypeInventoryEnum.SALE)
-                    .createdAt(LocalDateTime.now())
-                    .build());
-        }
+        // Deduct stock with pessimistic lock via event
+        eventPublisher.publishEvent(new OrderConfirmedEvent(order));
 
         // Update status
         order.setStatus(StatusEnum.PENDING_PAYMENT);
@@ -286,30 +263,8 @@ public class OrderService {
         order.setStatus(StatusEnum.CANCELLED);
         orderRepository.save(order);
 
-        // Only restore stock if order was confirmed (stock was deducted)
-        if (wasConfirmed) {
-            List<OrderItems> items = orderItemsRepository.findAllByOrderId(id);
-            for (OrderItems item : items) {
-                Product product = productRepository.findByIdAndStoreIdWithLock(item.getProduct().getId(), storeId)
-                        .orElseThrow(() -> new IdInvalidException(
-                                "Không tìm thấy Product id=" + item.getProduct().getId()));
-                int restoreQuantity = item.getQuantity().intValue();
-                int newStock = product.getStock() + restoreQuantity;
-                product.setStock(newStock);
-                productRepository.save(product);
-
-                inventoryLogsRepository.save(InventoryLogs.builder()
-                        .store(order.getStore())
-                        .product(product)
-                        .orderItem(item)
-                        .quantityIn(restoreQuantity)
-                        .balanceAfter(newStock)
-                        .currentStock(newStock)
-                        .type(TypeInventoryEnum.RETURN)
-                        .createdAt(LocalDateTime.now())
-                        .build());
-            }
-        }
+        // Restore stock via event
+        eventPublisher.publishEvent(new OrderCancelledEvent(order, wasConfirmed));
 
         log.info("[Order] Cancelled order id={}, code={}", id, order.getCode());
     }

@@ -5,7 +5,7 @@ import com.quyen.shoplite.util.constant.PaymentMethodEnum;
 import com.quyen.shoplite.util.constant.PaymentStatusEnum;
 import com.quyen.shoplite.util.constant.RefTypeEnum;
 
-import com.quyen.shoplite.domain.OrderCompletedEvent;
+import com.quyen.shoplite.event.OrderCompletedEvent;
 import com.quyen.shoplite.domain.Payment;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
