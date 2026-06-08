@@ -114,9 +114,12 @@ const RootRoute: React.FC = () => {
  * Inner component — lives inside IonReactRouter so useIonRouter() works.
  * Also the right place for the push notification hook (needs hook + router context).
  */
-const AppContent: React.FC = () => {
+const PushNotificationManager: React.FC = () => {
   usePushNotifications();
+  return null;
+};
 
+const AppContent: React.FC = () => {
   return (
     <IonRouterOutlet>
       <Route exact path="/login" render={() => <LoginRoute />} />
@@ -199,6 +202,7 @@ const App: React.FC = () => (
   <IonApp>
     <AuthProvider>
       <IonReactRouter>
+        <PushNotificationManager />
         <AppContent />
       </IonReactRouter>
     </AuthProvider>

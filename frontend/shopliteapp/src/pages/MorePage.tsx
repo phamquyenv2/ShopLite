@@ -346,7 +346,7 @@ const MorePage: React.FC = () => {
             key={item.route}
             role="button"
             tabIndex={0}
-            onClick={() => item.route !== '/more' && history.push(item.route)}
+            onClick={() => item.route !== '/more' && history.replace(item.route)}
           >
             <IonIcon icon={item.icon} />
             <span>{item.label}</span>
